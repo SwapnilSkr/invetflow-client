@@ -3,7 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { ConnectionState } from "livekit-client";
 import { useInterviewRoom } from "#/integrations/livekit/use-interview-room";
-import { sessionQueries, useAppendTranscript, useEndSession } from "#/integrations/api/queries";
+import { sessionQueries, useEndSession } from "#/integrations/api/queries";
 import { InterviewStatusBar } from "#/components/candidate/InterviewStatusBar";
 import { InterviewControls } from "#/components/candidate/InterviewControls";
 import { AIInterviewTranscript } from "#/components/candidate/AIInterviewTranscript";
@@ -31,11 +31,10 @@ function InterviewSessionPage() {
 
 	const [phase, setPhase] = useState<"tech-check" | "interview" | "completed">("tech-check");
 	const [duration, setDuration] = useState(0);
-	const durationRef = useRef<ReturnType<typeof setInterval>>();
+	const durationRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
 	const room = useInterviewRoom();
 	const endSession = useEndSession();
-	const appendTranscript = useAppendTranscript();
 
 	const { data: session } = useQuery({
 		...sessionQueries.detail(sessionId),

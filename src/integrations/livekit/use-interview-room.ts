@@ -1,4 +1,4 @@
-import { Room, RoomEvent, ConnectionState, Track, type RemoteTrackPublication, type RemoteParticipant } from 'livekit-client'
+import { Room, RoomEvent, ConnectionState, Track } from 'livekit-client'
 import { useCallback, useEffect, useRef, useState } from 'react'
 
 export interface InterviewRoomState {
