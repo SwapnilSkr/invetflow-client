@@ -1,0 +1,25 @@
+{
+  "projectName": "invetflow-client",
+  "mode": "file-router",
+  "typescript": true,
+  "packageManager": "bun",
+  "includeExamples": true,
+  "tailwind": true,
+  "addOnOptions": {},
+  "envVarValues": {},
+  "git": true,
+  "routerOnly": false,
+  "version": 1,
+  "framework": "react",
+  "chosenAddOns": [
+    "biome",
+    "compiler",
+    "tRPC",
+    "better-auth",
+    "tanstack-query",
+    "sentry",
+    "shadcn",
+    "storybook",
+    "mcp"
+  ]
+}
