@@ -7,9 +7,8 @@ import {
 	Wifi,
 	WifiOff,
 } from "lucide-react";
-import React from "react";
 import { Badge } from "#/components/ui/badge";
-import { cn, getStatusColor } from "#/lib/utils";
+import { cn } from "#/lib/utils";
 
 interface InterviewStatusBarProps {
 	status: "connecting" | "connected" | "reconnecting" | "error";

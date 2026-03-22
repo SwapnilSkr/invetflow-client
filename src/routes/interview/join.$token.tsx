@@ -1,7 +1,12 @@
-import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
-import { interviewQueries, useJoinInterview } from "#/integrations/api/queries";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { Clock, HelpCircle, Mic, Users, Video } from "lucide-react";
 import { useState } from "react";
+import { Button } from "#/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "#/components/ui/card";
+import { Separator } from "#/components/ui/separator";
+import { Skeleton } from "#/components/ui/skeleton";
+import { interviewQueries, useJoinInterview } from "#/integrations/api/queries";
 
 export const Route = createFileRoute("/interview/join/$token")({
 	component: JoinByTokenPage,
@@ -10,7 +15,11 @@ export const Route = createFileRoute("/interview/join/$token")({
 function JoinByTokenPage() {
 	const { token } = Route.useParams();
 	const navigate = useNavigate();
-	const { data: interview, isLoading, error } = useQuery(interviewQueries.byToken(token));
+	const {
+		data: interview,
+		isLoading,
+		error,
+	} = useQuery(interviewQueries.byToken(token));
 	const joinInterview = useJoinInterview();
 	const [joining, setJoining] = useState(false);
 	const [joinError, setJoinError] = useState<string | null>(null);
@@ -31,7 +40,9 @@ function JoinByTokenPage() {
 				},
 			});
 		} catch (err) {
-			setJoinError(err instanceof Error ? err.message : "Failed to join interview");
+			setJoinError(
+				err instanceof Error ? err.message : "Failed to join interview",
+			);
 		} finally {
 			setJoining(false);
 		}
@@ -39,65 +50,126 @@ function JoinByTokenPage() {
 
 	if (isLoading) {
 		return (
-			<div className="flex items-center justify-center py-20">
-				<div className="h-8 w-8 animate-spin rounded-full border-2 border-neutral-200 border-t-neutral-900 dark:border-neutral-800 dark:border-t-neutral-100" />
-			</div>
+			<main className="page-wrap flex justify-center px-4 py-16">
+				<Card className="w-full max-w-lg">
+					<CardContent className="space-y-4 p-8">
+						<Skeleton className="mx-auto h-8 w-48" />
+						<Skeleton className="mx-auto h-5 w-32" />
+						<Skeleton className="h-24 w-full" />
+						<Skeleton className="h-12 w-full" />
+					</CardContent>
+				</Card>
+			</main>
 		);
 	}
 
 	if (error || !interview) {
 		return (
-			<div className="flex flex-col items-center justify-center py-20">
-				<p className="text-red-500 text-lg font-medium">Interview not found</p>
-				<p className="text-sm text-neutral-500 mt-2">
-					This invite link may have expired or is invalid.
-				</p>
-			</div>
+			<main className="page-wrap flex justify-center px-4 py-16">
+				<Card className="w-full max-w-lg">
+					<CardContent className="py-16 text-center">
+						<div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-red-50 dark:bg-red-900/20">
+							<HelpCircle className="h-7 w-7 text-red-500" />
+						</div>
+						<p className="text-lg font-medium text-destructive">
+							Interview not found
+						</p>
+						<p className="mt-2 text-sm text-muted-foreground">
+							This invite link may have expired or is invalid.
+						</p>
+					</CardContent>
+				</Card>
+			</main>
 		);
 	}
 
+	const isJoinable =
+		interview.status !== "Completed" && interview.status !== "Cancelled";
+
 	return (
-		<div className="container mx-auto max-w-lg py-16 px-4">
-			<div className="text-center space-y-6">
-				<div className="space-y-2">
-					<h1 className="text-2xl font-bold">{interview.title}</h1>
-					<p className="text-neutral-500">{interview.job_title}</p>
-				</div>
-
-				<div className="bg-neutral-50 dark:bg-neutral-800 rounded-lg p-4 text-left space-y-2">
-					<div className="flex justify-between text-sm">
-						<span className="text-neutral-500">Duration</span>
-						<span className="font-medium">{interview.duration_minutes} minutes</span>
+		<main className="page-wrap flex justify-center px-4 py-16">
+			<Card className="w-full max-w-lg">
+				<CardHeader className="text-center">
+					<div className="mx-auto mb-2 flex items-center gap-2">
+						<span className="h-2 w-2 rounded-full bg-[linear-gradient(90deg,#56c6be,#7ed3bf)]" />
+						<span className="text-sm font-semibold text-[var(--sea-ink)]">
+							InvetFlow
+						</span>
 					</div>
-					<div className="flex justify-between text-sm">
-						<span className="text-neutral-500">Questions</span>
-						<span className="font-medium">{interview.questions?.length || 0}</span>
+					<CardTitle className="text-xl">{interview.title}</CardTitle>
+					<p className="text-muted-foreground">{interview.job_title}</p>
+				</CardHeader>
+				<CardContent className="space-y-6">
+					{/* Interview Details */}
+					<div className="space-y-3 rounded-lg bg-muted/50 p-4">
+						<div className="flex items-center justify-between text-sm">
+							<span className="flex items-center gap-2 text-muted-foreground">
+								<Clock className="h-4 w-4" />
+								Duration
+							</span>
+							<span className="font-medium">
+								{interview.duration_minutes} minutes
+							</span>
+						</div>
+						<Separator />
+						<div className="flex items-center justify-between text-sm">
+							<span className="flex items-center gap-2 text-muted-foreground">
+								<Users className="h-4 w-4" />
+								Questions
+							</span>
+							<span className="font-medium">
+								{interview.questions?.length || 0}
+							</span>
+						</div>
 					</div>
-					<div className="flex justify-between text-sm">
-						<span className="text-neutral-500">Status</span>
-						<span className="font-medium">{interview.status}</span>
+
+					{/* Requirements */}
+					<div className="space-y-2">
+						<p className="text-sm font-medium">Before you begin</p>
+						<div className="grid grid-cols-2 gap-2">
+							<div className="flex items-center gap-2 rounded-md bg-muted/50 px-3 py-2 text-sm text-muted-foreground">
+								<Video className="h-4 w-4 text-emerald-500" />
+								Working camera
+							</div>
+							<div className="flex items-center gap-2 rounded-md bg-muted/50 px-3 py-2 text-sm text-muted-foreground">
+								<Mic className="h-4 w-4 text-emerald-500" />
+								Working microphone
+							</div>
+						</div>
 					</div>
-				</div>
 
-				{joinError && (
-					<div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 p-3 rounded-lg">
-						<p className="text-sm text-red-600 dark:text-red-400">{joinError}</p>
-					</div>
-				)}
+					{joinError && (
+						<div className="rounded-lg border border-red-200 bg-red-50 p-3 dark:border-red-800 dark:bg-red-900/20">
+							<p className="text-sm text-red-600 dark:text-red-400">
+								{joinError}
+							</p>
+						</div>
+					)}
 
-				<button
-					type="button"
-					onClick={handleJoin}
-					disabled={joining || interview.status === "Completed" || interview.status === "Cancelled"}
-					className="w-full px-6 py-3 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 disabled:opacity-50 font-medium text-lg"
-				>
-					{joining ? "Joining..." : "Join Interview"}
-				</button>
+					<Button
+						className="w-full"
+						size="lg"
+						onClick={handleJoin}
+						disabled={joining || !isJoinable}
+					>
+						{joining ? (
+							<span className="flex items-center gap-2">
+								<span className="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
+								Joining...
+							</span>
+						) : !isJoinable ? (
+							"Interview unavailable"
+						) : (
+							"Join Interview"
+						)}
+					</Button>
 
-				<p className="text-xs text-neutral-400">
-					Make sure you have a working camera and microphone before joining.
-				</p>
-			</div>
-		</div>
+					<p className="text-center text-xs text-muted-foreground">
+						You&rsquo;ll go through a quick tech check before the interview
+						starts.
+					</p>
+				</CardContent>
+			</Card>
+		</main>
 	);
 }

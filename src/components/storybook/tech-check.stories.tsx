@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from "@storybook/react";
-import { TechCheck } from "../src/components/candidate/TechCheck";
+import { TechCheck } from "#/components/candidate/TechCheck";
 
 const meta: Meta<typeof TechCheck> = {
 	title: "Candidate/TechCheck",
@@ -14,13 +14,13 @@ type Story = StoryObj<typeof TechCheck>;
 
 export const Default: Story = {
 	args: {
-		onComplete: (devices) => console.log("Devices ready:", devices),
+		onComplete: (devices: { audio: boolean; video: boolean; screen: boolean }) => console.log("Devices ready:", devices),
 		onCancel: () => console.log("Cancelled"),
 	},
 };
 
 export const WithoutCancel: Story = {
 	args: {
-		onComplete: (devices) => console.log("Devices ready:", devices),
+		onComplete: (devices: { audio: boolean; video: boolean; screen: boolean }) => console.log("Devices ready:", devices),
 	},
 };

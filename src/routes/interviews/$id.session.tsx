@@ -1,7 +1,10 @@
-import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
+import { CheckCircle2 } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { ConnectionState } from "livekit-client";
+import { Button } from "#/components/ui/button";
+import { Card, CardContent } from "#/components/ui/card";
 import { useInterviewRoom } from "#/integrations/livekit/use-interview-room";
 import { sessionQueries, useEndSession } from "#/integrations/api/queries";
 import { InterviewStatusBar } from "#/components/candidate/InterviewStatusBar";
@@ -96,40 +99,39 @@ function InterviewSessionPage() {
 
 	if (phase === "tech-check") {
 		return (
-			<div className="container mx-auto max-w-2xl py-8 px-4">
+			<main className="page-wrap mx-auto max-w-2xl px-4 py-8">
 				<TechCheck
 					onComplete={handleTechCheckComplete}
 					onCancel={() => navigate({ to: "/interviews/$id", params: { id } })}
 				/>
-			</div>
+			</main>
 		);
 	}
 
 	if (phase === "completed") {
 		return (
-			<div className="container mx-auto max-w-2xl py-20 px-4 text-center">
-				<div className="space-y-4">
-					<div className="h-16 w-16 mx-auto rounded-full bg-emerald-100 dark:bg-emerald-900 flex items-center justify-center">
-						<svg className="h-8 w-8 text-emerald-600 dark:text-emerald-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-							<path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-						</svg>
-					</div>
-					<h1 className="text-2xl font-bold">Interview Complete</h1>
-					<p className="text-neutral-500">
-						Your interview has been recorded. You'll receive feedback shortly.
-					</p>
-					<p className="text-sm text-neutral-400">
-						Duration: {Math.floor(duration / 60)}m {duration % 60}s
-					</p>
-					<button
-						type="button"
-						onClick={() => navigate({ to: "/interviews" })}
-						className="mt-4 px-6 py-2 bg-neutral-900 text-white rounded-lg hover:bg-neutral-800 dark:bg-neutral-100 dark:text-neutral-900 dark:hover:bg-neutral-200"
-					>
-						Back to Interviews
-					</button>
-				</div>
-			</div>
+			<main className="page-wrap flex justify-center px-4 py-20">
+				<Card className="w-full max-w-md text-center">
+					<CardContent className="space-y-5 py-12">
+						<div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-emerald-50 dark:bg-emerald-900/30">
+							<CheckCircle2 className="h-8 w-8 text-emerald-600 dark:text-emerald-400" />
+						</div>
+						<div>
+							<h1 className="text-2xl font-bold">Interview Complete</h1>
+							<p className="mt-2 text-muted-foreground">
+								Your interview has been recorded. You&rsquo;ll receive
+								feedback shortly.
+							</p>
+						</div>
+						<p className="text-sm text-muted-foreground">
+							Duration: {Math.floor(duration / 60)}m {duration % 60}s
+						</p>
+						<Button asChild className="mt-2">
+							<Link to="/interviews">Back to Interviews</Link>
+						</Button>
+					</CardContent>
+				</Card>
+			</main>
 		);
 	}
 

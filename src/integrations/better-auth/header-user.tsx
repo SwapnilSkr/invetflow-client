@@ -1,4 +1,5 @@
 import { Link } from "@tanstack/react-router";
+import { Button } from "#/components/ui/button";
 import { logout } from "#/integrations/api/client";
 import { authClient } from "#/lib/auth-client";
 
@@ -7,35 +8,32 @@ export default function BetterAuthHeader() {
 
 	if (isPending) {
 		return (
-			<div className="h-8 w-8 bg-neutral-100 dark:bg-neutral-800 animate-pulse rounded-full" />
+			<div className="h-8 w-8 animate-pulse rounded-full bg-muted" />
 		);
 	}
 
 	if (session?.user) {
 		return (
 			<div className="flex items-center gap-2">
-				<div className="h-8 w-8 bg-neutral-100 dark:bg-neutral-800 flex items-center justify-center rounded-full">
-					<span className="text-xs font-medium text-neutral-600 dark:text-neutral-400">
+				<div className="flex h-8 w-8 items-center justify-center rounded-full bg-[rgba(79,184,178,0.14)] text-[var(--lagoon-deep)]">
+					<span className="text-xs font-semibold">
 						{session.user.name?.charAt(0).toUpperCase() || "U"}
 					</span>
 				</div>
-				<button
-					type="button"
+				<Button
+					variant="outline"
+					size="sm"
 					onClick={() => void logout()}
-					className="h-9 px-4 text-sm font-medium bg-white dark:bg-neutral-900 text-neutral-900 dark:text-neutral-50 border border-neutral-300 dark:border-neutral-700 hover:bg-neutral-50 dark:hover:bg-neutral-800 transition-colors rounded-lg"
 				>
 					Sign out
-				</button>
+				</Button>
 			</div>
 		);
 	}
 
 	return (
-		<Link
-			to="/auth"
-			className="h-9 px-4 text-sm font-medium bg-white dark:bg-neutral-900 text-neutral-900 dark:text-neutral-50 border border-neutral-300 dark:border-neutral-700 hover:bg-neutral-50 dark:hover:bg-neutral-800 transition-colors inline-flex items-center rounded-lg"
-		>
-			Sign in
-		</Link>
+		<Button variant="outline" size="sm" asChild>
+			<Link to="/auth">Sign in</Link>
+		</Button>
 	);
 }

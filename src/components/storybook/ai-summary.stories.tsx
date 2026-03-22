@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from "@storybook/react";
-import { AISummary } from "../src/components/recruiter/AISummary";
+import { AISummary } from "#/components/recruiter/AISummary";
 
 const meta: Meta<typeof AISummary> = {
 	title: "Recruiter/AISummary",

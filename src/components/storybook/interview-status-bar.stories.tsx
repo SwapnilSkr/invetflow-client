@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from "@storybook/react";
-import { InterviewStatusBar } from "../src/components/candidate/InterviewStatusBar";
+import { InterviewStatusBar } from "#/components/candidate/InterviewStatusBar";
 
 const meta: Meta<typeof InterviewStatusBar> = {
 	title: "Candidate/InterviewStatusBar",

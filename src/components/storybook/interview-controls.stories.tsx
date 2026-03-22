@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from "@storybook/react";
-import { InterviewControls } from "../src/components/candidate/InterviewControls";
+import { InterviewControls } from "#/components/candidate/InterviewControls";
 
 const meta: Meta<typeof InterviewControls> = {
 	title: "Candidate/InterviewControls",

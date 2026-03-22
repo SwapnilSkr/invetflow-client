@@ -3,7 +3,6 @@ import {
 	BookmarkCheck,
 	Clock,
 	MessageSquare,
-	Play,
 	Send,
 	Share2,
 } from "lucide-react";
@@ -12,9 +11,7 @@ import { Badge } from "#/components/ui/badge";
 import { Button } from "#/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "#/components/ui/card";
 import { Input } from "#/components/ui/input";
-import { Separator } from "#/components/ui/separator";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "#/components/ui/tabs";
-import { cn } from "#/lib/utils";
 
 interface Comment {
 	id: string;
@@ -49,8 +46,8 @@ export function VideoPlayer({
 	onShareHighlight,
 }: VideoPlayerProps) {
 	const videoRef = React.useRef<HTMLVideoElement>(null);
-	const [isPlaying, setIsPlaying] = React.useState(false);
-	const [progress, setProgress] = React.useState(0);
+	const [, setIsPlaying] = React.useState(false);
+	const [, setProgress] = React.useState(0);
 	const [newComment, setNewComment] = React.useState("");
 
 	React.useEffect(() => {

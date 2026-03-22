@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from "@storybook/react";
-import { AntiCheatIndicator } from "../src/components/candidate/AntiCheatIndicator";
+import { AntiCheatIndicator } from "#/components/candidate/AntiCheatIndicator";
 
 const meta: Meta<typeof AntiCheatIndicator> = {
 	title: "Candidate/AntiCheatIndicator",

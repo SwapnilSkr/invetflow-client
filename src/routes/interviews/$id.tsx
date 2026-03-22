@@ -1,7 +1,27 @@
 import { useQuery } from "@tanstack/react-query";
-import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import {
+	ArrowLeft,
+	Calendar,
+	Clock,
+	Copy,
+	LinkIcon,
+	Play,
+	Users,
+} from "lucide-react";
 import { useState } from "react";
+import { Badge } from "#/components/ui/badge";
+import { Button } from "#/components/ui/button";
+import {
+	Card,
+	CardContent,
+	CardHeader,
+	CardTitle,
+} from "#/components/ui/card";
+import { Separator } from "#/components/ui/separator";
+import { Skeleton } from "#/components/ui/skeleton";
 import { interviewQueries, useJoinInterview } from "#/integrations/api/queries";
+import { getStatusColor } from "#/lib/utils";
 
 export const Route = createFileRoute("/interviews/$id")({
 	component: InterviewDetailPage,
@@ -17,6 +37,7 @@ function InterviewDetailPage() {
 	} = useQuery(interviewQueries.detail(id));
 	const joinInterview = useJoinInterview();
 	const [joining, setJoining] = useState(false);
+	const [copied, setCopied] = useState(false);
 
 	const handleJoin = async () => {
 		setJoining(true);
@@ -38,10 +59,21 @@ function InterviewDetailPage() {
 		}
 	};
 
+	const copyInviteLink = async () => {
+		if (interview?.invite_link) {
+			await navigator.clipboard.writeText(interview.invite_link);
+			setCopied(true);
+			setTimeout(() => setCopied(false), 2000);
+		}
+	};
+
 	if (isLoading) {
 		return (
-			<div className="flex items-center justify-center py-20">
-				<div className="h-8 w-8 animate-spin rounded-full border-2 border-neutral-200 border-t-neutral-900 dark:border-neutral-800 dark:border-t-neutral-100" />
+			<div className="container mx-auto px-4 py-8">
+				<Skeleton className="mb-6 h-5 w-32" />
+				<Skeleton className="mb-2 h-9 w-64" />
+				<Skeleton className="mb-8 h-5 w-48" />
+				<Skeleton className="h-64 w-full" />
 			</div>
 		);
 	}
@@ -49,127 +81,216 @@ function InterviewDetailPage() {
 	if (error || !interview) {
 		return (
 			<div className="flex flex-col items-center justify-center py-20">
-				<p className="text-red-500">Interview not found</p>
+				<p className="text-lg font-medium text-destructive">
+					Interview not found
+				</p>
+				<p className="mt-2 text-sm text-muted-foreground">
+					This interview may have been deleted or you don&rsquo;t have access.
+				</p>
+				<Button variant="outline" className="mt-4" asChild>
+					<Link to="/interviews">Back to interviews</Link>
+				</Button>
 			</div>
 		);
 	}
 
+	const canJoin =
+		interview.status === "Scheduled" || interview.status === "Draft";
+
 	return (
-		<div className="container mx-auto py-8 px-4">
-			<div className="mb-8">
-				<a
-					href="/interviews"
-					className="text-sm text-neutral-500 hover:text-neutral-700 dark:hover:text-neutral-300"
-				>
-					← Back to interviews
-				</a>
+		<div className="container mx-auto px-4 py-8">
+			{/* Breadcrumb */}
+			<div className="mb-6">
+				<Button variant="ghost" size="sm" asChild>
+					<Link to="/interviews">
+						<ArrowLeft className="mr-2 h-4 w-4" />
+						Back to interviews
+					</Link>
+				</Button>
 			</div>
 
-			<div className="bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 rounded-lg p-6">
-				<div className="flex items-start justify-between mb-6">
-					<div>
+			{/* Header */}
+			<div className="mb-6 flex items-start justify-between">
+				<div>
+					<div className="flex items-center gap-3">
 						<h1 className="text-2xl font-bold">{interview.title}</h1>
-						<p className="text-neutral-500 mt-1">{interview.job_title}</p>
+						<Badge className={getStatusColor(interview.status)}>
+							{interview.status}
+						</Badge>
 					</div>
-					<span
-						className={`text-sm px-3 py-1 rounded-full ${
-							interview.status === "Active"
-								? "bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300"
-								: interview.status === "Completed"
-									? "bg-neutral-100 text-neutral-700 dark:bg-neutral-800 dark:text-neutral-300"
-									: "bg-yellow-100 text-yellow-700 dark:bg-yellow-900 dark:text-yellow-300"
-						}`}
-					>
-						{interview.status}
-					</span>
+					<p className="mt-1 text-muted-foreground">{interview.job_title}</p>
 				</div>
-
-				{interview.job_description && (
-					<div className="mb-6">
-						<h2 className="text-sm font-medium text-neutral-500 mb-2">
-							Description
-						</h2>
-						<p className="text-neutral-700 dark:text-neutral-300">
-							{interview.job_description}
-						</p>
-					</div>
-				)}
-
-				<div className="grid grid-cols-2 gap-4 mb-6">
-					<div>
-						<h2 className="text-sm font-medium text-neutral-500 mb-1">
-							Duration
-						</h2>
-						<p>{interview.duration_minutes} minutes</p>
-					</div>
-					<div>
-						<h2 className="text-sm font-medium text-neutral-500 mb-1">
-							Questions
-						</h2>
-						<p>{interview.questions?.length || 0} questions</p>
-					</div>
-				</div>
-
-				{interview.questions && interview.questions.length > 0 && (
-					<div className="mb-6">
-						<h2 className="text-sm font-medium text-neutral-500 mb-3">
-							Questions
-						</h2>
-						<ol className="list-decimal list-inside space-y-2">
-							{interview.questions.map((q, idx) => (
-								<li
-									key={q.id || idx}
-									className="text-neutral-700 dark:text-neutral-300"
-								>
-									<span className="font-medium">{q.question}</span>
-									<span className="text-xs text-neutral-400 ml-2">
-										({q.category})
-									</span>
-								</li>
-							))}
-						</ol>
-					</div>
-				)}
-
-				{interview.candidate_name && (
-					<div className="mb-6 p-4 bg-neutral-50 dark:bg-neutral-800 rounded-lg">
-						<h2 className="text-sm font-medium text-neutral-500 mb-2">
-							Candidate
-						</h2>
-						<p className="font-medium">{interview.candidate_name}</p>
-						<p className="text-sm text-neutral-500">
-							{interview.candidate_email}
-						</p>
-					</div>
-				)}
-
-				{interview.invite_link && (
-					<div className="mb-6 p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
-						<h2 className="text-sm font-medium text-blue-700 dark:text-blue-300 mb-2">
-							Invite Link
-						</h2>
-						<code className="text-sm break-all">{interview.invite_link}</code>
-					</div>
-				)}
-
-				<div className="flex gap-3">
-					{(interview.status === "Scheduled" ||
-						interview.status === "Draft") && (
-						<button
-							type="button"
-							onClick={handleJoin}
-							disabled={joining}
-							className="px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50"
-						>
+				<div className="flex gap-2">
+					{canJoin && (
+						<Button onClick={handleJoin} disabled={joining}>
+							<Play className="mr-2 h-4 w-4" />
 							{joining ? "Joining..." : "Join Interview"}
-						</button>
+						</Button>
 					)}
-					<a
-						href={`/interviews/${id}/edit`}
-						className="px-6 py-2 border border-neutral-200 dark:border-neutral-700 rounded-lg hover:bg-neutral-50 dark:hover:bg-neutral-800"
-					>
-						Edit
-					</a>
+				</div>
+			</div>
+
+			<div className="grid gap-6 lg:grid-cols-3">
+				{/* Main Content */}
+				<div className="space-y-6 lg:col-span-2">
+					{/* Description */}
+					{interview.job_description && (
+						<Card>
+							<CardHeader>
+								<CardTitle className="text-base">Description</CardTitle>
+							</CardHeader>
+							<CardContent>
+								<p className="text-sm leading-relaxed text-muted-foreground">
+									{interview.job_description}
+								</p>
+							</CardContent>
+						</Card>
+					)}
+
+					{/* Questions */}
+					<Card>
+						<CardHeader>
+							<CardTitle className="text-base">
+								Questions ({interview.questions?.length || 0})
+							</CardTitle>
+						</CardHeader>
+						<CardContent>
+							{interview.questions && interview.questions.length > 0 ? (
+								<ol className="space-y-3">
+									{interview.questions.map((q, idx) => (
+										<li key={q.id || idx} className="flex gap-3">
+											<span className="flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full bg-muted text-xs font-medium">
+												{idx + 1}
+											</span>
+											<div className="flex-1">
+												<p className="text-sm font-medium">
+													{q.question}
+												</p>
+												<div className="mt-1 flex items-center gap-2">
+													<Badge variant="secondary" className="text-xs">
+														{q.category}
+													</Badge>
+													{q.time_limit_seconds && (
+														<span className="text-xs text-muted-foreground">
+															{q.time_limit_seconds}s limit
+														</span>
+													)}
+												</div>
+												{q.follow_up_prompts.length > 0 && (
+													<p className="mt-1 text-xs text-muted-foreground">
+														{q.follow_up_prompts.length} follow-up prompts
+													</p>
+												)}
+											</div>
+										</li>
+									))}
+								</ol>
+							) : (
+								<p className="text-sm text-muted-foreground">
+									No questions added yet. The AI will generate questions
+									based on the job description.
+								</p>
+							)}
+						</CardContent>
+					</Card>
+				</div>
+
+				{/* Sidebar */}
+				<div className="space-y-4">
+					{/* Details */}
+					<Card>
+						<CardHeader>
+							<CardTitle className="text-base">Details</CardTitle>
+						</CardHeader>
+						<CardContent className="space-y-3">
+							<div className="flex items-center justify-between text-sm">
+								<span className="flex items-center gap-2 text-muted-foreground">
+									<Clock className="h-4 w-4" />
+									Duration
+								</span>
+								<span className="font-medium">
+									{interview.duration_minutes} min
+								</span>
+							</div>
+							<Separator />
+							<div className="flex items-center justify-between text-sm">
+								<span className="flex items-center gap-2 text-muted-foreground">
+									<Users className="h-4 w-4" />
+									Questions
+								</span>
+								<span className="font-medium">
+									{interview.questions?.length || 0}
+								</span>
+							</div>
+							<Separator />
+							<div className="flex items-center justify-between text-sm">
+								<span className="flex items-center gap-2 text-muted-foreground">
+									<Calendar className="h-4 w-4" />
+									Created
+								</span>
+								<span className="font-medium">
+									{new Date(interview.created_at).toLocaleDateString()}
+								</span>
+							</div>
+						</CardContent>
+					</Card>
+
+					{/* Candidate */}
+					{interview.candidate_name && (
+						<Card>
+							<CardHeader>
+								<CardTitle className="text-base">Candidate</CardTitle>
+							</CardHeader>
+							<CardContent>
+								<div className="flex items-center gap-3">
+									<div className="flex h-10 w-10 items-center justify-center rounded-full bg-[rgba(79,184,178,0.14)] text-[var(--lagoon-deep)]">
+										<span className="text-sm font-semibold">
+											{interview.candidate_name.charAt(0).toUpperCase()}
+										</span>
+									</div>
+									<div className="min-w-0">
+										<p className="truncate text-sm font-medium">
+											{interview.candidate_name}
+										</p>
+										<p className="truncate text-xs text-muted-foreground">
+											{interview.candidate_email}
+										</p>
+									</div>
+								</div>
+							</CardContent>
+						</Card>
+					)}
+
+					{/* Invite Link */}
+					{interview.invite_link && (
+						<Card>
+							<CardHeader>
+								<CardTitle className="flex items-center gap-2 text-base">
+									<LinkIcon className="h-4 w-4" />
+									Invite Link
+								</CardTitle>
+							</CardHeader>
+							<CardContent>
+								<div className="flex gap-2">
+									<code className="flex-1 truncate rounded-md bg-muted px-3 py-2 text-xs">
+										{interview.invite_link}
+									</code>
+									<Button
+										variant="outline"
+										size="icon-sm"
+										onClick={copyInviteLink}
+									>
+										<Copy className="h-3.5 w-3.5" />
+									</Button>
+								</div>
+								{copied && (
+									<p className="mt-2 text-xs text-emerald-600 dark:text-emerald-400">
+										Copied to clipboard!
+									</p>
+								)}
+							</CardContent>
+						</Card>
+					)}
 				</div>
 			</div>
 		</div>

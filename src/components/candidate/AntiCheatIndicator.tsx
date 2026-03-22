@@ -1,5 +1,4 @@
 import { AlertTriangle, Eye, Lock, Shield } from "lucide-react";
-import React from "react";
 import { Alert, AlertDescription } from "#/components/ui/alert";
 import { Card, CardContent, CardHeader, CardTitle } from "#/components/ui/card";
 import { cn } from "#/lib/utils";

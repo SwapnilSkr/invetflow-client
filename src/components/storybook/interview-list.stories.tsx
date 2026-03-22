@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from "@storybook/react";
-import { InterviewList } from "../src/components/recruiter/InterviewList";
+import { InterviewList } from "#/components/recruiter/InterviewList";
 
 const meta: Meta<typeof InterviewList> = {
 	title: "Recruiter/InterviewList",
@@ -60,14 +60,14 @@ const mockInterviews = [
 export const Default: Story = {
 	args: {
 		interviews: mockInterviews,
-		onSelect: (interview) => console.log("Selected:", interview),
-		onDelete: (id) => console.log("Delete:", id),
+		onSelect: (interview: { id: string }) => console.log("Selected:", interview),
+		onDelete: (id: string) => console.log("Delete:", id),
 	},
 };
 
 export const WithoutDelete: Story = {
 	args: {
 		interviews: mockInterviews,
-		onSelect: (interview) => console.log("Selected:", interview),
+		onSelect: (interview: { id: string }) => console.log("Selected:", interview),
 	},
 };

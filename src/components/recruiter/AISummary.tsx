@@ -11,7 +11,7 @@ import {
 } from "lucide-react";
 import type React from "react";
 import { Badge } from "#/components/ui/badge";
-import { Card, CardContent, CardHeader, CardTitle } from "#/components/ui/card";
+import { Card, CardContent } from "#/components/ui/card";
 import { Progress } from "#/components/ui/progress";
 import { Separator } from "#/components/ui/separator";
 import { cn, getScoreBgColor, getScoreColor } from "#/lib/utils";
