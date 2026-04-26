@@ -1,6 +1,7 @@
 import {
 	ConnectionQuality,
 	ConnectionState,
+	LocalAudioTrack,
 	type LocalTrack,
 	type LocalTrackPublication,
 	type RemoteTrack,
@@ -11,6 +12,10 @@ import {
 } from "livekit-client";
 import { useCallback, useEffect, useRef, useState } from "react";
 
+const TRANSCRIPTION_TOPIC = "lk.transcription";
+const TRANSCRIPTION_FINAL_ATTRIBUTE = "lk.transcription_final";
+const TRANSCRIPTION_SEGMENT_ATTRIBUTE = "lk.segment_id";
+
 function mapConnectionQuality(q: ConnectionQuality): "good" | "fair" | "poor" {
 	switch (q) {
 		case ConnectionQuality.Excellent:
@@ -20,6 +25,29 @@ function mapConnectionQuality(q: ConnectionQuality): "good" | "fair" | "poor" {
 			return "fair";
 		default:
 			return "poor";
+	}
+}
+
+async function enableEnhancedNoiseCancellation(track: LocalTrack) {
+	if (!(track instanceof LocalAudioTrack)) return;
+	if (track.getProcessor()?.name === "livekit-noise-filter") return;
+
+	try {
+		const { KrispNoiseFilter, isKrispNoiseFilterSupported } = await import(
+			"@livekit/krisp-noise-filter"
+		);
+		if (!isKrispNoiseFilterSupported()) {
+			console.info(
+				"LiveKit Krisp noise filter is not supported in this browser",
+			);
+			return;
+		}
+
+		const processor = KrispNoiseFilter();
+		await track.setProcessor(processor);
+		await processor.setEnabled(true);
+	} catch (e) {
+		console.warn("Could not enable LiveKit Krisp noise filter", e);
 	}
 }
 
@@ -211,6 +239,46 @@ export function useInterviewRoom(): InterviewRoomState & InterviewRoomActions {
 					},
 				);
 
+				lkRoom.registerTextStreamHandler(
+					TRANSCRIPTION_TOPIC,
+					async (reader, participantInfo) => {
+						const segmentId =
+							reader.info.attributes?.[TRANSCRIPTION_SEGMENT_ATTRIBUTE] ??
+							reader.info.id;
+						const speaker =
+							participantInfo.identity === lkRoom.localParticipant.identity
+								? "candidate"
+								: "ai";
+						let content = "";
+
+						for await (const chunk of reader) {
+							content += chunk;
+							const text = content.trim();
+							if (!text) continue;
+
+							setLiveTranscriptMessages((current) => {
+								const byId = new Map(
+									current.map((message) => [message.id, message]),
+								);
+
+								byId.set(segmentId, {
+									id: segmentId,
+									speaker,
+									content: text,
+									timestamp: reader.info.timestamp || Date.now(),
+									isFinal:
+										reader.info.attributes?.[TRANSCRIPTION_FINAL_ATTRIBUTE] ===
+										"true",
+								});
+
+								return Array.from(byId.values()).sort(
+									(a, b) => a.timestamp - b.timestamp,
+								);
+							});
+						}
+					},
+				);
+
 				lkRoom.on(RoomEvent.MediaDevicesError, (e: Error) => {
 					setError(`Media device error: ${e.message}`);
 				});
@@ -227,7 +295,10 @@ export function useInterviewRoom(): InterviewRoomState & InterviewRoomActions {
 				lkRoom.on(
 					RoomEvent.LocalTrackPublished,
 					(pub: LocalTrackPublication) => {
-						if (pub.track) onLocalTrack(pub.track);
+						if (pub.track) {
+							onLocalTrack(pub.track);
+							void enableEnhancedNoiseCancellation(pub.track);
+						}
 					},
 				);
 
