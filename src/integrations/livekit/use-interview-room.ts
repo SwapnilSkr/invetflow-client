@@ -14,7 +14,6 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { isAudioOutputSelectionSupported } from "#/lib/interview-audio-prefs";
 
 const TRANSCRIPTION_TOPIC = "lk.transcription";
-const TRANSCRIPTION_FINAL_ATTRIBUTE = "lk.transcription_final";
 const TRANSCRIPTION_SEGMENT_ATTRIBUTE = "lk.segment_id";
 
 function mapConnectionQuality(q: ConnectionQuality): "good" | "fair" | "poor" {
@@ -303,33 +302,47 @@ export function useInterviewRoom(): InterviewRoomState & InterviewRoomActions {
 							participantInfo.identity === lkRoom.localParticipant.identity
 								? "candidate"
 								: "ai";
+						const ts = reader.info.timestamp || Date.now();
 						let content = "";
+						let rafId: ReturnType<typeof requestAnimationFrame> | null = null;
 
-						for await (const chunk of reader) {
-							content += chunk;
+						const commit = (isFinal: boolean) => {
 							const text = content.trim();
-							if (!text) continue;
-
+							if (!text) return;
 							setLiveTranscriptMessages((current) => {
 								const byId = new Map(
 									current.map((message) => [message.id, message]),
 								);
-
 								byId.set(segmentId, {
 									id: segmentId,
 									speaker,
 									content: text,
-									timestamp: reader.info.timestamp || Date.now(),
-									isFinal:
-										reader.info.attributes?.[TRANSCRIPTION_FINAL_ATTRIBUTE] ===
-										"true",
+									timestamp: ts,
+									isFinal,
 								});
-
 								return Array.from(byId.values()).sort(
 									(a, b) => a.timestamp - b.timestamp,
 								);
 							});
+						};
+
+						for await (const chunk of reader) {
+							content += chunk;
+							// Debounce interim updates to one per animation frame to avoid
+							// hammering React state with a re-render on every STT chunk.
+							if (rafId !== null) cancelAnimationFrame(rafId);
+							rafId = requestAnimationFrame(() => {
+								rafId = null;
+								commit(false);
+							});
 						}
+
+						// Stream closed — this segment is now final.
+						if (rafId !== null) {
+							cancelAnimationFrame(rafId);
+							rafId = null;
+						}
+						commit(true);
 					},
 				);
 

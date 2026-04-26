@@ -79,7 +79,7 @@ function InterviewSessionPage() {
 	const { data: transcriptData } = useQuery({
 		...sessionQueries.transcript(sessionId),
 		enabled: !!sessionId && phase === "interview",
-		refetchInterval: phase === "interview" ? 3000 : false,
+		refetchInterval: phase === "interview" ? 1500 : false,
 	});
 
 	// After the interview layout commits, connect so the video ref exists. useLayoutEffect
@@ -168,17 +168,22 @@ function InterviewSessionPage() {
 				isFinal: true,
 			},
 		}));
+		const normalise = (s: string) =>
+			s
+				.trim()
+				.toLocaleLowerCase()
+				.replace(/[^\p{L}\p{N}\s]/gu, "")
+				.replace(/\s+/g, " ");
 		const storedFingerprints = new Set(
 			storedMessages.map(
-				(message) =>
-					`${message.type}:${message.content.trim().toLocaleLowerCase()}`,
+				(message) => `${message.type}:${normalise(message.content)}`,
 			),
 		);
 		const liveMessages = room.liveTranscriptMessages
 			.filter(
 				(message) =>
 					!storedFingerprints.has(
-						`${message.speaker}:${message.content.trim().toLocaleLowerCase()}`,
+						`${message.speaker}:${normalise(message.content)}`,
 					),
 			)
 			.map((message) => ({
