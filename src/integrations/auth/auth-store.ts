@@ -16,6 +16,14 @@ function normalizeUser(u: User): User {
 
 export type AuthStatus = "initializing" | "unauthenticated" | "authenticated";
 
+/** JWT is in sessionStorage — on the client, reflect “pending validation” so guards/UI don’t treat a refresh as logged-out before `initialize()` runs. */
+function getInitialAuthStatus(): AuthStatus {
+	if (typeof sessionStorage === "undefined") return "unauthenticated";
+	return hasValidAccessToken() ? "initializing" : "unauthenticated";
+}
+
+let initializeInFlight: Promise<void> | null = null;
+
 type AuthState = {
 	status: AuthStatus;
 	user: User | null;
@@ -35,28 +43,36 @@ type AuthState = {
 };
 
 export const useAuthStore = create<AuthState>((set, get) => ({
-	status: "unauthenticated",
+	status: getInitialAuthStatus(),
 	user: null,
 
 	initialize: async () => {
-		if (!hasValidAccessToken()) {
-			set({ status: "unauthenticated", user: null });
-			return;
-		}
+		if (initializeInFlight) return initializeInFlight;
 
-		const { status, user: existing } = get();
-		if (status === "authenticated" && existing) {
-			return;
-		}
+		initializeInFlight = (async () => {
+			if (!hasValidAccessToken()) {
+				set({ status: "unauthenticated", user: null });
+				return;
+			}
 
-		set({ status: "initializing" });
+			const { status, user: existing } = get();
+			if (status === "authenticated" && existing) {
+				return;
+			}
 
-		try {
-			const user = normalizeUser(await fetchCurrentUserFromApi());
-			set({ user, status: "authenticated" });
-		} catch {
-			get().signOut();
-		}
+			set({ status: "initializing" });
+
+			try {
+				const user = normalizeUser(await fetchCurrentUserFromApi());
+				set({ user, status: "authenticated" });
+			} catch {
+				get().signOut();
+			}
+		})().finally(() => {
+			initializeInFlight = null;
+		});
+
+		return initializeInFlight;
 	},
 
 	applyTokenResponse: (accessToken, expiresIn, user) => {
@@ -74,4 +90,15 @@ export const useAuthStore = create<AuthState>((set, get) => ({
 /** Non-hook access (api client, interceptors) — use sparingly. */
 export function getAuthStoreState() {
 	return useAuthStore.getState();
+}
+
+/**
+ * Await once per load so router guards run after persisted JWT is validated (or cleared).
+ * No-op on the server — sessionStorage JWT is client-only; guards skip redirects there.
+ */
+export function ensureAuthResolved(): Promise<void> {
+	if (typeof window === "undefined") {
+		return Promise.resolve();
+	}
+	return useAuthStore.getState().initialize();
 }
