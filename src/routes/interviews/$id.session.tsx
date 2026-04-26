@@ -1,44 +1,71 @@
-import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
-import { CheckCircle2 } from "lucide-react";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { ConnectionState } from "livekit-client";
+import { CheckCircle2 } from "lucide-react";
+import {
+	useCallback,
+	useEffect,
+	useLayoutEffect,
+	useRef,
+	useState,
+} from "react";
+import { AIInterviewTranscript } from "#/components/candidate/AIInterviewTranscript";
+import { InterviewControls } from "#/components/candidate/InterviewControls";
+import { InterviewStatusBar } from "#/components/candidate/InterviewStatusBar";
+import { TechCheck } from "#/components/candidate/TechCheck";
 import { Button } from "#/components/ui/button";
 import { Card, CardContent } from "#/components/ui/card";
-import { useInterviewRoom } from "#/integrations/livekit/use-interview-room";
 import { sessionQueries, useEndSession } from "#/integrations/api/queries";
-import { InterviewStatusBar } from "#/components/candidate/InterviewStatusBar";
-import { InterviewControls } from "#/components/candidate/InterviewControls";
-import { AIInterviewTranscript } from "#/components/candidate/AIInterviewTranscript";
-import { TechCheck } from "#/components/candidate/TechCheck";
+import { useInterviewRoom } from "#/integrations/livekit/use-interview-room";
 import { requireSession } from "#/lib/require-session";
 
 interface SessionSearch {
 	sessionId: string;
 	token: string;
 	url: string;
+	/** Set to `"1"` after tech check so refresh / Strict remounts can resume the same step. */
+	startRoom?: string;
+}
+
+function parseSessionSearch(search: Record<string, unknown>): SessionSearch {
+	return {
+		sessionId: String(search.sessionId ?? ""),
+		token: String(search.token ?? ""),
+		url: String(search.url ?? ""),
+		startRoom:
+			typeof search.startRoom === "string" ? search.startRoom : undefined,
+	};
 }
 
 export const Route = createFileRoute("/interviews/$id/session")({
 	beforeLoad: requireSession,
-	validateSearch: (search: Record<string, unknown>): SessionSearch => ({
-		sessionId: search.sessionId as string,
-		token: search.token as string,
-		url: search.url as string,
-	}),
+	validateSearch: (search: Record<string, unknown>): SessionSearch =>
+		parseSessionSearch(search),
 	component: InterviewSessionPage,
 });
 
 function InterviewSessionPage() {
 	const { id } = Route.useParams();
-	const { sessionId, token, url } = Route.useSearch();
+	const { sessionId, token, url, startRoom } = Route.useSearch();
 	const navigate = useNavigate();
 
-	const [phase, setPhase] = useState<"tech-check" | "interview" | "completed">("tech-check");
+	const pastTechCheck = startRoom === "1";
+	const [phase, setPhase] = useState<"tech-check" | "interview" | "completed">(
+		() => (pastTechCheck ? "interview" : "tech-check"),
+	);
+	const [shouldConnectToLiveKit, setShouldConnectToLiveKit] = useState(
+		() => pastTechCheck,
+	);
 	const [duration, setDuration] = useState(0);
 	const durationRef = useRef<ReturnType<typeof setInterval> | null>(null);
+	const videoContainerRef = useRef<HTMLDivElement>(null);
 
 	const room = useInterviewRoom();
+	const {
+		connect: connectToRoom,
+		connectionState,
+		disconnect: disconnectFromRoom,
+	} = room;
 	const endSession = useEndSession();
 
 	const { data: session } = useQuery({
@@ -53,9 +80,34 @@ function InterviewSessionPage() {
 		refetchInterval: phase === "interview" ? 3000 : false,
 	});
 
+	// After the interview layout commits, connect so the video ref exists. useLayoutEffect
+	// + URL `startRoom=1` avoid losing this step to React Strict Mode remounts.
+	useLayoutEffect(() => {
+		if (!shouldConnectToLiveKit || phase !== "interview") return;
+		if (!sessionId || !token || !url) return;
+		setShouldConnectToLiveKit(false);
+
+		let attempts = 0;
+		const run = () => {
+			const el = videoContainerRef.current;
+			if (!el && attempts < 30) {
+				attempts += 1;
+				requestAnimationFrame(run);
+				return;
+			}
+			if (el) {
+				void connectToRoom(url, token, { mediaContainer: el });
+			}
+		};
+		run();
+	}, [shouldConnectToLiveKit, phase, url, token, connectToRoom, sessionId]);
+
 	// Duration timer
 	useEffect(() => {
-		if (phase === "interview" && room.connectionState === ConnectionState.Connected) {
+		if (
+			phase === "interview" &&
+			connectionState === ConnectionState.Connected
+		) {
 			durationRef.current = setInterval(() => {
 				setDuration((d) => d + 1);
 			}, 1000);
@@ -63,21 +115,31 @@ function InterviewSessionPage() {
 		return () => {
 			if (durationRef.current) clearInterval(durationRef.current);
 		};
-	}, [phase, room.connectionState]);
+	}, [phase, connectionState]);
 
-	const handleTechCheckComplete = useCallback(async () => {
+	const handleTechCheckComplete = useCallback(() => {
 		setPhase("interview");
-		await room.connect(url, token);
-	}, [url, token, room]);
+		setShouldConnectToLiveKit(true);
+		void navigate({
+			to: "/interviews/$id/session",
+			params: { id },
+			search: (prev) => ({ ...prev, startRoom: "1" }),
+			replace: true,
+		});
+	}, [navigate, id]);
 
 	const handleEndCall = useCallback(async () => {
-		await room.disconnect();
+		await disconnectFromRoom();
 		await endSession.mutateAsync(sessionId);
 		setPhase("completed");
-	}, [room, endSession, sessionId]);
+	}, [disconnectFromRoom, endSession, sessionId]);
 
-	const getConnectionStatus = (): "connecting" | "connected" | "reconnecting" | "error" => {
-		switch (room.connectionState) {
+	const getConnectionStatus = ():
+		| "connecting"
+		| "connected"
+		| "reconnecting"
+		| "error" => {
+		switch (connectionState) {
 			case ConnectionState.Connected:
 				return "connected";
 			case ConnectionState.Connecting:
@@ -98,6 +160,27 @@ function InterviewSessionPage() {
 			confidence: entry.confidence ?? undefined,
 		},
 	}));
+
+	if (!sessionId || !token || !url) {
+		return (
+			<main className="page-wrap mx-auto max-w-lg px-4 py-16">
+				<Card>
+					<CardContent className="space-y-3 p-8">
+						<h1 className="text-lg font-semibold">Invalid session link</h1>
+						<p className="text-sm text-muted-foreground">
+							This page needs session, token, and room URL. Open Join interview
+							from the interview page again.
+						</p>
+						<Button asChild>
+							<Link to="/interviews/$id" params={{ id }}>
+								Back to interview
+							</Link>
+						</Button>
+					</CardContent>
+				</Card>
+			</main>
+		);
+	}
 
 	if (phase === "tech-check") {
 		return (
@@ -121,8 +204,8 @@ function InterviewSessionPage() {
 						<div>
 							<h1 className="text-2xl font-bold">Interview Complete</h1>
 							<p className="mt-2 text-muted-foreground">
-								Your interview has been recorded. You&rsquo;ll receive
-								feedback shortly.
+								Your interview has been recorded. You&rsquo;ll receive feedback
+								shortly.
 							</p>
 						</div>
 						<p className="text-sm text-muted-foreground">
@@ -143,16 +226,40 @@ function InterviewSessionPage() {
 				status={getConnectionStatus()}
 				audioEnabled={room.isMicEnabled}
 				videoEnabled={room.isCameraEnabled}
-				networkQuality="good"
+				networkQuality={room.networkQuality}
 				duration={duration}
 			/>
+
+			{connectionState === ConnectionState.Connected &&
+				room.remoteParticipantCount === 0 && (
+					<div className="border-b border-amber-200/60 bg-amber-50/95 px-4 py-2.5 text-center text-xs leading-relaxed text-amber-950 dark:border-amber-800/50 dark:bg-amber-950/40 dark:text-amber-100">
+						<strong className="font-semibold">
+							You are the only participant in the room.
+						</strong>{" "}
+						Run the <strong>invetflow-agent</strong> worker (and set
+						LIVEKIT_AGENT_NAME=invetflow-agent plus AGENT_API_SECRET on the server)
+						so the AI interviewer can join, or use another client on the same room.{" "}
+						<a
+							href="https://docs.livekit.io/agents/"
+							className="underline underline-offset-2"
+							target="_blank"
+							rel="noreferrer"
+						>
+							LiveKit Agents
+						</a>
+					</div>
+				)}
 
 			<div className="flex-1 flex overflow-hidden">
 				{/* Video area */}
 				<div className="flex-1 flex items-center justify-center bg-neutral-950 relative">
-					<div id="livekit-video-container" className="w-full h-full" />
+					<div
+						id="livekit-video-container"
+						ref={videoContainerRef}
+						className="grid h-full w-full min-h-0 min-w-0 grid-cols-1 place-items-stretch gap-0 md:grid-cols-2"
+					/>
 
-					{room.connectionState !== ConnectionState.Connected && (
+					{connectionState !== ConnectionState.Connected && (
 						<div className="absolute inset-0 flex items-center justify-center bg-neutral-950/80">
 							<div className="text-center text-white">
 								<div className="h-8 w-8 mx-auto mb-3 animate-spin rounded-full border-2 border-neutral-600 border-t-white" />
@@ -189,7 +296,7 @@ function InterviewSessionPage() {
 				onToggleVideo={() => void room.toggleCamera()}
 				onToggleScreenShare={() => void room.toggleScreenShare()}
 				onEndCall={() => void handleEndCall()}
-				disabled={room.connectionState !== ConnectionState.Connected}
+				disabled={connectionState !== ConnectionState.Connected}
 			/>
 		</div>
 	);
