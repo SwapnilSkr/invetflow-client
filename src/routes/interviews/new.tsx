@@ -125,7 +125,7 @@ function CreateInterviewPage() {
 	return (
 		<div className="container mx-auto max-w-3xl px-4 py-8">
 			<Button variant="ghost" className="mb-6 -ml-2 gap-1" asChild>
-				<Link to="/interviews/">
+				<Link to="/interviews">
 					<ArrowLeft className="h-4 w-4" />
 					All interviews
 				</Link>
@@ -330,7 +330,7 @@ function CreateInterviewPage() {
 
 				<div className="flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
 					<Button type="button" variant="outline" asChild>
-						<Link to="/interviews/">Cancel</Link>
+						<Link to="/interviews">Cancel</Link>
 					</Button>
 					<Button type="submit" disabled={createInterview.isPending}>
 						{createInterview.isPending ? (

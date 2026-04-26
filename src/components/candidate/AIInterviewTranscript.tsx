@@ -9,6 +9,7 @@ interface AIInterviewMessage {
 	timestamp: Date;
 	metadata?: {
 		confidence?: number;
+		isFinal?: boolean;
 		sentiment?: "positive" | "neutral" | "negative";
 		followUp?: boolean;
 	};
@@ -46,9 +47,8 @@ export function AIInterviewTranscript({
 				<div className="text-center text-muted-foreground py-8 px-2">
 					<Bot className="h-8 w-8 mx-auto mb-2 opacity-50" />
 					<p className="text-sm">
-						No transcript lines yet. The sidebar shows text when your backend
-						stores lines (e.g. from an AI or proctor via the session transcript
-						API), not automatically from this WebRTC room alone.
+						No transcript lines yet. Live text appears here as soon as the room
+						receives transcription updates.
 					</p>
 				</div>
 			)}
@@ -63,6 +63,7 @@ export function AIInterviewTranscript({
 function MessageBubble({ message }: { message: AIInterviewMessage }) {
 	const isAI = message.type === "ai";
 	const isSystem = message.type === "system";
+	const isInterim = message.metadata?.isFinal === false;
 
 	if (isSystem) {
 		return (
@@ -102,6 +103,7 @@ function MessageBubble({ message }: { message: AIInterviewMessage }) {
 						isAI
 							? "bg-muted text-foreground rounded-tl-sm"
 							: "bg-emerald-500 text-white rounded-tr-sm",
+						isInterim && "opacity-75 italic",
 					)}
 				>
 					{message.content}

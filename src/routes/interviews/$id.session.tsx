@@ -6,6 +6,7 @@ import {
 	useCallback,
 	useEffect,
 	useLayoutEffect,
+	useMemo,
 	useRef,
 	useState,
 } from "react";
@@ -123,10 +124,10 @@ function InterviewSessionPage() {
 		void navigate({
 			to: "/interviews/$id/session",
 			params: { id },
-			search: (prev) => ({ ...prev, startRoom: "1" }),
+			search: { sessionId, token, url, startRoom: "1" },
 			replace: true,
 		});
-	}, [navigate, id]);
+	}, [navigate, id, sessionId, token, url]);
 
 	const handleEndCall = useCallback(async () => {
 		await disconnectFromRoom();
@@ -151,15 +152,44 @@ function InterviewSessionPage() {
 		}
 	};
 
-	const transcriptMessages = (transcriptData?.entries ?? []).map((entry) => ({
-		id: entry.id,
-		type: entry.speaker.toLowerCase() as "ai" | "candidate" | "system",
-		content: entry.content,
-		timestamp: new Date(entry.timestamp),
-		metadata: {
-			confidence: entry.confidence ?? undefined,
-		},
-	}));
+	const transcriptMessages = useMemo(() => {
+		const storedMessages = (transcriptData?.entries ?? []).map((entry) => ({
+			id: entry.id,
+			type: entry.speaker.toLowerCase() as "ai" | "candidate" | "system",
+			content: entry.content,
+			timestamp: new Date(entry.timestamp),
+			metadata: {
+				confidence: entry.confidence ?? undefined,
+				isFinal: true,
+			},
+		}));
+		const storedFingerprints = new Set(
+			storedMessages.map(
+				(message) =>
+					`${message.type}:${message.content.trim().toLocaleLowerCase()}`,
+			),
+		);
+		const liveMessages = room.liveTranscriptMessages
+			.filter(
+				(message) =>
+					!storedFingerprints.has(
+						`${message.speaker}:${message.content.trim().toLocaleLowerCase()}`,
+					),
+			)
+			.map((message) => ({
+				id: `live:${message.id}`,
+				type: message.speaker,
+				content: message.content,
+				timestamp: new Date(message.timestamp),
+				metadata: {
+					isFinal: message.isFinal,
+				},
+			}));
+
+		return [...storedMessages, ...liveMessages].sort(
+			(a, b) => a.timestamp.getTime() - b.timestamp.getTime(),
+		);
+	}, [room.liveTranscriptMessages, transcriptData?.entries]);
 
 	if (!sessionId || !token || !url) {
 		return (
@@ -237,8 +267,9 @@ function InterviewSessionPage() {
 							You are the only participant in the room.
 						</strong>{" "}
 						Run the <strong>invetflow-agent</strong> worker (and set
-						LIVEKIT_AGENT_NAME=invetflow-agent plus AGENT_API_SECRET on the server)
-						so the AI interviewer can join, or use another client on the same room.{" "}
+						LIVEKIT_AGENT_NAME=invetflow-agent plus AGENT_API_SECRET on the
+						server) so the AI interviewer can join, or use another client on the
+						same room.{" "}
 						<a
 							href="https://docs.livekit.io/agents/"
 							className="underline underline-offset-2"

@@ -7,6 +7,7 @@ import {
 	Room,
 	RoomEvent,
 	Track,
+	type TranscriptionSegment,
 } from "livekit-client";
 import { useCallback, useEffect, useRef, useState } from "react";
 
@@ -50,6 +51,15 @@ export interface ConnectOptions {
 	mediaContainer?: HTMLElement | null;
 }
 
+export interface LiveTranscriptMessage {
+	id: string;
+	speaker: "ai" | "candidate";
+	content: string;
+	timestamp: number;
+	isFinal: boolean;
+	language?: string;
+}
+
 export interface InterviewRoomState {
 	room: Room | null;
 	connectionState: ConnectionState;
@@ -60,6 +70,8 @@ export interface InterviewRoomState {
 	networkQuality: "good" | "fair" | "poor";
 	/** Other participants in the room (e.g. AI agent or human); you are not counted. */
 	remoteParticipantCount: number;
+	/** LiveKit transcription stream, including interim updates before Mongo persistence. */
+	liveTranscriptMessages: LiveTranscriptMessage[];
 	error: string | null;
 }
 
@@ -91,6 +103,9 @@ export function useInterviewRoom(): InterviewRoomState & InterviewRoomActions {
 	>("good");
 	const [error, setError] = useState<string | null>(null);
 	const [remoteParticipantCount, setRemoteParticipantCount] = useState(0);
+	const [liveTranscriptMessages, setLiveTranscriptMessages] = useState<
+		LiveTranscriptMessage[]
+	>([]);
 
 	useEffect(() => {
 		return () => {
@@ -110,6 +125,7 @@ export function useInterviewRoom(): InterviewRoomState & InterviewRoomActions {
 				setError(null);
 				setNetworkQuality("good");
 				setRemoteParticipantCount(0);
+				setLiveTranscriptMessages([]);
 
 				await roomInstanceRef.current?.disconnect();
 				roomInstanceRef.current = null;
@@ -143,6 +159,7 @@ export function useInterviewRoom(): InterviewRoomState & InterviewRoomActions {
 				lkRoom.on(RoomEvent.Disconnected, () => {
 					setConnectionState(ConnectionState.Disconnected);
 					setRemoteParticipantCount(0);
+					setLiveTranscriptMessages([]);
 					mediaContainerRef.current?.replaceChildren();
 				});
 
@@ -158,6 +175,39 @@ export function useInterviewRoom(): InterviewRoomState & InterviewRoomActions {
 						if (participant.isLocal) {
 							setNetworkQuality(mapConnectionQuality(quality));
 						}
+					},
+				);
+
+				lkRoom.on(
+					RoomEvent.TranscriptionReceived,
+					(segments: TranscriptionSegment[], participant) => {
+						const speaker = participant?.isLocal ? "candidate" : "ai";
+						setLiveTranscriptMessages((current) => {
+							const byId = new Map(
+								current.map((message) => [message.id, message]),
+							);
+
+							for (const segment of segments) {
+								const content = segment.text.trim();
+								if (!content) continue;
+
+								byId.set(segment.id, {
+									id: segment.id,
+									speaker,
+									content,
+									timestamp:
+										segment.firstReceivedTime > 0
+											? segment.firstReceivedTime
+											: Date.now(),
+									isFinal: segment.final,
+									language: segment.language || undefined,
+								});
+							}
+
+							return Array.from(byId.values()).sort(
+								(a, b) => a.timestamp - b.timestamp,
+							);
+						});
 					},
 				);
 
@@ -190,7 +240,7 @@ export function useInterviewRoom(): InterviewRoomState & InterviewRoomActions {
 				// Sensible connect timeouts; defaults match livekit-client
 				await lkRoom.connect(url, token, {
 					autoSubscribe: true,
-					webSocketTimeout: 20000,
+					websocketTimeout: 20000,
 					peerConnectionTimeout: 20000,
 				});
 
@@ -218,6 +268,7 @@ export function useInterviewRoom(): InterviewRoomState & InterviewRoomActions {
 		setRoom(null);
 		setConnectionState(ConnectionState.Disconnected);
 		setRemoteParticipantCount(0);
+		setLiveTranscriptMessages([]);
 	}, []);
 
 	const toggleMic = useCallback(async () => {
@@ -252,6 +303,7 @@ export function useInterviewRoom(): InterviewRoomState & InterviewRoomActions {
 		isScreenShareEnabled,
 		networkQuality,
 		remoteParticipantCount,
+		liveTranscriptMessages,
 		error,
 		connect,
 		disconnect,
