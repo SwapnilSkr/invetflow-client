@@ -1,3 +1,4 @@
+import { Room } from "livekit-client";
 import {
 	Mic,
 	MicOff,
@@ -8,6 +9,10 @@ import {
 } from "lucide-react";
 import React from "react";
 import { Button } from "#/components/ui/button";
+import {
+	isAudioOutputSelectionSupported,
+	storeInterviewAudioDevices,
+} from "#/lib/interview-audio-prefs";
 import { cn } from "#/lib/utils";
 
 interface TechCheckProps {
@@ -33,7 +38,33 @@ export function TechCheck({ onComplete, onCancel }: TechCheckProps) {
 	const [screenEnabled, setScreenEnabled] = React.useState(false);
 	const [testingAudio, setTestingAudio] = React.useState(false);
 	const [audioLevel, setAudioLevel] = React.useState(0);
+	const [audioInputs, setAudioInputs] = React.useState<MediaDeviceInfo[]>([]);
+	const [audioOutputs, setAudioOutputs] = React.useState<MediaDeviceInfo[]>([]);
+	const [selectedMicId, setSelectedMicId] = React.useState("");
+	const [selectedSpeakerId, setSelectedSpeakerId] = React.useState("");
 	const videoRef = React.useRef<HTMLVideoElement>(null);
+
+	React.useEffect(() => {
+		let cancelled = false;
+		(async () => {
+			try {
+				const inputs = await Room.getLocalDevices("audioinput", true);
+				const outputs = await Room.getLocalDevices("audiooutput", false);
+				if (cancelled) return;
+				setAudioInputs(inputs);
+				setAudioOutputs(outputs);
+				setSelectedMicId((prev) => prev || inputs[0]?.deviceId || "");
+				if (isAudioOutputSelectionSupported()) {
+					setSelectedSpeakerId((prev) => prev || outputs[0]?.deviceId || "");
+				}
+			} catch (err) {
+				console.error("Failed to enumerate audio devices:", err);
+			}
+		})();
+		return () => {
+			cancelled = true;
+		};
+	}, []);
 
 	React.useEffect(() => {
 		if (videoEnabled && videoRef.current) {
@@ -62,7 +93,9 @@ export function TechCheck({ onComplete, onCancel }: TechCheckProps) {
 	const testAudio = async () => {
 		setTestingAudio(true);
 		try {
-			const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+			const stream = await navigator.mediaDevices.getUserMedia({
+				audio: selectedMicId ? { deviceId: { exact: selectedMicId } } : true,
+			});
 			const audioContext = new AudioContext();
 			const analyser = audioContext.createAnalyser();
 			const source = audioContext.createMediaStreamSource(stream);
@@ -163,12 +196,66 @@ export function TechCheck({ onComplete, onCancel }: TechCheckProps) {
 								variant={audioEnabled ? "outline" : "default"}
 								size="sm"
 								onClick={testAudio}
-								disabled={testingAudio}
+								disabled={testingAudio || audioInputs.length === 0}
 							>
 								{audioEnabled ? "Test Again" : "Test Microphone"}
 							</Button>
 						)}
 					</div>
+					{audioInputs.length > 0 && (
+						<div className="mt-3 space-y-1.5">
+							<label
+								htmlFor="tech-check-mic"
+								className="text-xs font-medium text-muted-foreground"
+							>
+								Microphone for the interview
+							</label>
+							<select
+								id="tech-check-mic"
+								value={selectedMicId}
+								onChange={(e) => setSelectedMicId(e.target.value)}
+								className={cn(
+									"flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm",
+									"focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring",
+								)}
+							>
+								{audioInputs.map((d, i) => (
+									<option key={d.deviceId || `mic-${i}`} value={d.deviceId}>
+										{d.label?.trim() || `Microphone ${i + 1}`}
+									</option>
+								))}
+							</select>
+						</div>
+					)}
+					{isAudioOutputSelectionSupported() && audioOutputs.length > 0 && (
+						<div className="mt-3 space-y-1.5">
+							<label
+								htmlFor="tech-check-speaker"
+								className="text-xs font-medium text-muted-foreground"
+							>
+								Speakers / headset output
+							</label>
+							<select
+								id="tech-check-speaker"
+								value={selectedSpeakerId}
+								onChange={(e) => setSelectedSpeakerId(e.target.value)}
+								className={cn(
+									"flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm",
+									"focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring",
+								)}
+							>
+								{audioOutputs.map((d, i) => (
+									<option key={d.deviceId || `out-${i}`} value={d.deviceId}>
+										{d.label?.trim() || `Speaker ${i + 1}`}
+									</option>
+								))}
+							</select>
+							<p className="text-xs text-muted-foreground">
+								Choose where you hear the interviewer (USB headset, monitor,
+								etc.).
+							</p>
+						</div>
+					)}
 				</div>
 
 				{/* Video Test */}
@@ -277,13 +364,20 @@ export function TechCheck({ onComplete, onCancel }: TechCheckProps) {
 				)}
 				<Button
 					className="flex-1"
-					onClick={() =>
+					onClick={() => {
+						storeInterviewAudioDevices({
+							audioInputDeviceId: selectedMicId || undefined,
+							audioOutputDeviceId:
+								isAudioOutputSelectionSupported() && selectedSpeakerId
+									? selectedSpeakerId
+									: undefined,
+						});
 						onComplete({
 							audio: audioEnabled,
 							video: videoEnabled,
 							screen: screenEnabled,
-						})
-					}
+						});
+					}}
 					disabled={!allReady}
 				>
 					{allReady ? "Continue to Interview" : "Complete Tech Check"}

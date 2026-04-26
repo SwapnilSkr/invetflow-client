@@ -18,6 +18,7 @@ import { Button } from "#/components/ui/button";
 import { Card, CardContent } from "#/components/ui/card";
 import { sessionQueries, useEndSession } from "#/integrations/api/queries";
 import { useInterviewRoom } from "#/integrations/livekit/use-interview-room";
+import { readStoredInterviewAudioDevices } from "#/lib/interview-audio-prefs";
 import { requireSession } from "#/lib/require-session";
 
 interface SessionSearch {
@@ -97,7 +98,11 @@ function InterviewSessionPage() {
 				return;
 			}
 			if (el) {
-				void connectToRoom(url, token, { mediaContainer: el });
+				const audioPrefs = readStoredInterviewAudioDevices();
+				void connectToRoom(url, token, {
+					mediaContainer: el,
+					...audioPrefs,
+				});
 			}
 		};
 		run();
@@ -328,6 +333,16 @@ function InterviewSessionPage() {
 				onToggleScreenShare={() => void room.toggleScreenShare()}
 				onEndCall={() => void handleEndCall()}
 				disabled={connectionState !== ConnectionState.Connected}
+				audioInputDevices={room.audioInputDevices}
+				audioOutputDevices={room.audioOutputDevices}
+				activeAudioInputDeviceId={room.activeAudioInputDeviceId}
+				activeAudioOutputDeviceId={room.activeAudioOutputDeviceId}
+				audioOutputSelectionSupported={room.audioOutputSelectionSupported}
+				onRefreshAudioDevices={() => void room.refreshMediaDevices()}
+				onSelectMicrophone={(deviceId) =>
+					void room.setMicrophoneDevice(deviceId)
+				}
+				onSelectSpeaker={(deviceId) => void room.setSpeakerDevice(deviceId)}
 			/>
 		</div>
 	);

@@ -11,6 +11,7 @@ import {
 	type TranscriptionSegment,
 } from "livekit-client";
 import { useCallback, useEffect, useRef, useState } from "react";
+import { isAudioOutputSelectionSupported } from "#/lib/interview-audio-prefs";
 
 const TRANSCRIPTION_TOPIC = "lk.transcription";
 const TRANSCRIPTION_FINAL_ATTRIBUTE = "lk.transcription_final";
@@ -77,6 +78,10 @@ function attachTrack(
 export interface ConnectOptions {
 	/** Where to mount local/remote *video* elements. Audio is attached hidden on this or body. */
 	mediaContainer?: HTMLElement | null;
+	/** Prefer this capture device after joining (requires permission). */
+	audioInputDeviceId?: string;
+	/** Prefer this playback device for remote audio (see `audioOutputSelectionSupported`). */
+	audioOutputDeviceId?: string;
 }
 
 export interface LiveTranscriptMessage {
@@ -101,6 +106,14 @@ export interface InterviewRoomState {
 	/** LiveKit transcription stream, including interim updates before Mongo persistence. */
 	liveTranscriptMessages: LiveTranscriptMessage[];
 	error: string | null;
+	/** Enumerated mic devices (labels may be empty until permission). */
+	audioInputDevices: MediaDeviceInfo[];
+	/** Enumerated speaker / headset output devices. */
+	audioOutputDevices: MediaDeviceInfo[];
+	activeAudioInputDeviceId: string | undefined;
+	activeAudioOutputDeviceId: string | undefined;
+	/** Whether `setSinkId` works in this browser (Chrome/Edge; limited elsewhere). */
+	audioOutputSelectionSupported: boolean;
 }
 
 export interface InterviewRoomActions {
@@ -113,6 +126,9 @@ export interface InterviewRoomActions {
 	toggleMic: () => Promise<void>;
 	toggleCamera: () => Promise<void>;
 	toggleScreenShare: () => Promise<void>;
+	refreshMediaDevices: () => Promise<void>;
+	setMicrophoneDevice: (deviceId: string) => Promise<boolean>;
+	setSpeakerDevice: (deviceId: string) => Promise<boolean>;
 }
 
 export function useInterviewRoom(): InterviewRoomState & InterviewRoomActions {
@@ -134,6 +150,44 @@ export function useInterviewRoom(): InterviewRoomState & InterviewRoomActions {
 	const [liveTranscriptMessages, setLiveTranscriptMessages] = useState<
 		LiveTranscriptMessage[]
 	>([]);
+	const [audioInputDevices, setAudioInputDevices] = useState<MediaDeviceInfo[]>(
+		[],
+	);
+	const [audioOutputDevices, setAudioOutputDevices] = useState<
+		MediaDeviceInfo[]
+	>([]);
+	const [activeAudioInputDeviceId, setActiveAudioInputDeviceId] = useState<
+		string | undefined
+	>();
+	const [activeAudioOutputDeviceId, setActiveAudioOutputDeviceId] = useState<
+		string | undefined
+	>();
+	const [audioOutputSelectionSupported] = useState(
+		isAudioOutputSelectionSupported,
+	);
+
+	const syncDevicesFromRoom = useCallback((lkRoom: Room) => {
+		setActiveAudioInputDeviceId(lkRoom.getActiveDevice("audioinput"));
+		setActiveAudioOutputDeviceId(lkRoom.getActiveDevice("audiooutput"));
+	}, []);
+
+	const refreshMediaDevices = useCallback(async () => {
+		const lkRoom = roomInstanceRef.current;
+		try {
+			const requestMicPermission = !lkRoom;
+			const [inputs, outputs] = await Promise.all([
+				Room.getLocalDevices("audioinput", requestMicPermission),
+				Room.getLocalDevices("audiooutput", false),
+			]);
+			setAudioInputDevices(inputs);
+			setAudioOutputDevices(outputs);
+			if (lkRoom) {
+				syncDevicesFromRoom(lkRoom);
+			}
+		} catch (e) {
+			console.warn("Could not refresh media devices", e);
+		}
+	}, [syncDevicesFromRoom]);
 
 	useEffect(() => {
 		return () => {
@@ -283,6 +337,18 @@ export function useInterviewRoom(): InterviewRoomState & InterviewRoomActions {
 					setError(`Media device error: ${e.message}`);
 				});
 
+				lkRoom.on(
+					RoomEvent.ActiveDeviceChanged,
+					(kind: MediaDeviceKind, deviceId: string) => {
+						if (kind === "audioinput") setActiveAudioInputDeviceId(deviceId);
+						if (kind === "audiooutput") setActiveAudioOutputDeviceId(deviceId);
+					},
+				);
+
+				lkRoom.on(RoomEvent.MediaDevicesChanged, () => {
+					void refreshMediaDevices();
+				});
+
 				const onLocalTrack = (t: RemoteTrack | LocalTrack) => {
 					attachTrack(t, mediaContainerRef.current, true);
 				};
@@ -315,9 +381,28 @@ export function useInterviewRoom(): InterviewRoomState & InterviewRoomActions {
 					peerConnectionTimeout: 20000,
 				});
 
+				roomInstanceRef.current = lkRoom;
+
 				await lkRoom.localParticipant.enableCameraAndMicrophone();
 
-				roomInstanceRef.current = lkRoom;
+				await refreshMediaDevices();
+
+				if (options?.audioInputDeviceId) {
+					await lkRoom.switchActiveDevice(
+						"audioinput",
+						options.audioInputDeviceId,
+						true,
+					);
+				}
+				if (options?.audioOutputDeviceId && isAudioOutputSelectionSupported()) {
+					await lkRoom.switchActiveDevice(
+						"audiooutput",
+						options.audioOutputDeviceId,
+						true,
+					);
+				}
+				syncDevicesFromRoom(lkRoom);
+
 				setRoom(lkRoom);
 				syncRemoteCount();
 				setIsMicEnabled(true);
@@ -329,7 +414,7 @@ export function useInterviewRoom(): InterviewRoomState & InterviewRoomActions {
 				mediaContainerRef.current?.replaceChildren();
 			}
 		},
-		[],
+		[refreshMediaDevices, syncDevicesFromRoom],
 	);
 
 	const disconnect = useCallback(async () => {
@@ -340,6 +425,8 @@ export function useInterviewRoom(): InterviewRoomState & InterviewRoomActions {
 		setConnectionState(ConnectionState.Disconnected);
 		setRemoteParticipantCount(0);
 		setLiveTranscriptMessages([]);
+		setActiveAudioInputDeviceId(undefined);
+		setActiveAudioOutputDeviceId(undefined);
 	}, []);
 
 	const toggleMic = useCallback(async () => {
@@ -366,6 +453,18 @@ export function useInterviewRoom(): InterviewRoomState & InterviewRoomActions {
 		setIsScreenShareEnabled(!enabled);
 	}, []);
 
+	const setMicrophoneDevice = useCallback(async (deviceId: string) => {
+		const r = roomInstanceRef.current;
+		if (!r) return false;
+		return r.switchActiveDevice("audioinput", deviceId, true);
+	}, []);
+
+	const setSpeakerDevice = useCallback(async (deviceId: string) => {
+		const r = roomInstanceRef.current;
+		if (!r || !isAudioOutputSelectionSupported()) return false;
+		return r.switchActiveDevice("audiooutput", deviceId, true);
+	}, []);
+
 	return {
 		room,
 		connectionState,
@@ -376,10 +475,18 @@ export function useInterviewRoom(): InterviewRoomState & InterviewRoomActions {
 		remoteParticipantCount,
 		liveTranscriptMessages,
 		error,
+		audioInputDevices,
+		audioOutputDevices,
+		activeAudioInputDeviceId,
+		activeAudioOutputDeviceId,
+		audioOutputSelectionSupported,
 		connect,
 		disconnect,
 		toggleMic,
 		toggleCamera,
 		toggleScreenShare,
+		refreshMediaDevices,
+		setMicrophoneDevice,
+		setSpeakerDevice,
 	};
 }
