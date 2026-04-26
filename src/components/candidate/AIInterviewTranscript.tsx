@@ -43,9 +43,13 @@ export function AIInterviewTranscript({
 			)}
 		>
 			{messages.length === 0 && (
-				<div className="text-center text-muted-foreground py-8">
+				<div className="text-center text-muted-foreground py-8 px-2">
 					<Bot className="h-8 w-8 mx-auto mb-2 opacity-50" />
-					<p className="text-sm">The interview will begin shortly...</p>
+					<p className="text-sm">
+						No transcript lines yet. The sidebar shows text when your backend
+						stores lines (e.g. from an AI or proctor via the session transcript
+						API), not automatically from this WebRTC room alone.
+					</p>
 				</div>
 			)}
 
