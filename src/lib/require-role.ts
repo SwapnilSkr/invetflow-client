@@ -1,32 +1,51 @@
 import { type ParsedLocation, redirect } from "@tanstack/react-router";
 import type { AppUserRole } from "#/integrations/api/types";
-import { useAuthStore } from "#/integrations/auth/auth-store";
+import {
+	ensureAuthResolved,
+	useAuthStore,
+} from "#/integrations/auth/auth-store";
+
+function isBrowser(): boolean {
+	return typeof window !== "undefined";
+}
 
 /**
  * Router `beforeLoad` guard: must have a valid session (any role).
  * See `requireRecruiter` / `requireCandidate` for job-specific areas.
+ *
+ * Async so we await client JWT hydration (sessionStorage + GET /api/auth/me). Skips redirect
+ * during SSR — the token is not available on the server.
  */
-export function requireSession(): void {
+export async function requireSession(): Promise<void> {
+	if (!isBrowser()) return;
+	await ensureAuthResolved();
 	if (useAuthStore.getState().status === "unauthenticated") {
 		throw redirect({ to: "/auth" });
 	}
 }
 
 /**
- * Like `requireSession`, but after sign-in the user is sent back to this in-app path (`location.href` without origin).
+ * Like `requireSession`, but after sign-in the user is sent back to this in-app path.
+ * Uses `pathname` + `search` + `hash` so the `redirect` search param is a stable app-relative string.
  */
-export function requireSessionWithReturnTo(
-	location: Pick<ParsedLocation, "href">,
-): void {
+export async function requireSessionWithReturnTo(
+	location: Pick<ParsedLocation, "pathname" | "searchStr" | "hash">,
+): Promise<void> {
+	if (!isBrowser()) return;
+	await ensureAuthResolved();
 	if (useAuthStore.getState().status === "unauthenticated") {
-		throw redirect({ to: "/auth", search: { redirect: location.href } });
+		const hash = location.hash ? `#${location.hash}` : "";
+		const next = `${location.pathname}${location.searchStr ?? ""}${hash}`;
+		throw redirect({ to: "/auth", search: { redirect: next } });
 	}
 }
 
 /**
  * Hiring-side routes: list/create interviews, assign candidates, review.
  */
-export function requireRecruiter(): void {
+export async function requireRecruiter(): Promise<void> {
+	if (!isBrowser()) return;
+	await ensureAuthResolved();
 	const { status, user } = useAuthStore.getState();
 	if (status === "unauthenticated") {
 		throw redirect({ to: "/auth" });
@@ -39,7 +58,9 @@ export function requireRecruiter(): void {
 /**
  * Candidate home: only users who registered as job seekers.
  */
-export function requireCandidate(): void {
+export async function requireCandidate(): Promise<void> {
+	if (!isBrowser()) return;
+	await ensureAuthResolved();
 	const { status, user } = useAuthStore.getState();
 	if (status === "unauthenticated") {
 		throw redirect({ to: "/auth" });
