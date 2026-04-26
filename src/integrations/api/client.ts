@@ -37,6 +37,8 @@ export interface Interview {
 	updated_at: string;
 	invite_token: string | null;
 	invite_link: string | null;
+	/** Any signed-in user (except admins) may join when scheduled, not only the assignee. */
+	is_public: boolean;
 }
 
 export interface Question {
@@ -74,6 +76,7 @@ export interface UpdateInterviewRequest {
 	job_title?: string;
 	job_description?: string;
 	duration_minutes?: number;
+	is_public?: boolean;
 }
 
 export interface AssignCandidateRequest {
@@ -131,6 +134,8 @@ export interface RegisterRequestBody {
 	email: string;
 	password: string;
 	name?: string;
+	/** Must match invetflow-server `UserAccountRole` JSON ("Recruiter" | "Candidate"). */
+	role: "Recruiter" | "Candidate";
 }
 
 function applyAuthResponse(data: AuthResponse) {

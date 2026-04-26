@@ -147,6 +147,7 @@ export function useAssignCandidate() {
 			}),
 		onSuccess: (_, { id }) => {
 			queryClient.invalidateQueries({ queryKey: interviewKeys.detail(id) });
+			queryClient.invalidateQueries({ queryKey: interviewKeys.lists() });
 		},
 	});
 }
@@ -161,6 +162,7 @@ export function useScheduleInterview() {
 			}),
 		onSuccess: (_, id) => {
 			queryClient.invalidateQueries({ queryKey: interviewKeys.detail(id) });
+			queryClient.invalidateQueries({ queryKey: interviewKeys.lists() });
 		},
 	});
 }

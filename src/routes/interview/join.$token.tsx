@@ -7,8 +7,12 @@ import { Card, CardContent, CardHeader, CardTitle } from "#/components/ui/card";
 import { Separator } from "#/components/ui/separator";
 import { Skeleton } from "#/components/ui/skeleton";
 import { interviewQueries, useJoinInterview } from "#/integrations/api/queries";
+import { requireSessionWithReturnTo } from "#/lib/require-role";
 
 export const Route = createFileRoute("/interview/join/$token")({
+	beforeLoad: ({ location }) => {
+		requireSessionWithReturnTo(location);
+	},
 	component: JoinByTokenPage,
 });
 
@@ -84,7 +88,7 @@ function JoinByTokenPage() {
 	}
 
 	const isJoinable =
-		interview.status !== "Completed" && interview.status !== "Cancelled";
+		interview.status === "Scheduled" || interview.status === "Active";
 
 	return (
 		<main className="page-wrap flex justify-center px-4 py-16">

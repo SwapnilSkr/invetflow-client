@@ -1,9 +1,13 @@
+/** Stored sign-up / auth role: hiring vs job seeker (matches server `UserResponse.role`). */
+export type AppUserRole = "Recruiter" | "Candidate";
+
 /** invetflow-server: `UserResponse` in `api/dto/auth_dto.rs` (GET /api/auth/me, login, register). */
 export interface User {
 	id: string;
 	email: string;
 	name: string | null;
 	email_verified: boolean;
+	role: AppUserRole;
 }
 
 /** invetflow-server: `AuthResponse` (flattened `TokenResponse` + `user`) from `api/dto/auth_dto.rs`. */

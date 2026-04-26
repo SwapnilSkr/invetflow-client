@@ -26,6 +26,8 @@ export function formatDate(date: string | Date): string {
 
 export function getStatusColor(status: string): string {
 	switch (status.toLowerCase()) {
+		case "draft":
+			return "bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300 border-slate-200 dark:border-slate-700";
 		case "active":
 		case "in_progress":
 			return "bg-emerald-100 text-emerald-700 dark:bg-emerald-900 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800";

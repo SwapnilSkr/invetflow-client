@@ -65,16 +65,16 @@ function About() {
 					{CAPABILITIES.map(({ icon: Icon, title, description }) => (
 						<Card
 							key={title}
-							className="feature-card border-[var(--line)] bg-transparent"
+							className="feature-card border-(--line) bg-transparent"
 						>
 							<CardContent className="p-5">
 								<div className="mb-3 inline-flex rounded-xl bg-[rgba(79,184,178,0.12)] p-2.5 text-[var(--lagoon-deep)]">
 									<Icon className="h-5 w-5" />
 								</div>
-								<h3 className="mb-1.5 text-sm font-semibold text-[var(--sea-ink)]">
+								<h3 className="mb-1.5 text-sm font-semibold text-(--sea-ink)">
 									{title}
 								</h3>
-								<p className="m-0 text-sm leading-relaxed text-[var(--sea-ink-soft)]">
+								<p className="m-0 text-sm leading-relaxed text-(--sea-ink-soft)">
 									{description}
 								</p>
 							</CardContent>

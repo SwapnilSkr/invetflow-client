@@ -10,7 +10,10 @@ import { logout } from "./client";
 /** Routes that use `beforeLoad: requireSession` — sign-out must `navigate` or user stays on the page. */
 function isSessionGuardedPath(pathname: string): boolean {
 	return (
-		pathname.startsWith("/dashboard") || pathname.startsWith("/interviews")
+		pathname.startsWith("/dashboard") ||
+		pathname.startsWith("/interviews") ||
+		pathname.startsWith("/interview/") ||
+		pathname.startsWith("/candidate")
 	);
 }
 

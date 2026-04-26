@@ -14,6 +14,7 @@ import { Route as AboutRouteImport } from './routes/about'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as InterviewsIndexRouteImport } from './routes/interviews/index'
 import { Route as DashboardIndexRouteImport } from './routes/dashboard/index'
+import { Route as CandidateIndexRouteImport } from './routes/candidate/index'
 import { Route as InterviewsIdRouteImport } from './routes/interviews/$id'
 import { Route as InterviewsIdSessionRouteImport } from './routes/interviews/$id.session'
 import { Route as InterviewJoinTokenRouteImport } from './routes/interview/join.$token'
@@ -43,6 +44,11 @@ const DashboardIndexRoute = DashboardIndexRouteImport.update({
   path: '/dashboard/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const CandidateIndexRoute = CandidateIndexRouteImport.update({
+  id: '/candidate/',
+  path: '/candidate/',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const InterviewsIdRoute = InterviewsIdRouteImport.update({
   id: '/interviews/$id',
   path: '/interviews/$id',
@@ -64,6 +70,7 @@ export interface FileRoutesByFullPath {
   '/about': typeof AboutRoute
   '/auth': typeof AuthRoute
   '/interviews/$id': typeof InterviewsIdRouteWithChildren
+  '/candidate/': typeof CandidateIndexRoute
   '/dashboard/': typeof DashboardIndexRoute
   '/interviews/': typeof InterviewsIndexRoute
   '/interview/join/$token': typeof InterviewJoinTokenRoute
@@ -74,6 +81,7 @@ export interface FileRoutesByTo {
   '/about': typeof AboutRoute
   '/auth': typeof AuthRoute
   '/interviews/$id': typeof InterviewsIdRouteWithChildren
+  '/candidate': typeof CandidateIndexRoute
   '/dashboard': typeof DashboardIndexRoute
   '/interviews': typeof InterviewsIndexRoute
   '/interview/join/$token': typeof InterviewJoinTokenRoute
@@ -85,6 +93,7 @@ export interface FileRoutesById {
   '/about': typeof AboutRoute
   '/auth': typeof AuthRoute
   '/interviews/$id': typeof InterviewsIdRouteWithChildren
+  '/candidate/': typeof CandidateIndexRoute
   '/dashboard/': typeof DashboardIndexRoute
   '/interviews/': typeof InterviewsIndexRoute
   '/interview/join/$token': typeof InterviewJoinTokenRoute
@@ -97,6 +106,7 @@ export interface FileRouteTypes {
     | '/about'
     | '/auth'
     | '/interviews/$id'
+    | '/candidate/'
     | '/dashboard/'
     | '/interviews/'
     | '/interview/join/$token'
@@ -107,6 +117,7 @@ export interface FileRouteTypes {
     | '/about'
     | '/auth'
     | '/interviews/$id'
+    | '/candidate'
     | '/dashboard'
     | '/interviews'
     | '/interview/join/$token'
@@ -117,6 +128,7 @@ export interface FileRouteTypes {
     | '/about'
     | '/auth'
     | '/interviews/$id'
+    | '/candidate/'
     | '/dashboard/'
     | '/interviews/'
     | '/interview/join/$token'
@@ -128,6 +140,7 @@ export interface RootRouteChildren {
   AboutRoute: typeof AboutRoute
   AuthRoute: typeof AuthRoute
   InterviewsIdRoute: typeof InterviewsIdRouteWithChildren
+  CandidateIndexRoute: typeof CandidateIndexRoute
   DashboardIndexRoute: typeof DashboardIndexRoute
   InterviewsIndexRoute: typeof InterviewsIndexRoute
   InterviewJoinTokenRoute: typeof InterviewJoinTokenRoute
@@ -168,6 +181,13 @@ declare module '@tanstack/react-router' {
       path: '/dashboard'
       fullPath: '/dashboard/'
       preLoaderRoute: typeof DashboardIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/candidate/': {
+      id: '/candidate/'
+      path: '/candidate'
+      fullPath: '/candidate/'
+      preLoaderRoute: typeof CandidateIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/interviews/$id': {
@@ -211,6 +231,7 @@ const rootRouteChildren: RootRouteChildren = {
   AboutRoute: AboutRoute,
   AuthRoute: AuthRoute,
   InterviewsIdRoute: InterviewsIdRouteWithChildren,
+  CandidateIndexRoute: CandidateIndexRoute,
   DashboardIndexRoute: DashboardIndexRoute,
   InterviewsIndexRoute: InterviewsIndexRoute,
   InterviewJoinTokenRoute: InterviewJoinTokenRoute,

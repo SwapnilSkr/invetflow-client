@@ -8,6 +8,7 @@ import {
 	Video,
 	Zap,
 } from "lucide-react";
+import { useAuth } from "#/integrations/api/hooks";
 
 export const Route = createFileRoute("/")({ component: App });
 
@@ -68,79 +69,98 @@ const HIGHLIGHTS = [
 ];
 
 function App() {
+	const { user, isAuthenticated, isLoading } = useAuth();
+	const isCandidate = user?.role === "Candidate";
+
 	return (
 		<main className="page-wrap px-4 pb-8 pt-14">
 			{/* Hero */}
-			<section className="island-shell rise-in relative overflow-hidden rounded-[2rem] px-6 py-12 sm:px-10 sm:py-16">
+			<section className="island-shell rise-in relative overflow-hidden rounded-4xl px-6 py-12 sm:px-10 sm:py-16">
 				<div className="pointer-events-none absolute -left-20 -top-24 h-56 w-56 rounded-full bg-[radial-gradient(circle,rgba(79,184,178,0.32),transparent_66%)]" />
 				<div className="pointer-events-none absolute -bottom-20 -right-20 h-56 w-56 rounded-full bg-[radial-gradient(circle,rgba(47,106,74,0.18),transparent_66%)]" />
 				<p className="island-kicker mb-3">AI-Powered Interview Intelligence</p>
-				<h1 className="display-title mb-5 max-w-3xl text-4xl leading-[1.02] font-bold tracking-tight text-[var(--sea-ink)] sm:text-6xl">
+				<h1 className="display-title mb-5 max-w-3xl text-4xl leading-[1.02] font-bold tracking-tight text-(--sea-ink) sm:text-6xl">
 					InvetFlow
 				</h1>
-				<p className="mb-8 max-w-2xl text-base leading-relaxed text-[var(--sea-ink-soft)] sm:text-lg">
+				<p className="mb-8 max-w-2xl text-base leading-relaxed text-(--sea-ink-soft) sm:text-lg">
 					Conduct AI-powered video interviews that understand and evaluate
 					candidates in real-time. From adaptive questioning to automated
 					scoring &mdash; hire smarter and faster.
 				</p>
 				<div className="flex flex-wrap gap-3">
-					<Link
-						to="/dashboard"
-						className="inline-flex items-center gap-2 rounded-full border border-[rgba(50,143,151,0.3)] bg-[rgba(79,184,178,0.14)] px-5 py-2.5 text-sm font-semibold text-[var(--lagoon-deep)] no-underline transition hover:-translate-y-0.5 hover:bg-[rgba(79,184,178,0.24)]"
-					>
-						<LayoutDashboard className="h-4 w-4" />
-						Go to Dashboard
-					</Link>
-					<Link
-						to="/auth"
-						className="inline-flex items-center gap-2 rounded-full border border-[rgba(23,58,64,0.2)] bg-white/50 px-5 py-2.5 text-sm font-semibold text-[var(--sea-ink)] no-underline transition hover:-translate-y-0.5 hover:border-[rgba(23,58,64,0.35)]"
-					>
-						Sign In
-					</Link>
+					{!isLoading && isAuthenticated && user ? (
+						<Link
+							to={isCandidate ? "/candidate" : "/dashboard"}
+							className="inline-flex items-center gap-2 rounded-full border border-[rgba(50,143,151,0.3)] bg-[rgba(79,184,178,0.14)] px-5 py-2.5 text-sm font-semibold text-(--lagoon-deep) no-underline transition hover:-translate-y-0.5 hover:bg-[rgba(79,184,178,0.24)]"
+						>
+							<LayoutDashboard className="h-4 w-4" />
+							{isCandidate ? "My interviews" : "Dashboard"}
+						</Link>
+					) : (
+						<Link
+							to="/auth"
+							className="inline-flex items-center gap-2 rounded-full border border-[rgba(50,143,151,0.3)] bg-[rgba(79,184,178,0.14)] px-5 py-2.5 text-sm font-semibold text-(--lagoon-deep) no-underline transition hover:-translate-y-0.5 hover:bg-[rgba(79,184,178,0.24)]"
+						>
+							Get started
+						</Link>
+					)}
+					{!isLoading && !isAuthenticated ? (
+						<Link
+							to="/auth"
+							className="inline-flex items-center gap-2 rounded-full border border-[rgba(23,58,64,0.2)] bg-white/50 px-5 py-2.5 text-sm font-semibold text-(--sea-ink) no-underline transition hover:-translate-y-0.5 hover:border-[rgba(23,58,64,0.35)]"
+						>
+							Sign in
+						</Link>
+					) : null}
 				</div>
 			</section>
 
 			{/* Feature Cards */}
 			<section className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-				{FEATURES.map(({ icon: Icon, title, description, color, iconColor }, index) => (
-					<article
-						key={title}
-						className="island-shell feature-card rise-in rounded-2xl p-5"
-						style={{ animationDelay: `${index * 90 + 80}ms` }}
-					>
-						<div
-							className={`mb-3 inline-flex rounded-xl p-2.5 ${iconColor}`}
-							style={{ backgroundColor: color }}
+				{FEATURES.map(
+					({ icon: Icon, title, description, color, iconColor }, index) => (
+						<article
+							key={title}
+							className="island-shell feature-card rise-in rounded-2xl p-5"
+							style={{ animationDelay: `${index * 90 + 80}ms` }}
 						>
-							<Icon className="h-5 w-5" />
-						</div>
-						<h2 className="mb-2 text-base font-semibold text-[var(--sea-ink)]">
-							{title}
-						</h2>
-						<p className="m-0 text-sm leading-relaxed text-[var(--sea-ink-soft)]">
-							{description}
-						</p>
-					</article>
-				))}
+							<div
+								className={`mb-3 inline-flex rounded-xl p-2.5 ${iconColor}`}
+								style={{ backgroundColor: color }}
+							>
+								<Icon className="h-5 w-5" />
+							</div>
+							<h2 className="mb-2 text-base font-semibold text-(--sea-ink)">
+								{title}
+							</h2>
+							<p className="m-0 text-sm leading-relaxed text-(--sea-ink-soft)">
+								{description}
+							</p>
+						</article>
+					),
+				)}
 			</section>
 
 			{/* Highlights */}
-			<section className="island-shell rise-in mt-8 rounded-[2rem] px-6 py-10 sm:px-10" style={{ animationDelay: "450ms" }}>
+			<section
+				className="island-shell rise-in mt-8 rounded-[2rem] px-6 py-10 sm:px-10"
+				style={{ animationDelay: "450ms" }}
+			>
 				<p className="island-kicker mb-2">Beyond basic interviews</p>
-				<h2 className="display-title mb-6 text-2xl font-bold text-[var(--sea-ink)] sm:text-3xl">
+				<h2 className="display-title mb-6 text-2xl font-bold text-(--sea-ink) sm:text-3xl">
 					Built for scale
 				</h2>
 				<div className="grid gap-6 sm:grid-cols-3">
 					{HIGHLIGHTS.map(({ icon: Icon, title, description }) => (
 						<div key={title} className="flex gap-3">
-							<div className="flex-shrink-0 rounded-lg bg-[rgba(79,184,178,0.1)] p-2 text-[var(--lagoon-deep)]">
+							<div className="flex-shrink-0 rounded-lg bg-[rgba(79,184,178,0.1)] p-2 text-(--lagoon-deep)">
 								<Icon className="h-5 w-5" />
 							</div>
 							<div>
-								<h3 className="mb-1 text-sm font-semibold text-[var(--sea-ink)]">
+								<h3 className="mb-1 text-sm font-semibold text-(--sea-ink)">
 									{title}
 								</h3>
-								<p className="m-0 text-sm text-[var(--sea-ink-soft)]">
+								<p className="m-0 text-sm text-(--sea-ink-soft)">
 									{description}
 								</p>
 							</div>

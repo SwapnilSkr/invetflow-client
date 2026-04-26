@@ -1,8 +1,13 @@
 import { Link } from "@tanstack/react-router";
+import { LayoutDashboard, ListVideo } from "lucide-react";
+import { useAuth } from "#/integrations/api/hooks";
 import AuthHeaderUser from "../integrations/auth/header-user.tsx";
 import ThemeToggle from "./ThemeToggle";
 
 export default function Header() {
+	const { user, isAuthenticated, isLoading } = useAuth();
+	const isCandidate = user?.role === "Candidate";
+
 	return (
 		<header className="sticky top-0 z-50 border-b border-(--line) bg-(--header-bg) px-4 backdrop-blur-lg">
 			<nav className="page-wrap flex flex-wrap items-center gap-x-3 gap-y-2 py-3 sm:py-4">
@@ -30,20 +35,36 @@ export default function Header() {
 					>
 						Home
 					</Link>
-					<Link
-						to="/dashboard"
-						className="nav-link"
-						activeProps={{ className: "nav-link is-active" }}
-					>
-						Dashboard
-					</Link>
-					<Link
-						to="/interviews"
-						className="nav-link"
-						activeProps={{ className: "nav-link is-active" }}
-					>
-						Interviews
-					</Link>
+					{!isLoading && isAuthenticated && user ? (
+						isCandidate ? (
+							<Link
+								to="/candidate"
+								className="nav-link inline-flex items-center gap-1.5"
+								activeProps={{ className: "nav-link is-active" }}
+							>
+								<ListVideo className="h-3.5 w-3.5 opacity-80" />
+								My interviews
+							</Link>
+						) : (
+							<>
+								<Link
+									to="/dashboard"
+									className="nav-link inline-flex items-center gap-1.5"
+									activeProps={{ className: "nav-link is-active" }}
+								>
+									<LayoutDashboard className="h-3.5 w-3.5 opacity-80" />
+									Dashboard
+								</Link>
+								<Link
+									to="/interviews"
+									className="nav-link"
+									activeProps={{ className: "nav-link is-active" }}
+								>
+									Interviews
+								</Link>
+							</>
+						)
+					) : null}
 					<Link
 						to="/about"
 						className="nav-link"

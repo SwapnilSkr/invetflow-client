@@ -1,5 +1,9 @@
 import { useQueryClient } from "@tanstack/react-query";
-import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import {
+	createFileRoute,
+	useNavigate,
+	useRouter,
+} from "@tanstack/react-router";
 import { useState } from "react";
 import { Button } from "#/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "#/components/ui/card";
@@ -10,20 +14,32 @@ import {
 	registerWithPassword,
 } from "#/integrations/api/client";
 import { useAuth, useLogout } from "#/integrations/api/hooks";
+import type { AppUserRole } from "#/integrations/api/types";
+import { useAuthStore } from "#/integrations/auth/auth-store";
+import { getSafeInternalRedirect } from "#/lib/safe-redirect";
+
+type AuthSearch = { redirect?: string };
 
 export const Route = createFileRoute("/auth")({
+	validateSearch: (search: Record<string, unknown>): AuthSearch => ({
+		redirect: typeof search.redirect === "string" ? search.redirect : undefined,
+	}),
 	component: AuthPage,
 });
 
 function AuthPage() {
 	const { user, isAuthenticated, isLoading } = useAuth();
 	const navigate = useNavigate();
+	const router = useRouter();
+	const { redirect: redirectTo } = Route.useSearch();
 	const queryClient = useQueryClient();
 	const doLogout = useLogout();
 	const [isSignUp, setIsSignUp] = useState(false);
 	const [email, setEmail] = useState("");
 	const [password, setPassword] = useState("");
 	const [name, setName] = useState("");
+	/** New accounts only: hiring vs candidate (sent as JSON `Recruiter` / `Candidate`). */
+	const [signUpRole, setSignUpRole] = useState<AppUserRole>("Recruiter");
 	const [error, setError] = useState("");
 	const [submitting, setSubmitting] = useState(false);
 
@@ -65,9 +81,23 @@ function AuthPage() {
 						<div className="flex gap-3">
 							<Button
 								className="flex-1"
-								onClick={() => void navigate({ to: "/dashboard" })}
+								onClick={() => {
+									const next = getSafeInternalRedirect(redirectTo);
+									if (next) {
+										void router.history.push(next);
+									} else {
+										void navigate({
+											to:
+												user.role === "Candidate" ? "/candidate" : "/dashboard",
+										});
+									}
+								}}
 							>
-								Go to Dashboard
+								{getSafeInternalRedirect(redirectTo)
+									? "Continue"
+									: user.role === "Candidate"
+										? "Go to my interviews"
+										: "Go to Dashboard"}
 							</Button>
 							<Button
 								variant="outline"
@@ -95,12 +125,23 @@ function AuthPage() {
 					email,
 					password,
 					name: name.trim() || undefined,
+					role: signUpRole,
 				});
 			} else {
 				await loginWithPassword({ email, password });
 			}
 			await queryClient.invalidateQueries({ queryKey: ["interviews"] });
-			void navigate({ to: "/dashboard" });
+			const role = useAuthStore.getState().user?.role;
+			const next = getSafeInternalRedirect(redirectTo);
+			if (next) {
+				void router.history.push(next);
+			} else {
+				const to =
+					role === "Candidate"
+						? ("/candidate" as const)
+						: ("/dashboard" as const);
+				void navigate({ to });
+			}
 		} catch (err) {
 			const msg =
 				err instanceof ApiError
@@ -133,6 +174,38 @@ function AuthPage() {
 				</CardHeader>
 				<CardContent>
 					<form onSubmit={handleSubmit} className="grid gap-4">
+						{isSignUp && (
+							<div className="grid gap-2">
+								<span className="text-sm font-medium leading-none">
+									I am signing up as
+								</span>
+								<div className="grid grid-cols-2 gap-2">
+									<Button
+										type="button"
+										variant={signUpRole === "Recruiter" ? "default" : "outline"}
+										className="h-auto flex-col gap-1 py-3"
+										onClick={() => setSignUpRole("Recruiter")}
+									>
+										<span className="font-semibold">Recruiter / HR</span>
+										<span className="text-xs font-normal opacity-90">
+											Create interviews and invite candidates
+										</span>
+									</Button>
+									<Button
+										type="button"
+										variant={signUpRole === "Candidate" ? "default" : "outline"}
+										className="h-auto flex-col gap-1 py-3"
+										onClick={() => setSignUpRole("Candidate")}
+									>
+										<span className="font-semibold">Candidate</span>
+										<span className="text-xs font-normal opacity-90">
+											Join interviews you are invited to
+										</span>
+									</Button>
+								</div>
+							</div>
+						)}
+
 						{isSignUp && (
 							<div className="grid gap-2">
 								<label

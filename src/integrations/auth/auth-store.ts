@@ -5,8 +5,14 @@ import {
 	rememberAccessToken,
 	setStoredToken,
 } from "#/integrations/api/token-storage";
-import type { User } from "#/integrations/api/types";
+import type { AppUserRole, User } from "#/integrations/api/types";
 import { fetchCurrentUserFromApi } from "#/integrations/api/user-api";
+
+function normalizeUser(u: User): User {
+	const role: AppUserRole =
+		u.role === "Candidate" || u.role === "Recruiter" ? u.role : "Recruiter";
+	return { ...u, role };
+}
 
 export type AuthStatus = "initializing" | "unauthenticated" | "authenticated";
 
@@ -46,7 +52,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
 		set({ status: "initializing" });
 
 		try {
-			const user = await fetchCurrentUserFromApi();
+			const user = normalizeUser(await fetchCurrentUserFromApi());
 			set({ user, status: "authenticated" });
 		} catch {
 			get().signOut();
@@ -56,7 +62,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
 	applyTokenResponse: (accessToken, expiresIn, user) => {
 		setStoredToken(accessToken, expiresIn);
 		rememberAccessToken(accessToken);
-		set({ user, status: "authenticated" });
+		set({ user: normalizeUser(user), status: "authenticated" });
 	},
 
 	signOut: () => {

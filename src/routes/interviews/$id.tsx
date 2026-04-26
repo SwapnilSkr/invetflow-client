@@ -5,23 +5,30 @@ import {
 	Calendar,
 	Clock,
 	Copy,
-	LinkIcon,
+	Globe2,
+	Link as LinkIcon,
 	Play,
+	UserPlus,
 	Users,
 } from "lucide-react";
-import { useState } from "react";
+import { useId, useState } from "react";
+import { Alert, AlertDescription, AlertTitle } from "#/components/ui/alert";
 import { Badge } from "#/components/ui/badge";
 import { Button } from "#/components/ui/button";
-import {
-	Card,
-	CardContent,
-	CardHeader,
-	CardTitle,
-} from "#/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "#/components/ui/card";
+import { Input } from "#/components/ui/input";
 import { Separator } from "#/components/ui/separator";
 import { Skeleton } from "#/components/ui/skeleton";
-import { interviewQueries, useJoinInterview } from "#/integrations/api/queries";
-import { requireSession } from "#/lib/require-session";
+import { ApiError } from "#/integrations/api/errors";
+import { useAuth } from "#/integrations/api/hooks";
+import {
+	interviewQueries,
+	useAssignCandidate,
+	useJoinInterview,
+	useScheduleInterview,
+	useUpdateInterview,
+} from "#/integrations/api/queries";
+import { requireSession } from "#/lib/require-role";
 import { getStatusColor } from "#/lib/utils";
 
 export const Route = createFileRoute("/interviews/$id")({
@@ -31,6 +38,8 @@ export const Route = createFileRoute("/interviews/$id")({
 
 function InterviewDetailPage() {
 	const { id } = Route.useParams();
+	const { user } = useAuth();
+	const isRecruiter = user?.role === "Recruiter";
 	const navigate = useNavigate();
 	const {
 		data: interview,
@@ -38,10 +47,19 @@ function InterviewDetailPage() {
 		error,
 	} = useQuery(interviewQueries.detail(id));
 	const joinInterview = useJoinInterview();
+	const assignCandidate = useAssignCandidate();
+	const scheduleInterview = useScheduleInterview();
+	const updateInterview = useUpdateInterview();
 	const [joining, setJoining] = useState(false);
 	const [copied, setCopied] = useState(false);
+	const [joinError, setJoinError] = useState<string | null>(null);
+	const [assignName, setAssignName] = useState("");
+	const [assignEmail, setAssignEmail] = useState("");
+	const assignNameId = useId();
+	const assignEmailId = useId();
 
 	const handleJoin = async () => {
+		setJoinError(null);
 		setJoining(true);
 		try {
 			const result = await joinInterview.mutateAsync(id);
@@ -55,23 +73,31 @@ function InterviewDetailPage() {
 				},
 			});
 		} catch (err) {
-			console.error("Failed to join:", err);
+			const msg =
+				err instanceof ApiError
+					? err.message
+					: "Could not start the session. The interview may need to be scheduled, or you may need to be the assignee (unless it is open to any signed-in user).";
+			setJoinError(msg);
 		} finally {
 			setJoining(false);
 		}
 	};
 
 	const copyInviteLink = async () => {
-		if (interview?.invite_link) {
-			await navigator.clipboard.writeText(interview.invite_link);
-			setCopied(true);
-			setTimeout(() => setCopied(false), 2000);
+		if (!interview?.invite_link) {
+			return;
 		}
+		const link = interview.invite_link.startsWith("http")
+			? interview.invite_link
+			: `${window.location.origin}${interview.invite_link.startsWith("/") ? "" : "/"}${interview.invite_link}`;
+		await navigator.clipboard.writeText(link);
+		setCopied(true);
+		setTimeout(() => setCopied(false), 2000);
 	};
 
 	if (isLoading) {
 		return (
-			<div className="container mx-auto px-4 py-8">
+			<div className="container mx-auto max-w-5xl px-4 py-8">
 				<Skeleton className="mb-6 h-5 w-32" />
 				<Skeleton className="mb-2 h-9 w-64" />
 				<Skeleton className="mb-8 h-5 w-48" />
@@ -86,57 +112,79 @@ function InterviewDetailPage() {
 				<p className="text-lg font-medium text-destructive">
 					Interview not found
 				</p>
-				<p className="mt-2 text-sm text-muted-foreground">
-					This interview may have been deleted or you don&rsquo;t have access.
+				<p className="mt-2 text-sm text-muted-foreground text-center max-w-sm">
+					This interview may have been removed or you don&rsquo;t have access to
+					it.
 				</p>
 				<Button variant="outline" className="mt-4" asChild>
-					<Link to="/interviews">Back to interviews</Link>
+					<Link to={isRecruiter ? "/dashboard" : "/candidate"}>Back</Link>
 				</Button>
 			</div>
 		);
 	}
 
-	const canJoin =
-		interview.status === "Scheduled" || interview.status === "Draft";
+	const isOwner = user?.id === interview.recruiter_id;
+
+	const joinReady =
+		interview.status === "Scheduled" || interview.status === "Active";
+	/** Recruiters can only enter the room for testing when the job is “open to any signed-in user”. */
+	const showJoinButton =
+		joinReady &&
+		(user?.role === "Candidate" ||
+			(user?.role === "Recruiter" && interview.is_public));
 
 	return (
-		<div className="container mx-auto px-4 py-8">
-			{/* Breadcrumb */}
+		<div className="container mx-auto max-w-5xl px-4 py-8">
 			<div className="mb-6">
 				<Button variant="ghost" size="sm" asChild>
-					<Link to="/interviews">
+					<Link to={isRecruiter ? "/interviews" : "/candidate"}>
 						<ArrowLeft className="mr-2 h-4 w-4" />
-						Back to interviews
+						{isRecruiter ? "All interviews" : "My interviews"}
 					</Link>
 				</Button>
 			</div>
 
-			{/* Header */}
-			<div className="mb-6 flex items-start justify-between">
+			<div className="mb-6 flex flex-wrap items-start justify-between gap-4">
 				<div>
-					<div className="flex items-center gap-3">
-						<h1 className="text-2xl font-bold">{interview.title}</h1>
+					<div className="flex flex-wrap items-center gap-3">
+						<h1 className="text-2xl font-bold tracking-tight">
+							{interview.title}
+						</h1>
 						<Badge className={getStatusColor(interview.status)}>
 							{interview.status}
 						</Badge>
 					</div>
 					<p className="mt-1 text-muted-foreground">{interview.job_title}</p>
 				</div>
-				<div className="flex gap-2">
-					{canJoin && (
-						<Button onClick={handleJoin} disabled={joining}>
-							<Play className="mr-2 h-4 w-4" />
-							{joining ? "Joining..." : "Join Interview"}
-						</Button>
-					)}
-				</div>
+				{showJoinButton ? (
+					<Button onClick={handleJoin} disabled={joining}>
+						<Play className="mr-2 h-4 w-4" />
+						{joining ? "Joining…" : "Join interview room"}
+					</Button>
+				) : null}
 			</div>
 
+			{joinError ? (
+				<Alert variant="destructive" className="mb-6">
+					<AlertTitle>Could not join</AlertTitle>
+					<AlertDescription>{joinError}</AlertDescription>
+				</Alert>
+			) : null}
+
+			{!isRecruiter && !joinReady && interview.status === "Draft" ? (
+				<Alert className="mb-6">
+					<AlertTitle>Not ready yet</AlertTitle>
+					<AlertDescription>
+						The hiring team has not finished scheduling. After it moves to
+						scheduled, you can join if you are the assignee, or if this
+						interview is open to any signed-in user.
+					</AlertDescription>
+				</Alert>
+			) : null}
+
 			<div className="grid gap-6 lg:grid-cols-3">
-				{/* Main Content */}
 				<div className="space-y-6 lg:col-span-2">
-					{/* Description */}
-					{interview.job_description && (
+					{interview.job_description ? (
 						<Card>
 							<CardHeader>
 								<CardTitle className="text-base">Description</CardTitle>
@@ -147,13 +195,12 @@ function InterviewDetailPage() {
 								</p>
 							</CardContent>
 						</Card>
-					)}
+					) : null}
 
-					{/* Questions */}
 					<Card>
 						<CardHeader>
 							<CardTitle className="text-base">
-								Questions ({interview.questions?.length || 0})
+								Question plan ({interview.questions?.length ?? 0})
 							</CardTitle>
 						</CardHeader>
 						<CardContent>
@@ -161,53 +208,44 @@ function InterviewDetailPage() {
 								<ol className="space-y-3">
 									{interview.questions.map((q, idx) => (
 										<li key={q.id || idx} className="flex gap-3">
-											<span className="flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full bg-muted text-xs font-medium">
+											<span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-muted text-xs font-medium">
 												{idx + 1}
 											</span>
-											<div className="flex-1">
-												<p className="text-sm font-medium">
-													{q.question}
-												</p>
-												<div className="mt-1 flex items-center gap-2">
+											<div className="min-w-0 flex-1">
+												<p className="text-sm font-medium">{q.question}</p>
+												<div className="mt-1 flex flex-wrap items-center gap-2">
 													<Badge variant="secondary" className="text-xs">
 														{q.category}
 													</Badge>
-													{q.time_limit_seconds && (
+													{q.time_limit_seconds ? (
 														<span className="text-xs text-muted-foreground">
-															{q.time_limit_seconds}s limit
+															{q.time_limit_seconds}s cap
 														</span>
-													)}
+													) : null}
 												</div>
-												{q.follow_up_prompts.length > 0 && (
-													<p className="mt-1 text-xs text-muted-foreground">
-														{q.follow_up_prompts.length} follow-up prompts
-													</p>
-												)}
 											</div>
 										</li>
 									))}
 								</ol>
 							) : (
 								<p className="text-sm text-muted-foreground">
-									No questions added yet. The AI will generate questions
-									based on the job description.
+									Add questions from the list view when that editor is
+									available, or the session may use a generated plan.
 								</p>
 							)}
 						</CardContent>
 					</Card>
 				</div>
 
-				{/* Sidebar */}
 				<div className="space-y-4">
-					{/* Details */}
 					<Card>
 						<CardHeader>
 							<CardTitle className="text-base">Details</CardTitle>
 						</CardHeader>
-						<CardContent className="space-y-3">
-							<div className="flex items-center justify-between text-sm">
-								<span className="flex items-center gap-2 text-muted-foreground">
-									<Clock className="h-4 w-4" />
+						<CardContent className="space-y-3 text-sm">
+							<div className="flex justify-between gap-2">
+								<span className="text-muted-foreground flex items-center gap-2">
+									<Clock className="h-4 w-4 shrink-0" />
 									Duration
 								</span>
 								<span className="font-medium">
@@ -215,84 +253,220 @@ function InterviewDetailPage() {
 								</span>
 							</div>
 							<Separator />
-							<div className="flex items-center justify-between text-sm">
-								<span className="flex items-center gap-2 text-muted-foreground">
-									<Users className="h-4 w-4" />
-									Questions
-								</span>
-								<span className="font-medium">
-									{interview.questions?.length || 0}
-								</span>
-							</div>
-							<Separator />
-							<div className="flex items-center justify-between text-sm">
-								<span className="flex items-center gap-2 text-muted-foreground">
-									<Calendar className="h-4 w-4" />
+							<div className="flex justify-between gap-2">
+								<span className="text-muted-foreground flex items-center gap-2">
+									<Calendar className="h-4 w-4 shrink-0" />
 									Created
 								</span>
 								<span className="font-medium">
-									{new Date(interview.created_at).toLocaleDateString()}
+									{new Date(interview.created_at).toLocaleString()}
 								</span>
 							</div>
 						</CardContent>
 					</Card>
 
-					{/* Candidate */}
-					{interview.candidate_name && (
+					{isRecruiter &&
+					isOwner &&
+					interview.status !== "Completed" &&
+					interview.status !== "Cancelled" ? (
+						<Card>
+							<CardHeader>
+								<CardTitle className="flex items-center gap-2 text-base">
+									<Globe2 className="h-4 w-4" />
+									Access
+								</CardTitle>
+							</CardHeader>
+							<CardContent>
+								<label className="flex cursor-pointer items-start gap-3">
+									<input
+										type="checkbox"
+										className="mt-1 size-4 rounded border-input"
+										checked={interview.is_public}
+										onChange={(e) => {
+											void updateInterview.mutateAsync({
+												id,
+												data: { is_public: e.target.checked },
+											});
+										}}
+										disabled={updateInterview.isPending}
+									/>
+									<span>
+										<span className="font-medium">
+											Open to any signed-in user
+										</span>
+										<p className="text-sm text-muted-foreground">
+											When scheduled, anyone with an account can join (not only
+											the named assignee). Admins still cannot join as the
+											candidate.
+										</p>
+									</span>
+								</label>
+							</CardContent>
+						</Card>
+					) : null}
+
+					{isRecruiter && interview.status === "Draft" ? (
+						<Card>
+							<CardHeader>
+								<CardTitle className="flex items-center gap-2 text-base">
+									<UserPlus className="h-4 w-4" />
+									Assign candidate
+								</CardTitle>
+							</CardHeader>
+							<CardContent className="space-y-3">
+								<p className="text-sm text-muted-foreground">
+									Required before anyone can join. The account email must match
+									an existing or future candidate signup.
+								</p>
+								<div className="space-y-2">
+									<label className="text-sm font-medium" htmlFor={assignNameId}>
+										Candidate name
+									</label>
+									<Input
+										id={assignNameId}
+										value={assignName}
+										onChange={(e) => setAssignName(e.target.value)}
+										placeholder="Alex Rivera"
+									/>
+								</div>
+								<div className="space-y-2">
+									<label
+										className="text-sm font-medium"
+										htmlFor={assignEmailId}
+									>
+										Candidate email
+									</label>
+									<Input
+										id={assignEmailId}
+										type="email"
+										value={assignEmail}
+										onChange={(e) => setAssignEmail(e.target.value)}
+										placeholder="alex@company.com"
+									/>
+								</div>
+								<Button
+									className="w-full"
+									disabled={
+										!assignName.trim() ||
+										!assignEmail.trim() ||
+										assignCandidate.isPending
+									}
+									onClick={async () => {
+										try {
+											await assignCandidate.mutateAsync({
+												id,
+												data: {
+													candidate_name: assignName.trim(),
+													candidate_email: assignEmail.trim(),
+												},
+											});
+											setAssignName("");
+											setAssignEmail("");
+										} catch {
+											// Error text shown via mutation state below
+										}
+									}}
+								>
+									{assignCandidate.isPending ? "Saving…" : "Assign & schedule"}
+								</Button>
+								{assignCandidate.isError && assignCandidate.error ? (
+									<p className="text-sm text-destructive" role="alert">
+										{assignCandidate.error instanceof Error
+											? assignCandidate.error.message
+											: "Could not assign candidate."}
+									</p>
+								) : null}
+							</CardContent>
+						</Card>
+					) : null}
+
+					{isRecruiter &&
+					interview.candidate_email &&
+					interview.status === "Draft" ? (
+						<Card>
+							<CardContent className="pt-6">
+								<Button
+									variant="secondary"
+									className="w-full"
+									disabled={scheduleInterview.isPending}
+									onClick={async () => {
+										try {
+											await scheduleInterview.mutateAsync(id);
+										} catch {
+											// handled by network layer if needed
+										}
+									}}
+								>
+									{scheduleInterview.isPending
+										? "Scheduling…"
+										: "Schedule interview"}
+								</Button>
+								<p className="mt-2 text-center text-xs text-muted-foreground">
+									Use if the role stayed in Draft after data import.
+								</p>
+							</CardContent>
+						</Card>
+					) : null}
+
+					{interview.candidate_name || interview.candidate_email ? (
 						<Card>
 							<CardHeader>
 								<CardTitle className="text-base">Candidate</CardTitle>
 							</CardHeader>
 							<CardContent>
 								<div className="flex items-center gap-3">
-									<div className="flex h-10 w-10 items-center justify-center rounded-full bg-[rgba(79,184,178,0.14)] text-[var(--lagoon-deep)]">
-										<span className="text-sm font-semibold">
-											{interview.candidate_name.charAt(0).toUpperCase()}
-										</span>
+									<div className="flex h-10 w-10 items-center justify-center rounded-full bg-[rgba(79,184,178,0.14)] text-(--lagoon-deep)">
+										<Users className="h-5 w-5" />
 									</div>
 									<div className="min-w-0">
 										<p className="truncate text-sm font-medium">
-											{interview.candidate_name}
+											{interview.candidate_name ?? "—"}
 										</p>
 										<p className="truncate text-xs text-muted-foreground">
-											{interview.candidate_email}
+											{interview.candidate_email ?? ""}
 										</p>
 									</div>
 								</div>
 							</CardContent>
 						</Card>
-					)}
+					) : null}
 
-					{/* Invite Link */}
-					{interview.invite_link && (
+					{isRecruiter && interview.invite_link ? (
 						<Card>
 							<CardHeader>
 								<CardTitle className="flex items-center gap-2 text-base">
 									<LinkIcon className="h-4 w-4" />
-									Invite Link
+									Candidate invite
 								</CardTitle>
 							</CardHeader>
 							<CardContent>
+								<p className="mb-3 text-sm text-muted-foreground">
+									{interview.is_public
+										? "Anyone signed in can use this link once the interview is scheduled (or use the interview from their account). "
+										: "Share with the assignee. They sign in, then open this link. "}
+									Candidate accounts work best for the interview experience.
+								</p>
 								<div className="flex gap-2">
-									<code className="flex-1 truncate rounded-md bg-muted px-3 py-2 text-xs">
+									<code className="min-w-0 flex-1 truncate rounded-md bg-muted px-3 py-2 text-xs">
 										{interview.invite_link}
 									</code>
 									<Button
 										variant="outline"
-										size="icon-sm"
+										size="icon"
+										type="button"
 										onClick={copyInviteLink}
 									>
 										<Copy className="h-3.5 w-3.5" />
 									</Button>
 								</div>
-								{copied && (
+								{copied ? (
 									<p className="mt-2 text-xs text-emerald-600 dark:text-emerald-400">
-										Copied to clipboard!
+										Copied to clipboard.
 									</p>
-								)}
+								) : null}
 							</CardContent>
 						</Card>
-					)}
+					) : null}
 				</div>
 			</div>
 		</div>

@@ -1,13 +1,10 @@
-import { redirect } from "@tanstack/react-router";
-import { useAuthStore } from "#/integrations/auth/auth-store";
-
 /**
- * TanStack Router `beforeLoad` guard: recruiters must have a session (Zustand +
- * invetflow-server JWT in sessionStorage). `initializing` is allowed so bootstrap
- * can finish; only explicit guests are redirected to `/auth`.
+ * @deprecated import from `#/lib/require-role` for session + role helpers.
+ * Re-exported for existing route files.
  */
-export function requireSession(): void {
-	if (useAuthStore.getState().status === "unauthenticated") {
-		throw redirect({ to: "/auth" });
-	}
-}
+export {
+	requireCandidate,
+	requireRecruiter,
+	requireSession,
+	requireSessionWithReturnTo,
+} from "#/lib/require-role";
