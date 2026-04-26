@@ -8,16 +8,13 @@ import {
 	Trash2,
 	Users,
 } from "lucide-react";
-import { useState } from "react";
 import { Badge } from "#/components/ui/badge";
 import { Button } from "#/components/ui/button";
 import { Card, CardContent } from "#/components/ui/card";
-import { Input } from "#/components/ui/input";
 import { Skeleton } from "#/components/ui/skeleton";
-import type { CreateInterviewRequest, Interview } from "#/integrations/api/client";
+import type { Interview } from "#/integrations/api/client";
 import {
 	interviewQueries,
-	useCreateInterview,
 	useDeleteInterview,
 } from "#/integrations/api/queries";
 import { requireRecruiter } from "#/lib/require-role";
@@ -29,9 +26,7 @@ export const Route = createFileRoute("/interviews/")({
 });
 
 function InterviewsPage() {
-	const [showCreate, setShowCreate] = useState(false);
 	const { data, isLoading, error } = useQuery(interviewQueries.list());
-	const createInterview = useCreateInterview();
 	const deleteInterview = useDeleteInterview();
 
 	if (isLoading) {
@@ -79,21 +74,13 @@ function InterviewsPage() {
 						{data?.total ?? 0} total interviews
 					</p>
 				</div>
-				<Button onClick={() => setShowCreate(true)}>
-					<Plus className="mr-2 h-4 w-4" />
-					Create Interview
+				<Button asChild>
+					<Link to="/interviews/new">
+						<Plus className="mr-2 h-4 w-4" />
+						Create Interview
+					</Link>
 				</Button>
 			</div>
-
-			{showCreate && (
-				<CreateInterviewForm
-					onClose={() => setShowCreate(false)}
-					onSubmit={async (formData) => {
-						await createInterview.mutateAsync(formData);
-						setShowCreate(false);
-					}}
-				/>
-			)}
 
 			<div className="space-y-3">
 				{data?.interviews?.length === 0 ? (
@@ -106,9 +93,11 @@ function InterviewsPage() {
 							<p className="mt-1 text-sm text-muted-foreground">
 								Create your first interview to get started
 							</p>
-							<Button className="mt-4" onClick={() => setShowCreate(true)}>
-								<Plus className="mr-2 h-4 w-4" />
-								Create Interview
+							<Button className="mt-4" asChild>
+								<Link to="/interviews/new">
+									<Plus className="mr-2 h-4 w-4" />
+									Create Interview
+								</Link>
 							</Button>
 						</CardContent>
 					</Card>
@@ -118,7 +107,9 @@ function InterviewsPage() {
 							key={interview.id}
 							interview={interview}
 							onDelete={(id) => {
-								if (confirm("Are you sure you want to delete this interview?")) {
+								if (
+									confirm("Are you sure you want to delete this interview?")
+								) {
 									deleteInterview.mutate(id);
 								}
 							}}
@@ -155,7 +146,12 @@ function InterviewCard({
 									{interview.job_title}
 								</p>
 							</div>
-							<Badge className={cn("flex-shrink-0", getStatusColor(interview.status))}>
+							<Badge
+								className={cn(
+									"flex-shrink-0",
+									getStatusColor(interview.status),
+								)}
+							>
 								{interview.status}
 							</Badge>
 						</div>
@@ -197,96 +193,5 @@ function InterviewCard({
 				</div>
 			</CardContent>
 		</Card>
-	);
-}
-
-function CreateInterviewForm({
-	onClose,
-	onSubmit,
-}: {
-	onClose: () => void;
-	onSubmit: (data: CreateInterviewRequest) => Promise<void>;
-}) {
-	const [title, setTitle] = useState("");
-	const [jobTitle, setJobTitle] = useState("");
-	const [duration, setDuration] = useState(30);
-	const [loading, setLoading] = useState(false);
-
-	const handleSubmit = async (e: React.FormEvent) => {
-		e.preventDefault();
-		setLoading(true);
-		try {
-			await onSubmit({
-				title,
-				job_title: jobTitle,
-				duration_minutes: duration,
-				questions: [],
-			});
-		} finally {
-			setLoading(false);
-		}
-	};
-
-	return (
-		<div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
-			<Card className="w-full max-w-md">
-				<CardContent className="p-6">
-					<h2 className="mb-4 text-lg font-semibold">Create Interview</h2>
-					<form onSubmit={handleSubmit} className="space-y-4">
-						<div className="grid gap-2">
-							<label className="text-sm font-medium">Title</label>
-							<Input
-								type="text"
-								value={title}
-								onChange={(e) => setTitle(e.target.value)}
-								placeholder="e.g. Senior Frontend Developer"
-								required
-							/>
-						</div>
-						<div className="grid gap-2">
-							<label className="text-sm font-medium">Job Title</label>
-							<Input
-								type="text"
-								value={jobTitle}
-								onChange={(e) => setJobTitle(e.target.value)}
-								placeholder="e.g. React Engineer"
-								required
-							/>
-						</div>
-						<div className="grid gap-2">
-							<label className="text-sm font-medium">
-								Duration (minutes)
-							</label>
-							<Input
-								type="number"
-								value={duration}
-								onChange={(e) =>
-									setDuration(parseInt(e.target.value) || 30)
-								}
-								min={5}
-								max={180}
-							/>
-						</div>
-						<div className="flex gap-3 pt-2">
-							<Button
-								type="button"
-								variant="outline"
-								className="flex-1"
-								onClick={onClose}
-							>
-								Cancel
-							</Button>
-							<Button
-								type="submit"
-								disabled={loading}
-								className="flex-1"
-							>
-								{loading ? "Creating..." : "Create"}
-							</Button>
-						</div>
-					</form>
-				</CardContent>
-			</Card>
-		</div>
 	);
 }
