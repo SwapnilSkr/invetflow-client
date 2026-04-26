@@ -6,6 +6,7 @@ import {
 import {
 	type AssignCandidateRequest,
 	apiClient,
+	apiClientPublic,
 	type CreateInterviewRequest,
 	type Interview,
 	type InterviewScores,
@@ -61,7 +62,8 @@ export const interviewQueries = {
 	byToken: (token: string) =>
 		queryOptions({
 			queryKey: interviewKeys.byToken(token),
-			queryFn: () => apiClient<Interview>(`/api/interviews/token/${token}`),
+			queryFn: () =>
+				apiClientPublic<Interview>(`/api/interviews/token/${token}`),
 		}),
 };
 

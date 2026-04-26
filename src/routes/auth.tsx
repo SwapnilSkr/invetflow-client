@@ -1,63 +1,63 @@
+import { useQueryClient } from "@tanstack/react-query";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
 import { Button } from "#/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "#/components/ui/card";
 import { Input } from "#/components/ui/input";
-import { authClient } from "#/lib/auth-client";
+import {
+	ApiError,
+	loginWithPassword,
+	registerWithPassword,
+} from "#/integrations/api/client";
+import { useAuth, useLogout } from "#/integrations/api/hooks";
 
 export const Route = createFileRoute("/auth")({
 	component: AuthPage,
 });
 
 function AuthPage() {
-	const { data: session, isPending } = authClient.useSession();
+	const { user, isAuthenticated, isLoading } = useAuth();
 	const navigate = useNavigate();
+	const queryClient = useQueryClient();
+	const doLogout = useLogout();
 	const [isSignUp, setIsSignUp] = useState(false);
 	const [email, setEmail] = useState("");
 	const [password, setPassword] = useState("");
 	const [name, setName] = useState("");
 	const [error, setError] = useState("");
-	const [loading, setLoading] = useState(false);
+	const [submitting, setSubmitting] = useState(false);
 
-	if (isPending) {
+	if (isLoading) {
 		return (
 			<div className="flex items-center justify-center py-20">
-				<div className="h-6 w-6 animate-spin rounded-full border-2 border-[var(--line)] border-t-[var(--lagoon)]" />
+				<div className="h-6 w-6 animate-spin rounded-full border-2 border-(--line) border-t-(--lagoon)" />
 			</div>
 		);
 	}
 
-	if (session?.user) {
+	if (isAuthenticated && user) {
 		return (
 			<main className="page-wrap flex justify-center px-4 py-12">
 				<Card className="w-full max-w-md">
 					<CardHeader>
 						<CardTitle>Welcome back</CardTitle>
 						<p className="text-sm text-muted-foreground">
-							You&rsquo;re signed in as {session.user.email}
+							You&rsquo;re signed in as {user.email}
 						</p>
 					</CardHeader>
 					<CardContent className="space-y-4">
 						<div className="flex items-center gap-3">
-							{session.user.image ? (
-								<img
-									src={session.user.image}
-									alt=""
-									className="h-10 w-10 rounded-full"
-								/>
-							) : (
-								<div className="flex h-10 w-10 items-center justify-center rounded-full bg-[rgba(79,184,178,0.14)] text-[var(--lagoon-deep)]">
-									<span className="text-sm font-semibold">
-										{session.user.name?.charAt(0).toUpperCase() || "U"}
-									</span>
-								</div>
-							)}
+							<div className="flex h-10 w-10 items-center justify-center rounded-full bg-[rgba(79,184,178,0.14)] text-(--lagoon-deep)">
+								<span className="text-sm font-semibold">
+									{user.name?.charAt(0).toUpperCase() || "U"}
+								</span>
+							</div>
 							<div className="min-w-0 flex-1">
 								<p className="truncate text-sm font-medium">
-									{session.user.name}
+									{user.name ?? "—"}
 								</p>
 								<p className="truncate text-xs text-muted-foreground">
-									{session.user.email}
+									{user.email}
 								</p>
 							</div>
 						</div>
@@ -65,13 +65,15 @@ function AuthPage() {
 						<div className="flex gap-3">
 							<Button
 								className="flex-1"
-								onClick={() => navigate({ to: "/dashboard" })}
+								onClick={() => void navigate({ to: "/dashboard" })}
 							>
 								Go to Dashboard
 							</Button>
 							<Button
 								variant="outline"
-								onClick={() => void authClient.signOut()}
+								onClick={() => {
+									doLogout();
+								}}
 							>
 								Sign out
 							</Button>
@@ -85,31 +87,28 @@ function AuthPage() {
 	const handleSubmit = async (e: React.FormEvent) => {
 		e.preventDefault();
 		setError("");
-		setLoading(true);
+		setSubmitting(true);
 
 		try {
 			if (isSignUp) {
-				const result = await authClient.signUp.email({
+				await registerWithPassword({
 					email,
 					password,
-					name,
+					name: name.trim() || undefined,
 				});
-				if (result.error) {
-					setError(result.error.message || "Sign up failed");
-				}
 			} else {
-				const result = await authClient.signIn.email({
-					email,
-					password,
-				});
-				if (result.error) {
-					setError(result.error.message || "Sign in failed");
-				}
+				await loginWithPassword({ email, password });
 			}
-		} catch {
-			setError("An unexpected error occurred");
+			await queryClient.invalidateQueries({ queryKey: ["interviews"] });
+			void navigate({ to: "/dashboard" });
+		} catch (err) {
+			const msg =
+				err instanceof ApiError
+					? err.message
+					: "An unexpected error occurred. Is the API running on VITE_API_URL?";
+			setError(msg);
 		} finally {
-			setLoading(false);
+			setSubmitting(false);
 		}
 	};
 
@@ -119,7 +118,7 @@ function AuthPage() {
 				<CardHeader>
 					<div className="mb-2 flex items-center gap-2">
 						<span className="h-2 w-2 rounded-full bg-[linear-gradient(90deg,#56c6be,#7ed3bf)]" />
-						<span className="text-sm font-semibold text-[var(--sea-ink)]">
+						<span className="text-sm font-semibold text-(--sea-ink)">
 							InvetFlow
 						</span>
 					</div>
@@ -129,7 +128,7 @@ function AuthPage() {
 					<p className="text-sm text-muted-foreground">
 						{isSignUp
 							? "Enter your information to get started"
-							: "Enter your email below to access your account"}
+							: "Sign in with the email and password for your account"}
 					</p>
 				</CardHeader>
 				<CardContent>
@@ -196,8 +195,8 @@ function AuthPage() {
 							</div>
 						)}
 
-						<Button type="submit" disabled={loading} className="w-full">
-							{loading ? (
+						<Button type="submit" disabled={submitting} className="w-full">
+							{submitting ? (
 								<span className="flex items-center gap-2">
 									<span className="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
 									Please wait

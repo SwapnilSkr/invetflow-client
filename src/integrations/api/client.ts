@@ -1,33 +1,24 @@
-// API Client for Invetflow Backend
-// Handles authentication token exchange and HTTP requests to the Rust backend
+// API client for the Invetflow Rust backend (Bearer JWT, invetflow-server /api/*)
+
+import { getAuthStoreState } from "#/integrations/auth/auth-store";
+import { parseHttpError } from "./errors";
+import { getApiToken } from "./token-storage";
+import type { AuthResponse } from "./types";
+
+export {
+	ApiError,
+	type HttpErrorKind,
+	isApiError,
+	parseHttpError,
+	type ServerErrorJson,
+} from "./errors";
+export { hasValidAccessToken } from "./token-storage";
+export type { AuthResponse, User } from "./types";
+export { fetchCurrentUserFromApi as fetchCurrentUser } from "./user-api";
 
 const API_BASE = import.meta.env.VITE_API_URL || "http://localhost:3001";
 
-export class ApiError extends Error {
-	constructor(
-		public status: number,
-		message: string,
-		public code?: string,
-	) {
-		super(message);
-		this.name = "ApiError";
-	}
-}
-
-// Types
-export interface User {
-	id: string;
-	email: string;
-	name: string | null;
-	email_verified: boolean;
-}
-
-export interface AuthResponse {
-	access_token: string;
-	token_type: string;
-	expires_in: number;
-	user: User;
-}
+// --- Interview and domain DTOs (align with invetflow-server JSON) ---
 
 export interface Interview {
 	id: string;
@@ -131,88 +122,80 @@ export interface InterviewScores {
 	evaluated_at: string;
 }
 
-// Token Management
-const TOKEN_KEY = "invetflow_api_token";
-const TOKEN_EXPIRY_KEY = "invetflow_api_token_expiry";
-
-function getStoredToken(): string | null {
-	return sessionStorage.getItem(TOKEN_KEY);
+export interface LoginRequestBody {
+	email: string;
+	password: string;
 }
 
-function setStoredToken(token: string, expiresIn: number): void {
-	sessionStorage.setItem(TOKEN_KEY, token);
-	sessionStorage.setItem(
-		TOKEN_EXPIRY_KEY,
-		(Date.now() + expiresIn * 1000 - 60000).toString(),
+export interface RegisterRequestBody {
+	email: string;
+	password: string;
+	name?: string;
+}
+
+function applyAuthResponse(data: AuthResponse) {
+	getAuthStoreState().applyTokenResponse(
+		data.access_token,
+		data.expires_in,
+		data.user,
 	);
 }
 
-function clearStoredToken(): void {
-	sessionStorage.removeItem(TOKEN_KEY);
-	sessionStorage.removeItem(TOKEN_EXPIRY_KEY);
-}
-
-function isTokenExpired(): boolean {
-	const expiry = sessionStorage.getItem(TOKEN_EXPIRY_KEY);
-	if (!expiry) return true;
-	return Date.now() >= parseInt(expiry);
-}
-
-// API Client
-let cachedToken: string | null = null;
-
-export async function getApiToken(): Promise<string> {
-	// Check memory cache first
-	if (cachedToken && !isTokenExpired()) {
-		return cachedToken;
-	}
-
-	// Check session storage
-	const storedToken = getStoredToken();
-	if (storedToken && !isTokenExpired()) {
-		cachedToken = storedToken;
-		return storedToken;
-	}
-
-	// Get session from better-auth
-	const { authClient } = await import("#/lib/auth-client");
-	const session = await authClient.getSession();
-
-	if (!session?.data?.session?.id) {
-		throw new ApiError(401, "Not authenticated. Please log in.");
-	}
-
-	// Exchange session for API token
-	const response = await fetch(`${API_BASE}/api/auth/exchange`, {
+export async function loginWithPassword(
+	body: LoginRequestBody,
+): Promise<AuthResponse> {
+	const response = await fetch(`${API_BASE}/api/auth/login`, {
 		method: "POST",
 		headers: { "Content-Type": "application/json" },
-		credentials: "include",
-		body: JSON.stringify({ session_id: session.data.session.id }),
+		body: JSON.stringify(body),
 	});
-
 	if (!response.ok) {
-		const error = await response
-			.json()
-			.catch(() => ({ message: "Failed to get API token" }));
-		throw new ApiError(
-			response.status,
-			error.message || "Failed to get API token",
-		);
+		throw await parseHttpError(response, "Sign in failed");
 	}
-
 	const data: AuthResponse = await response.json();
+	applyAuthResponse(data);
+	return data;
+}
 
-	// Cache token
-	setStoredToken(data.access_token, data.expires_in);
-	cachedToken = data.access_token;
+export async function registerWithPassword(
+	body: RegisterRequestBody,
+): Promise<AuthResponse> {
+	const response = await fetch(`${API_BASE}/api/auth/register`, {
+		method: "POST",
+		headers: { "Content-Type": "application/json" },
+		body: JSON.stringify(body),
+	});
+	if (!response.ok) {
+		throw await parseHttpError(response, "Registration failed");
+	}
+	const data: AuthResponse = await response.json();
+	applyAuthResponse(data);
+	return data;
+}
 
-	return data.access_token;
+export async function apiClientPublic<T>(
+	endpoint: string,
+	options: RequestInit = {},
+): Promise<T> {
+	const response = await fetch(`${API_BASE}${endpoint}`, {
+		...options,
+		headers: {
+			"Content-Type": "application/json",
+			...options.headers,
+		},
+	});
+	if (!response.ok) {
+		throw await parseHttpError(response, "Request failed");
+	}
+	if (response.status === 204) {
+		return null as T;
+	}
+	return response.json();
 }
 
 export async function apiClient<T>(
 	endpoint: string,
 	options: RequestInit = {},
-	_retry = false,
 ): Promise<T> {
 	const token = await getApiToken();
 
@@ -225,22 +208,12 @@ export async function apiClient<T>(
 		},
 	});
 
-	if (response.status === 401 && !_retry) {
-		// Token expired, clear and retry once
-		clearStoredToken();
-		cachedToken = null;
-		return apiClient<T>(endpoint, options, true);
+	if (response.status === 401) {
+		getAuthStoreState().signOut();
 	}
 
 	if (!response.ok) {
-		const error = await response
-			.json()
-			.catch(() => ({ message: "Request failed" }));
-		throw new ApiError(
-			response.status,
-			error.error || error.message || "Request failed",
-			error.code,
-		);
+		throw await parseHttpError(response, "Request failed");
 	}
 
 	if (response.status === 204) {
@@ -250,49 +223,18 @@ export async function apiClient<T>(
 	return response.json();
 }
 
-// Demo login (for testing without better-auth)
-export async function demoLogin(
-	email: string,
-	name?: string,
-	role?: string,
-): Promise<AuthResponse> {
-	const response = await fetch(`${API_BASE}/api/auth/demo-login`, {
-		method: "POST",
-		headers: { "Content-Type": "application/json" },
-		body: JSON.stringify({ email, name, role }),
-	});
-
-	if (!response.ok) {
-		const error = await response
-			.json()
-			.catch(() => ({ message: "Demo login failed" }));
-		throw new ApiError(response.status, error.message || "Demo login failed");
-	}
-
-	const data: AuthResponse = await response.json();
-	setStoredToken(data.access_token, data.expires_in);
-	cachedToken = data.access_token;
-
-	return data;
+/** Clears local session and zustand (JWT has no server revoke on invetflow-server). */
+export function logout() {
+	getAuthStoreState().signOut();
 }
 
-// Logout - clears both API token and better-auth session
-export async function logout(): Promise<void> {
-	clearStoredToken();
-	cachedToken = null;
-	try {
-		const { authClient } = await import("#/lib/auth-client");
-		await authClient.signOut();
-	} catch {
-		// Ignore errors during sign out
-	}
-}
-
-// Health check
 export async function healthCheck(): Promise<{
 	status: string;
 	version: string;
 }> {
 	const response = await fetch(`${API_BASE}/health`);
+	if (!response.ok) {
+		throw await parseHttpError(response, "Health check failed");
+	}
 	return response.json();
 }

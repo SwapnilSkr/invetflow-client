@@ -1,5 +1,5 @@
 import { AlertTriangle, Bot, Clock, User } from "lucide-react";
-import React from "react";
+import { useLayoutEffect, useRef } from "react";
 import { cn } from "#/lib/utils";
 
 interface AIInterviewMessage {
@@ -23,13 +23,16 @@ export function AIInterviewTranscript({
 	messages,
 	className,
 }: AIInterviewTranscriptProps) {
-	const scrollRef = React.useRef<HTMLDivElement>(null);
+	const scrollRef = useRef<HTMLDivElement>(null);
 
-	React.useEffect(() => {
-		if (scrollRef.current) {
-			scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
+	// Re-run when transcript length/content identity changes; ref alone does not express this to static analysis.
+	// biome-ignore lint/correctness/useExhaustiveDependencies: scroll container after `messages` updates
+	useLayoutEffect(() => {
+		const el = scrollRef.current;
+		if (el) {
+			el.scrollTop = el.scrollHeight;
 		}
-	});
+	}, [messages]);
 
 	return (
 		<div
@@ -74,7 +77,7 @@ function MessageBubble({ message }: { message: AIInterviewMessage }) {
 		<div className={cn("flex gap-3", isAI ? "flex-row" : "flex-row-reverse")}>
 			<div
 				className={cn(
-					"flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center",
+					"shrink-0 w-8 h-8 rounded-full flex items-center justify-center",
 					isAI
 						? "bg-blue-100 text-blue-600 dark:bg-blue-900 dark:text-blue-400"
 						: "bg-emerald-100 text-emerald-600 dark:bg-emerald-900 dark:text-emerald-400",

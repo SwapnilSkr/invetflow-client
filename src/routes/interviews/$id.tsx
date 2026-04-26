@@ -21,9 +21,11 @@ import {
 import { Separator } from "#/components/ui/separator";
 import { Skeleton } from "#/components/ui/skeleton";
 import { interviewQueries, useJoinInterview } from "#/integrations/api/queries";
+import { requireSession } from "#/lib/require-session";
 import { getStatusColor } from "#/lib/utils";
 
 export const Route = createFileRoute("/interviews/$id")({
+	beforeLoad: requireSession,
 	component: InterviewDetailPage,
 });
 

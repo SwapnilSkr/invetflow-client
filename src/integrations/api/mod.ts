@@ -1,4 +1,9 @@
-// API Integration Module
-export * from "./client";
-export { type AuthUser, useAuth, useDemoLogin, useLogout } from "./hooks";
+export type {
+	ApiError,
+	HttpErrorKind,
+	ServerErrorJson,
+} from "./errors";
+export { isApiError, parseHttpError } from "./errors";
+export { useAuth, useLogout } from "./hooks";
 export * from "./queries";
+export type { User } from "./types";

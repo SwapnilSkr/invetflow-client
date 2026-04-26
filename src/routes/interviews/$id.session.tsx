@@ -11,6 +11,7 @@ import { InterviewStatusBar } from "#/components/candidate/InterviewStatusBar";
 import { InterviewControls } from "#/components/candidate/InterviewControls";
 import { AIInterviewTranscript } from "#/components/candidate/AIInterviewTranscript";
 import { TechCheck } from "#/components/candidate/TechCheck";
+import { requireSession } from "#/lib/require-session";
 
 interface SessionSearch {
 	sessionId: string;
@@ -19,6 +20,7 @@ interface SessionSearch {
 }
 
 export const Route = createFileRoute("/interviews/$id/session")({
+	beforeLoad: requireSession,
 	validateSearch: (search: Record<string, unknown>): SessionSearch => ({
 		sessionId: search.sessionId as string,
 		token: search.token as string,

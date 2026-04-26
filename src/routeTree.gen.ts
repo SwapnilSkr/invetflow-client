@@ -17,7 +17,6 @@ import { Route as DashboardIndexRouteImport } from './routes/dashboard/index'
 import { Route as InterviewsIdRouteImport } from './routes/interviews/$id'
 import { Route as InterviewsIdSessionRouteImport } from './routes/interviews/$id.session'
 import { Route as InterviewJoinTokenRouteImport } from './routes/interview/join.$token'
-import { Route as ApiAuthSplatRouteImport } from './routes/api/auth/$'
 
 const AuthRoute = AuthRouteImport.update({
   id: '/auth',
@@ -59,11 +58,6 @@ const InterviewJoinTokenRoute = InterviewJoinTokenRouteImport.update({
   path: '/interview/join/$token',
   getParentRoute: () => rootRouteImport,
 } as any)
-const ApiAuthSplatRoute = ApiAuthSplatRouteImport.update({
-  id: '/api/auth/$',
-  path: '/api/auth/$',
-  getParentRoute: () => rootRouteImport,
-} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -72,7 +66,6 @@ export interface FileRoutesByFullPath {
   '/interviews/$id': typeof InterviewsIdRouteWithChildren
   '/dashboard/': typeof DashboardIndexRoute
   '/interviews/': typeof InterviewsIndexRoute
-  '/api/auth/$': typeof ApiAuthSplatRoute
   '/interview/join/$token': typeof InterviewJoinTokenRoute
   '/interviews/$id/session': typeof InterviewsIdSessionRoute
 }
@@ -83,7 +76,6 @@ export interface FileRoutesByTo {
   '/interviews/$id': typeof InterviewsIdRouteWithChildren
   '/dashboard': typeof DashboardIndexRoute
   '/interviews': typeof InterviewsIndexRoute
-  '/api/auth/$': typeof ApiAuthSplatRoute
   '/interview/join/$token': typeof InterviewJoinTokenRoute
   '/interviews/$id/session': typeof InterviewsIdSessionRoute
 }
@@ -95,7 +87,6 @@ export interface FileRoutesById {
   '/interviews/$id': typeof InterviewsIdRouteWithChildren
   '/dashboard/': typeof DashboardIndexRoute
   '/interviews/': typeof InterviewsIndexRoute
-  '/api/auth/$': typeof ApiAuthSplatRoute
   '/interview/join/$token': typeof InterviewJoinTokenRoute
   '/interviews/$id/session': typeof InterviewsIdSessionRoute
 }
@@ -108,7 +99,6 @@ export interface FileRouteTypes {
     | '/interviews/$id'
     | '/dashboard/'
     | '/interviews/'
-    | '/api/auth/$'
     | '/interview/join/$token'
     | '/interviews/$id/session'
   fileRoutesByTo: FileRoutesByTo
@@ -119,7 +109,6 @@ export interface FileRouteTypes {
     | '/interviews/$id'
     | '/dashboard'
     | '/interviews'
-    | '/api/auth/$'
     | '/interview/join/$token'
     | '/interviews/$id/session'
   id:
@@ -130,7 +119,6 @@ export interface FileRouteTypes {
     | '/interviews/$id'
     | '/dashboard/'
     | '/interviews/'
-    | '/api/auth/$'
     | '/interview/join/$token'
     | '/interviews/$id/session'
   fileRoutesById: FileRoutesById
@@ -142,7 +130,6 @@ export interface RootRouteChildren {
   InterviewsIdRoute: typeof InterviewsIdRouteWithChildren
   DashboardIndexRoute: typeof DashboardIndexRoute
   InterviewsIndexRoute: typeof InterviewsIndexRoute
-  ApiAuthSplatRoute: typeof ApiAuthSplatRoute
   InterviewJoinTokenRoute: typeof InterviewJoinTokenRoute
 }
 
@@ -204,13 +191,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof InterviewJoinTokenRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/api/auth/$': {
-      id: '/api/auth/$'
-      path: '/api/auth/$'
-      fullPath: '/api/auth/$'
-      preLoaderRoute: typeof ApiAuthSplatRouteImport
-      parentRoute: typeof rootRouteImport
-    }
   }
 }
 
@@ -233,7 +213,6 @@ const rootRouteChildren: RootRouteChildren = {
   InterviewsIdRoute: InterviewsIdRouteWithChildren,
   DashboardIndexRoute: DashboardIndexRoute,
   InterviewsIndexRoute: InterviewsIndexRoute,
-  ApiAuthSplatRoute: ApiAuthSplatRoute,
   InterviewJoinTokenRoute: InterviewJoinTokenRoute,
 }
 export const routeTree = rootRouteImport

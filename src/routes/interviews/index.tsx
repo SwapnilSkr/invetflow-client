@@ -20,9 +20,11 @@ import {
 	useCreateInterview,
 	useDeleteInterview,
 } from "#/integrations/api/queries";
+import { requireSession } from "#/lib/require-session";
 import { cn, getStatusColor } from "#/lib/utils";
 
 export const Route = createFileRoute("/interviews/")({
+	beforeLoad: requireSession,
 	component: InterviewsPage,
 });
 

@@ -23,9 +23,11 @@ import {
 import { Skeleton } from "#/components/ui/skeleton";
 import type { Interview } from "#/integrations/api/client";
 import { interviewQueries } from "#/integrations/api/queries";
+import { requireSession } from "#/lib/require-session";
 import { cn } from "#/lib/utils";
 
 export const Route = createFileRoute("/dashboard/")({
+	beforeLoad: requireSession,
 	component: RecruiterDashboard,
 });
 
