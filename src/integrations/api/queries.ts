@@ -10,6 +10,7 @@ import {
 	type CreateInterviewRequest,
 	type Interview,
 	type InterviewScores,
+	type InterviewSessionListResponse,
 	type JoinInterviewResponse,
 	type Session,
 	type TranscriptEntry,
@@ -25,6 +26,7 @@ export const interviewKeys = {
 	details: () => [...interviewKeys.all, "detail"] as const,
 	detail: (id: string) => [...interviewKeys.details(), id] as const,
 	byToken: (token: string) => [...interviewKeys.all, "token", token] as const,
+	sessions: (id: string) => [...interviewKeys.all, "sessions", id] as const,
 };
 
 // Session Query Keys
@@ -64,6 +66,15 @@ export const interviewQueries = {
 			queryKey: interviewKeys.byToken(token),
 			queryFn: () =>
 				apiClientPublic<Interview>(`/api/interviews/token/${token}`),
+		}),
+
+	sessions: (id: string) =>
+		queryOptions({
+			queryKey: interviewKeys.sessions(id),
+			queryFn: () =>
+				apiClient<InterviewSessionListResponse>(
+					`/api/interviews/${id}/sessions`,
+				),
 		}),
 };
 
@@ -119,6 +130,7 @@ export function useUpdateInterview() {
 			}),
 		onSuccess: (_, { id }) => {
 			queryClient.invalidateQueries({ queryKey: interviewKeys.detail(id) });
+			queryClient.invalidateQueries({ queryKey: interviewKeys.sessions(id) });
 			queryClient.invalidateQueries({ queryKey: interviewKeys.lists() });
 		},
 	});
@@ -168,11 +180,18 @@ export function useScheduleInterview() {
 }
 
 export function useJoinInterview() {
+	const queryClient = useQueryClient();
+
 	return useMutation({
 		mutationFn: (id: string) =>
 			apiClient<JoinInterviewResponse>(`/api/interviews/${id}/join`, {
 				method: "POST",
 			}),
+		onSuccess: (res) => {
+			queryClient.invalidateQueries({
+				queryKey: interviewKeys.sessions(res.interview_id),
+			});
+		},
 	});
 }
 
@@ -183,9 +202,12 @@ export function useEndSession() {
 	return useMutation({
 		mutationFn: (id: string) =>
 			apiClient<Session>(`/api/sessions/${id}/end`, { method: "POST" }),
-		onSuccess: (_, id) => {
+		onSuccess: (session, id) => {
 			queryClient.invalidateQueries({ queryKey: sessionKeys.detail(id) });
 			queryClient.invalidateQueries({ queryKey: sessionKeys.scores(id) });
+			queryClient.invalidateQueries({
+				queryKey: interviewKeys.sessions(session.interview_id),
+			});
 		},
 	});
 }

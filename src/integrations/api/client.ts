@@ -77,6 +77,12 @@ export interface UpdateInterviewRequest {
 	job_description?: string;
 	duration_minutes?: number;
 	is_public?: boolean;
+	/** Close the role in the app when you are done hiring. Ending a call only ends that answer session, not the job. */
+	status?: "Completed" | "Cancelled";
+}
+
+export interface InterviewSessionListResponse {
+	sessions: Session[];
 }
 
 export interface AssignCandidateRequest {
