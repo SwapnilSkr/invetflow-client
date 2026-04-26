@@ -6,24 +6,30 @@ import { Button } from "#/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "#/components/ui/card";
 import { Separator } from "#/components/ui/separator";
 import { Skeleton } from "#/components/ui/skeleton";
+import { ApiError } from "#/integrations/api/errors";
+import { useAuth } from "#/integrations/api/hooks";
 import { interviewQueries, useJoinInterview } from "#/integrations/api/queries";
 import { requireSessionWithReturnTo } from "#/lib/require-role";
 
 export const Route = createFileRoute("/interview/join/$token")({
-	beforeLoad: ({ location }) => {
-		requireSessionWithReturnTo(location);
+	beforeLoad: async ({ location }) => {
+		await requireSessionWithReturnTo(location);
 	},
 	component: JoinByTokenPage,
 });
 
 function JoinByTokenPage() {
 	const { token } = Route.useParams();
+	const { user } = useAuth();
 	const navigate = useNavigate();
 	const {
 		data: interview,
 		isLoading,
 		error,
-	} = useQuery(interviewQueries.byToken(token));
+	} = useQuery({
+		...interviewQueries.byToken(token),
+		enabled: Boolean(token),
+	});
 	const joinInterview = useJoinInterview();
 	const [joining, setJoining] = useState(false);
 	const [joinError, setJoinError] = useState<string | null>(null);
@@ -44,9 +50,13 @@ function JoinByTokenPage() {
 				},
 			});
 		} catch (err) {
-			setJoinError(
-				err instanceof Error ? err.message : "Failed to join interview",
-			);
+			const msg =
+				err instanceof ApiError
+					? err.message
+					: err instanceof Error
+						? err.message
+						: "Failed to join interview";
+			setJoinError(msg);
 		} finally {
 			setJoining(false);
 		}
@@ -87,8 +97,11 @@ function JoinByTokenPage() {
 		);
 	}
 
+	const isOwner = Boolean(user?.id && user.id === interview.recruiter_id);
 	const isJoinable =
-		interview.status === "Scheduled" || interview.status === "Active";
+		interview.status === "Scheduled" ||
+		interview.status === "Active" ||
+		(interview.status === "Draft" && isOwner && user?.role === "Recruiter");
 
 	return (
 		<main className="page-wrap flex justify-center px-4 py-16">
