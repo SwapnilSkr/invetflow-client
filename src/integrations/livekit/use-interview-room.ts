@@ -129,6 +129,7 @@ export function useInterviewRoom(): InterviewRoomState & InterviewRoomActions {
 						echoCancellation: true,
 						noiseSuppression: true,
 						autoGainControl: true,
+						voiceIsolation: true,
 					},
 				});
 
