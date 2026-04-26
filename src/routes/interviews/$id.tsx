@@ -1,11 +1,18 @@
 import { useQuery } from "@tanstack/react-query";
-import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import {
+	createFileRoute,
+	Link,
+	Outlet,
+	useNavigate,
+	useRouterState,
+} from "@tanstack/react-router";
 import {
 	ArrowLeft,
 	Calendar,
 	Clock,
 	Copy,
 	Globe2,
+	History,
 	Link as LinkIcon,
 	Play,
 	UserPlus,
@@ -33,8 +40,23 @@ import { getStatusColor } from "#/lib/utils";
 
 export const Route = createFileRoute("/interviews/$id")({
 	beforeLoad: requireSession,
-	component: InterviewDetailPage,
+	component: InterviewIdRoute,
 });
+
+/**
+ * `/interviews/$id/session` is a **child** route of this file. Without an
+ * `<Outlet />`, TanStack Router updates the URL but never mounts the session
+ * screen (only the parent component runs).
+ */
+function InterviewIdRoute() {
+	const isSessionChild = useRouterState({
+		select: (s) => s.location.pathname.endsWith("/session"),
+	});
+	if (isSessionChild) {
+		return <Outlet />;
+	}
+	return <InterviewDetailPage />;
+}
 
 function InterviewDetailPage() {
 	const { id } = Route.useParams();
@@ -46,6 +68,14 @@ function InterviewDetailPage() {
 		isLoading,
 		error,
 	} = useQuery(interviewQueries.detail(id));
+	const { data: sessionList } = useQuery({
+		...interviewQueries.sessions(id),
+		enabled: Boolean(
+			user?.role === "Recruiter" &&
+				interview &&
+				user.id === interview.recruiter_id,
+		),
+	});
 	const joinInterview = useJoinInterview();
 	const assignCandidate = useAssignCandidate();
 	const scheduleInterview = useScheduleInterview();
@@ -125,13 +155,18 @@ function InterviewDetailPage() {
 
 	const isOwner = user?.id === interview.recruiter_id;
 
-	const joinReady =
+	const isScheduledOrActive =
 		interview.status === "Scheduled" || interview.status === "Active";
-	/** Recruiters can only enter the room for testing when the job is “open to any signed-in user”. */
+	/** Owner HR can test from Draft without publishing; candidates when scheduled+ */
 	const showJoinButton =
-		joinReady &&
-		(user?.role === "Candidate" ||
-			(user?.role === "Recruiter" && interview.is_public));
+		(user?.role === "Candidate" && isScheduledOrActive) ||
+		(user?.role === "Recruiter" &&
+			isOwner &&
+			(interview.status === "Draft" || isScheduledOrActive)) ||
+		(user?.role === "Recruiter" &&
+			!isOwner &&
+			interview.is_public &&
+			isScheduledOrActive);
 
 	return (
 		<div className="container mx-auto max-w-5xl px-4 py-8">
@@ -171,7 +206,18 @@ function InterviewDetailPage() {
 				</Alert>
 			) : null}
 
-			{!isRecruiter && !joinReady && interview.status === "Draft" ? (
+			{!isRecruiter && isScheduledOrActive ? (
+				<Alert className="mb-6">
+					<AlertTitle>More than one visit is OK</AlertTitle>
+					<AlertDescription>
+						Each time you join, a new <strong>answer session</strong> is created.
+						Finishing a session does not close the job on its own—the hiring team
+						ends the role when they are done.
+					</AlertDescription>
+				</Alert>
+			) : null}
+
+			{!isRecruiter && !isScheduledOrActive && interview.status === "Draft" ? (
 				<Alert className="mb-6">
 					<AlertTitle>Not ready yet</AlertTitle>
 					<AlertDescription>
@@ -264,6 +310,103 @@ function InterviewDetailPage() {
 							</div>
 						</CardContent>
 					</Card>
+
+					{isRecruiter && isOwner ? (
+						<Card>
+							<CardHeader>
+								<CardTitle className="flex items-center gap-2 text-base">
+									<History className="h-4 w-4" />
+									Answer sessions
+								</CardTitle>
+							</CardHeader>
+							<CardContent>
+								<p className="mb-3 text-sm text-muted-foreground">
+									Each candidate join starts a new session. Ending a call only
+									finishes that session—candidates can return while the job is
+									<strong> scheduled or active</strong> (until you mark the role
+									complete or cancelled below).
+								</p>
+								{sessionList?.sessions && sessionList.sessions.length > 0 ? (
+									<ul className="max-h-48 space-y-2 overflow-y-auto text-sm">
+										{sessionList.sessions.map((s) => (
+											<li
+												key={s.id}
+												className="flex flex-col gap-1 border-b border-border py-2 last:border-0 sm:flex-row sm:items-center sm:justify-between"
+											>
+												<Badge variant="secondary">{s.status}</Badge>
+												<span className="text-xs text-muted-foreground tabular-nums">
+													{new Date(s.started_at).toLocaleString()} ·{" "}
+													{s.duration_seconds}s
+												</span>
+											</li>
+										))}
+									</ul>
+								) : (
+									<p className="text-sm text-muted-foreground">
+										No answer sessions recorded yet.
+									</p>
+								)}
+							</CardContent>
+						</Card>
+					) : null}
+
+					{isRecruiter &&
+					isOwner &&
+					interview.status !== "Completed" &&
+					interview.status !== "Cancelled" ? (
+						<Card>
+							<CardHeader>
+								<CardTitle className="text-base">Hiring status</CardTitle>
+							</CardHeader>
+							<CardContent className="space-y-2">
+								<p className="text-sm text-muted-foreground">
+									When you are done with hiring for this posting, mark it
+									complete (filled) or cancelled. That stops new answer sessions
+									for this job.
+								</p>
+								<Button
+									variant="secondary"
+									className="w-full"
+									disabled={updateInterview.isPending}
+									onClick={() => {
+										if (
+											!window.confirm(
+												"Mark this job as filled? New answer sessions can no longer be started.",
+											)
+										) {
+											return;
+										}
+										void updateInterview.mutateAsync({
+											id,
+											data: { status: "Completed" },
+										});
+									}}
+								>
+									Mark position filled
+								</Button>
+								<Button
+									variant="outline"
+									className="w-full"
+									disabled={updateInterview.isPending}
+									onClick={() => {
+										if (
+											!window.confirm(
+												"Cancel this job posting? New answer sessions can no longer be started.",
+											)
+										) {
+											return;
+										}
+										void updateInterview.mutateAsync({
+											id,
+											data: { status: "Cancelled" },
+										});
+									}}
+								>
+									Cancel job posting
+								</Button>
+							</CardContent>
+						</Card>
+					) : null}
 
 					{isRecruiter &&
 					isOwner &&
