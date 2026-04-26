@@ -1,14 +1,12 @@
 import {
 	ConnectionQuality,
 	ConnectionState,
-	LocalAudioTrack,
 	type LocalTrack,
 	type LocalTrackPublication,
 	type RemoteTrack,
 	Room,
 	RoomEvent,
 	Track,
-	type TranscriptionSegment,
 } from "livekit-client";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { isAudioOutputSelectionSupported } from "#/lib/interview-audio-prefs";
@@ -25,29 +23,6 @@ function mapConnectionQuality(q: ConnectionQuality): "good" | "fair" | "poor" {
 			return "fair";
 		default:
 			return "poor";
-	}
-}
-
-async function enableEnhancedNoiseCancellation(track: LocalTrack) {
-	if (!(track instanceof LocalAudioTrack)) return;
-	if (track.getProcessor()?.name === "livekit-noise-filter") return;
-
-	try {
-		const { KrispNoiseFilter, isKrispNoiseFilterSupported } = await import(
-			"@livekit/krisp-noise-filter"
-		);
-		if (!isKrispNoiseFilterSupported()) {
-			console.info(
-				"LiveKit Krisp noise filter is not supported in this browser",
-			);
-			return;
-		}
-
-		const processor = KrispNoiseFilter();
-		await track.setProcessor(processor);
-		await processor.setEnabled(true);
-	} catch (e) {
-		console.warn("Could not enable LiveKit Krisp noise filter", e);
 	}
 }
 
@@ -222,11 +197,16 @@ export function useInterviewRoom(): InterviewRoomState & InterviewRoomActions {
 					videoCaptureDefaults: {
 						resolution: { width: 1280, height: 720, frameRate: 30 },
 					},
+					// OpenAI's realtime STT applies its own model-tuned noise reduction.
+					// Stacking browser noiseSuppression + voiceIsolation + Krisp on top of it
+					// degrades the signal and produces dropped or hallucinated words. Keep
+					// only echoCancellation (prevents speaker→mic feedback loops) and
+					// autoGainControl (normalises volume across mic distances).
 					audioCaptureDefaults: {
 						echoCancellation: true,
-						noiseSuppression: true,
+						noiseSuppression: false,
 						autoGainControl: true,
-						voiceIsolation: true,
+						voiceIsolation: false,
 					},
 				});
 
@@ -259,39 +239,10 @@ export function useInterviewRoom(): InterviewRoomState & InterviewRoomActions {
 					},
 				);
 
-				lkRoom.on(
-					RoomEvent.TranscriptionReceived,
-					(segments: TranscriptionSegment[], participant) => {
-						const speaker = participant?.isLocal ? "candidate" : "ai";
-						setLiveTranscriptMessages((current) => {
-							const byId = new Map(
-								current.map((message) => [message.id, message]),
-							);
-
-							for (const segment of segments) {
-								const content = segment.text.trim();
-								if (!content) continue;
-
-								byId.set(segment.id, {
-									id: segment.id,
-									speaker,
-									content,
-									timestamp:
-										segment.firstReceivedTime > 0
-											? segment.firstReceivedTime
-											: Date.now(),
-									isFinal: segment.final,
-									language: segment.language || undefined,
-								});
-							}
-
-							return Array.from(byId.values()).sort(
-								(a, b) => a.timestamp - b.timestamp,
-							);
-						});
-					},
-				);
-
+				// LiveKit can deliver the same utterance through both `TranscriptionReceived`
+				// and the `lk.transcription` text stream, with different segment IDs, which
+				// produced duplicate lines. Rely on the text stream only (see TOPIC_TRANSCRIPTION
+				// in livekit agents).
 				lkRoom.registerTextStreamHandler(
 					TRANSCRIPTION_TOPIC,
 					async (reader, participantInfo) => {
@@ -376,7 +327,6 @@ export function useInterviewRoom(): InterviewRoomState & InterviewRoomActions {
 					(pub: LocalTrackPublication) => {
 						if (pub.track) {
 							onLocalTrack(pub.track);
-							void enableEnhancedNoiseCancellation(pub.track);
 						}
 					},
 				);
