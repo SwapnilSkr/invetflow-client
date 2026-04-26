@@ -143,7 +143,7 @@ function App() {
 
 			{/* Highlights */}
 			<section
-				className="island-shell rise-in mt-8 rounded-[2rem] px-6 py-10 sm:px-10"
+				className="island-shell rise-in mt-8 rounded-4xl px-6 py-10 sm:px-10"
 				style={{ animationDelay: "450ms" }}
 			>
 				<p className="island-kicker mb-2">Beyond basic interviews</p>
@@ -153,7 +153,7 @@ function App() {
 				<div className="grid gap-6 sm:grid-cols-3">
 					{HIGHLIGHTS.map(({ icon: Icon, title, description }) => (
 						<div key={title} className="flex gap-3">
-							<div className="flex-shrink-0 rounded-lg bg-[rgba(79,184,178,0.1)] p-2 text-(--lagoon-deep)">
+							<div className="shrink-0 rounded-lg bg-[rgba(79,184,178,0.1)] p-2 text-(--lagoon-deep)">
 								<Icon className="h-5 w-5" />
 							</div>
 							<div>

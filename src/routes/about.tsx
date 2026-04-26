@@ -111,9 +111,9 @@ function About() {
 					].map((milestone) => (
 						<div
 							key={milestone.version}
-							className="flex gap-4 rounded-lg border border-[var(--line)] bg-[var(--surface)] p-4"
+							className="flex gap-4 rounded-lg border border-(--line) bg-(--surface) p-4"
 						>
-							<div className="flex-shrink-0 rounded-lg bg-[rgba(79,184,178,0.14)] px-3 py-1.5 text-sm font-bold text-[var(--lagoon-deep)]">
+							<div className="shrink-0 rounded-lg bg-[rgba(79,184,178,0.14)] px-3 py-1.5 text-sm font-bold text-[var(--lagoon-deep)]">
 								{milestone.version}
 							</div>
 							<div>
