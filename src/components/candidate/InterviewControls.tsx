@@ -32,6 +32,7 @@ interface InterviewControlsProps {
 	onToggleScreenShare: () => void;
 	onEndCall: () => void;
 	disabled?: boolean;
+	endDisabled?: boolean;
 	audioInputDevices?: MediaDeviceInfo[];
 	audioOutputDevices?: MediaDeviceInfo[];
 	activeAudioInputDeviceId?: string;
@@ -56,6 +57,7 @@ export function InterviewControls({
 	onToggleScreenShare,
 	onEndCall,
 	disabled = false,
+	endDisabled = disabled,
 	audioInputDevices = [],
 	audioOutputDevices = [],
 	activeAudioInputDeviceId,
@@ -234,7 +236,7 @@ export function InterviewControls({
 				variant="destructive"
 				size="icon"
 				onClick={onEndCall}
-				disabled={disabled}
+				disabled={endDisabled}
 				className="h-12 w-12 rounded-full bg-red-600 hover:bg-red-700"
 				aria-label="End interview"
 			>

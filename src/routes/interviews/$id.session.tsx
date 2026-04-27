@@ -16,27 +16,37 @@ import { InterviewStatusBar } from "#/components/candidate/InterviewStatusBar";
 import { TechCheck } from "#/components/candidate/TechCheck";
 import { Button } from "#/components/ui/button";
 import { Card, CardContent } from "#/components/ui/card";
-import { sessionQueries, useEndSession } from "#/integrations/api/queries";
+import {
+	sessionQueries,
+	useEndSession,
+	useJoinInterview,
+} from "#/integrations/api/queries";
 import { useInterviewRoom } from "#/integrations/livekit/use-interview-room";
 import { readStoredInterviewAudioDevices } from "#/lib/interview-audio-prefs";
 import { requireSession } from "#/lib/require-session";
 
 interface SessionSearch {
 	sessionId: string;
-	token: string;
-	url: string;
+	token?: string;
+	url?: string;
 	/** Set to `"1"` after tech check so refresh / Strict remounts can resume the same step. */
 	startRoom?: string;
 }
 
 function parseSessionSearch(search: Record<string, unknown>): SessionSearch {
+	const token = typeof search.token === "string" ? search.token.trim() : "";
+	const url = typeof search.url === "string" ? search.url.trim() : "";
 	return {
 		sessionId: String(search.sessionId ?? ""),
-		token: String(search.token ?? ""),
-		url: String(search.url ?? ""),
+		token: token || undefined,
+		url: url || undefined,
 		startRoom:
 			typeof search.startRoom === "string" ? search.startRoom : undefined,
 	};
+}
+
+function isTerminalSessionStatus(status?: string) {
+	return status === "Completed" || status === "Cancelled";
 }
 
 export const Route = createFileRoute("/interviews/$id/session")({
@@ -52,13 +62,16 @@ function InterviewSessionPage() {
 	const navigate = useNavigate();
 
 	const pastTechCheck = startRoom === "1";
-	const [phase, setPhase] = useState<"tech-check" | "interview" | "completed">(
-		() => (pastTechCheck ? "interview" : "tech-check"),
+	const [phase, setPhase] = useState<"tech-check" | "interview">(() =>
+		pastTechCheck ? "interview" : "tech-check",
 	);
 	const [shouldConnectToLiveKit, setShouldConnectToLiveKit] = useState(
 		() => pastTechCheck,
 	);
 	const [duration, setDuration] = useState(0);
+	const [sessionActionError, setSessionActionError] = useState<string | null>(
+		null,
+	);
 	const durationRef = useRef<ReturnType<typeof setInterval> | null>(null);
 	const videoContainerRef = useRef<HTMLDivElement>(null);
 
@@ -69,23 +82,26 @@ function InterviewSessionPage() {
 		disconnect: disconnectFromRoom,
 	} = room;
 	const endSession = useEndSession();
+	const joinInterview = useJoinInterview();
 
-	const { data: session } = useQuery({
+	const { data: session, isLoading: isSessionLoading } = useQuery({
 		...sessionQueries.detail(sessionId),
 		enabled: !!sessionId,
 		refetchInterval: phase === "interview" ? 10000 : false,
 	});
+	const isTerminalSession = isTerminalSessionStatus(session?.status);
+	const isLiveInterview = phase === "interview" && !isTerminalSession;
 
 	const { data: transcriptData } = useQuery({
 		...sessionQueries.transcript(sessionId),
-		enabled: !!sessionId && phase === "interview",
-		refetchInterval: phase === "interview" ? 1500 : false,
+		enabled: !!sessionId && isLiveInterview,
+		refetchInterval: isLiveInterview ? 1500 : false,
 	});
 
 	// After the interview layout commits, connect so the video ref exists. useLayoutEffect
 	// + URL `startRoom=1` avoid losing this step to React Strict Mode remounts.
 	useLayoutEffect(() => {
-		if (!shouldConnectToLiveKit || phase !== "interview") return;
+		if (!shouldConnectToLiveKit || !isLiveInterview) return;
 		if (!sessionId || !token || !url) return;
 		setShouldConnectToLiveKit(false);
 
@@ -106,7 +122,19 @@ function InterviewSessionPage() {
 			}
 		};
 		run();
-	}, [shouldConnectToLiveKit, phase, url, token, connectToRoom, sessionId]);
+	}, [
+		shouldConnectToLiveKit,
+		isLiveInterview,
+		url,
+		token,
+		connectToRoom,
+		sessionId,
+	]);
+
+	useEffect(() => {
+		if (!isTerminalSession) return;
+		void disconnectFromRoom();
+	}, [disconnectFromRoom, isTerminalSession]);
 
 	// Duration timer
 	useEffect(() => {
@@ -124,6 +152,7 @@ function InterviewSessionPage() {
 	}, [phase, connectionState]);
 
 	const handleTechCheckComplete = useCallback(() => {
+		if (!token || !url) return;
 		setPhase("interview");
 		setShouldConnectToLiveKit(true);
 		void navigate({
@@ -135,10 +164,47 @@ function InterviewSessionPage() {
 	}, [navigate, id, sessionId, token, url]);
 
 	const handleEndCall = useCallback(async () => {
-		await disconnectFromRoom();
-		await endSession.mutateAsync(sessionId);
-		setPhase("completed");
-	}, [disconnectFromRoom, endSession, sessionId]);
+		if (!sessionId || endSession.isPending) return;
+		setSessionActionError(null);
+		try {
+			const ended = await endSession.mutateAsync(sessionId);
+			await disconnectFromRoom();
+			await navigate({
+				to: "/interviews/$id/session",
+				params: { id },
+				search: { sessionId: ended.id },
+				replace: true,
+			});
+		} catch (err) {
+			setSessionActionError(
+				err instanceof Error ? err.message : "Could not end the interview",
+			);
+		}
+	}, [disconnectFromRoom, endSession, id, navigate, sessionId]);
+
+	const handleReconnect = useCallback(async () => {
+		setSessionActionError(null);
+		try {
+			const result = await joinInterview.mutateAsync(id);
+			setPhase("interview");
+			setShouldConnectToLiveKit(true);
+			await navigate({
+				to: "/interviews/$id/session",
+				params: { id },
+				search: {
+					sessionId: result.session_id,
+					token: result.livekit_token,
+					url: result.livekit_url,
+					startRoom: "1",
+				},
+				replace: true,
+			});
+		} catch (err) {
+			setSessionActionError(
+				err instanceof Error ? err.message : "Could not reconnect to the room",
+			);
+		}
+	}, [id, joinInterview, navigate]);
 
 	const getConnectionStatus = ():
 		| "connecting"
@@ -201,15 +267,15 @@ function InterviewSessionPage() {
 		);
 	}, [room.liveTranscriptMessages, transcriptData?.entries]);
 
-	if (!sessionId || !token || !url) {
+	if (!sessionId) {
 		return (
 			<main className="page-wrap mx-auto max-w-lg px-4 py-16">
 				<Card>
 					<CardContent className="space-y-3 p-8">
 						<h1 className="text-lg font-semibold">Invalid session link</h1>
 						<p className="text-sm text-muted-foreground">
-							This page needs session, token, and room URL. Open Join interview
-							from the interview page again.
+							This page needs a session id. Open Join interview from the
+							interview page again.
 						</p>
 						<Button asChild>
 							<Link to="/interviews/$id" params={{ id }}>
@@ -222,7 +288,57 @@ function InterviewSessionPage() {
 		);
 	}
 
-	if (phase === "tech-check") {
+	if (isSessionLoading) {
+		return (
+			<main className="page-wrap mx-auto max-w-lg px-4 py-16">
+				<Card>
+					<CardContent className="space-y-3 p-8">
+						<h1 className="text-lg font-semibold">Loading session</h1>
+						<p className="text-sm text-muted-foreground">
+							Checking the current interview session status.
+						</p>
+					</CardContent>
+				</Card>
+			</main>
+		);
+	}
+
+	if (!isTerminalSession && (!token || !url)) {
+		return (
+			<main className="page-wrap mx-auto max-w-lg px-4 py-16">
+				<Card>
+					<CardContent className="space-y-4 p-8">
+						<div>
+							<h1 className="text-lg font-semibold">Reconnect required</h1>
+							<p className="mt-2 text-sm text-muted-foreground">
+								This session is still open, but this page does not have a room
+								token. Reconnect to get a fresh LiveKit token for the same
+								active interview session.
+							</p>
+						</div>
+						{sessionActionError ? (
+							<p className="text-sm text-destructive">{sessionActionError}</p>
+						) : null}
+						<div className="flex gap-2">
+							<Button
+								onClick={() => void handleReconnect()}
+								disabled={joinInterview.isPending}
+							>
+								{joinInterview.isPending ? "Reconnecting..." : "Reconnect"}
+							</Button>
+							<Button variant="outline" asChild>
+								<Link to="/interviews/$id" params={{ id }}>
+									Back to interview
+								</Link>
+							</Button>
+						</div>
+					</CardContent>
+				</Card>
+			</main>
+		);
+	}
+
+	if (phase === "tech-check" && !isTerminalSession) {
 		return (
 			<main className="page-wrap mx-auto max-w-2xl px-4 py-8">
 				<TechCheck
@@ -233,7 +349,8 @@ function InterviewSessionPage() {
 		);
 	}
 
-	if (phase === "completed") {
+	if (isTerminalSession) {
+		const completedDuration = session?.duration_seconds ?? duration;
 		return (
 			<main className="page-wrap flex justify-center px-4 py-20">
 				<Card className="w-full max-w-md text-center">
@@ -249,8 +366,14 @@ function InterviewSessionPage() {
 							</p>
 						</div>
 						<p className="text-sm text-muted-foreground">
-							Duration: {Math.floor(duration / 60)}m {duration % 60}s
+							Duration: {Math.floor(completedDuration / 60)}m{" "}
+							{completedDuration % 60}s
 						</p>
+						{session?.video_recording_status ? (
+							<p className="text-xs text-muted-foreground">
+								Recording: {session.video_recording_status}
+							</p>
+						) : null}
 						<Button asChild className="mt-2">
 							<Link to="/interviews">Back to Interviews</Link>
 						</Button>
@@ -269,6 +392,12 @@ function InterviewSessionPage() {
 				networkQuality={room.networkQuality}
 				duration={duration}
 			/>
+
+			{sessionActionError ? (
+				<div className="border-b border-destructive/30 bg-destructive/10 px-4 py-2.5 text-center text-xs leading-relaxed text-destructive">
+					{sessionActionError}
+				</div>
+			) : null}
 
 			{connectionState === ConnectionState.Connected &&
 				room.remoteParticipantCount === 0 && (
@@ -338,6 +467,7 @@ function InterviewSessionPage() {
 				onToggleScreenShare={() => void room.toggleScreenShare()}
 				onEndCall={() => void handleEndCall()}
 				disabled={connectionState !== ConnectionState.Connected}
+				endDisabled={endSession.isPending}
 				audioInputDevices={room.audioInputDevices}
 				audioOutputDevices={room.audioOutputDevices}
 				activeAudioInputDeviceId={room.activeAudioInputDeviceId}

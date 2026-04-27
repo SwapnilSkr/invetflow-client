@@ -182,6 +182,7 @@ export function useInterviewRoom(): InterviewRoomState & InterviewRoomActions {
 				setNetworkQuality("good");
 				setRemoteParticipantCount(0);
 				setLiveTranscriptMessages([]);
+				setConnectionState(ConnectionState.Connecting);
 
 				await roomInstanceRef.current?.disconnect();
 				roomInstanceRef.current = null;
@@ -209,6 +210,7 @@ export function useInterviewRoom(): InterviewRoomState & InterviewRoomActions {
 						voiceIsolation: false,
 					},
 				});
+				roomInstanceRef.current = lkRoom;
 
 				lkRoom.on(
 					RoomEvent.ConnectionStateChanged,
@@ -344,8 +346,6 @@ export function useInterviewRoom(): InterviewRoomState & InterviewRoomActions {
 					peerConnectionTimeout: 20000,
 				});
 
-				roomInstanceRef.current = lkRoom;
-
 				await lkRoom.localParticipant.enableCameraAndMicrophone();
 
 				await refreshMediaDevices();
@@ -373,6 +373,9 @@ export function useInterviewRoom(): InterviewRoomState & InterviewRoomActions {
 			} catch (e) {
 				const msg = e instanceof Error ? e.message : "Failed to connect";
 				setError(msg);
+				await roomInstanceRef.current?.disconnect();
+				roomInstanceRef.current = null;
+				setRoom(null);
 				setConnectionState(ConnectionState.Disconnected);
 				mediaContainerRef.current?.replaceChildren();
 			}

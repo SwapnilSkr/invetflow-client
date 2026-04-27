@@ -210,9 +210,10 @@ function InterviewDetailPage() {
 				<Alert className="mb-6">
 					<AlertTitle>More than one visit is OK</AlertTitle>
 					<AlertDescription>
-						Each time you join, a new <strong>answer session</strong> is created.
-						Finishing a session does not close the job on its own—the hiring team
-						ends the role when they are done.
+						Joining resumes your unfinished <strong>answer session</strong>.
+						After you end it, joining again starts a fresh session. Finishing a
+						session does not close the job on its own—the hiring team ends the
+						role when they are done.
 					</AlertDescription>
 				</Alert>
 			) : null}
@@ -321,8 +322,9 @@ function InterviewDetailPage() {
 							</CardHeader>
 							<CardContent>
 								<p className="mb-3 text-sm text-muted-foreground">
-									Each candidate join starts a new session. Ending a call only
-									finishes that session—candidates can return while the job is
+									Joining resumes an unfinished answer session for that
+									candidate. Ending a call finishes that session; the next join
+									can start a new one while the job is
 									<strong> scheduled or active</strong> (until you mark the role
 									complete or cancelled below).
 								</p>

@@ -108,6 +108,8 @@ export interface Session {
 	started_at: string;
 	ended_at: string | null;
 	duration_seconds: number;
+	video_url: string | null;
+	video_recording_status: string | null;
 }
 
 export interface TranscriptEntry {

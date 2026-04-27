@@ -203,6 +203,7 @@ export function useEndSession() {
 		mutationFn: (id: string) =>
 			apiClient<Session>(`/api/sessions/${id}/end`, { method: "POST" }),
 		onSuccess: (session, id) => {
+			queryClient.setQueryData(sessionKeys.detail(id), session);
 			queryClient.invalidateQueries({ queryKey: sessionKeys.detail(id) });
 			queryClient.invalidateQueries({ queryKey: sessionKeys.scores(id) });
 			queryClient.invalidateQueries({
