@@ -9,6 +9,7 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as OnboardingRouteImport } from './routes/onboarding'
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AboutRouteImport } from './routes/about'
 import { Route as IndexRouteImport } from './routes/index'
@@ -20,6 +21,11 @@ import { Route as InterviewsIdRouteImport } from './routes/interviews/$id'
 import { Route as InterviewsIdSessionRouteImport } from './routes/interviews/$id.session'
 import { Route as InterviewJoinTokenRouteImport } from './routes/interview/join.$token'
 
+const OnboardingRoute = OnboardingRouteImport.update({
+  id: '/onboarding',
+  path: '/onboarding',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AuthRoute = AuthRouteImport.update({
   id: '/auth',
   path: '/auth',
@@ -75,6 +81,7 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/about': typeof AboutRoute
   '/auth': typeof AuthRoute
+  '/onboarding': typeof OnboardingRoute
   '/interviews/$id': typeof InterviewsIdRouteWithChildren
   '/interviews/new': typeof InterviewsNewRoute
   '/candidate/': typeof CandidateIndexRoute
@@ -87,6 +94,7 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/about': typeof AboutRoute
   '/auth': typeof AuthRoute
+  '/onboarding': typeof OnboardingRoute
   '/interviews/$id': typeof InterviewsIdRouteWithChildren
   '/interviews/new': typeof InterviewsNewRoute
   '/candidate': typeof CandidateIndexRoute
@@ -100,6 +108,7 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/about': typeof AboutRoute
   '/auth': typeof AuthRoute
+  '/onboarding': typeof OnboardingRoute
   '/interviews/$id': typeof InterviewsIdRouteWithChildren
   '/interviews/new': typeof InterviewsNewRoute
   '/candidate/': typeof CandidateIndexRoute
@@ -114,6 +123,7 @@ export interface FileRouteTypes {
     | '/'
     | '/about'
     | '/auth'
+    | '/onboarding'
     | '/interviews/$id'
     | '/interviews/new'
     | '/candidate/'
@@ -126,6 +136,7 @@ export interface FileRouteTypes {
     | '/'
     | '/about'
     | '/auth'
+    | '/onboarding'
     | '/interviews/$id'
     | '/interviews/new'
     | '/candidate'
@@ -138,6 +149,7 @@ export interface FileRouteTypes {
     | '/'
     | '/about'
     | '/auth'
+    | '/onboarding'
     | '/interviews/$id'
     | '/interviews/new'
     | '/candidate/'
@@ -151,6 +163,7 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AboutRoute: typeof AboutRoute
   AuthRoute: typeof AuthRoute
+  OnboardingRoute: typeof OnboardingRoute
   InterviewsIdRoute: typeof InterviewsIdRouteWithChildren
   InterviewsNewRoute: typeof InterviewsNewRoute
   CandidateIndexRoute: typeof CandidateIndexRoute
@@ -161,6 +174,13 @@ export interface RootRouteChildren {
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/onboarding': {
+      id: '/onboarding'
+      path: '/onboarding'
+      fullPath: '/onboarding'
+      preLoaderRoute: typeof OnboardingRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/auth': {
       id: '/auth'
       path: '/auth'
@@ -250,6 +270,7 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AboutRoute: AboutRoute,
   AuthRoute: AuthRoute,
+  OnboardingRoute: OnboardingRoute,
   InterviewsIdRoute: InterviewsIdRouteWithChildren,
   InterviewsNewRoute: InterviewsNewRoute,
   CandidateIndexRoute: CandidateIndexRoute,
