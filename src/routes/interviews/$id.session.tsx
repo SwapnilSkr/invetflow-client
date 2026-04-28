@@ -355,8 +355,8 @@ function InterviewSessionPage() {
 			<main className="page-wrap flex justify-center px-4 py-20">
 				<Card className="w-full max-w-md text-center">
 					<CardContent className="space-y-5 py-12">
-						<div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-emerald-50 dark:bg-emerald-900/30">
-							<CheckCircle2 className="h-8 w-8 text-emerald-600 dark:text-emerald-400" />
+						<div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-blue-50 dark:bg-blue-900/30">
+							<CheckCircle2 className="h-8 w-8 text-blue-600 dark:text-blue-400" />
 						</div>
 						<div>
 							<h1 className="text-2xl font-bold">Interview Complete</h1>

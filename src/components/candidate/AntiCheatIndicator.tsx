@@ -49,7 +49,7 @@ export function AntiCheatIndicator({
 						"flex items-center justify-between p-2 rounded-md text-sm",
 						tabSwitchWarning
 							? "bg-red-50 text-red-700 dark:bg-red-950/30 dark:text-red-400"
-							: "bg-emerald-50 text-emerald-700 dark:bg-emerald-950/30 dark:text-emerald-400",
+							: "bg-blue-50 text-blue-700 dark:bg-blue-950/30 dark:text-blue-400",
 					)}
 				>
 					<div className="flex items-center gap-2">
@@ -68,7 +68,7 @@ export function AntiCheatIndicator({
 							"flex items-center justify-between p-2 rounded-md text-sm",
 							plagiarismWarning
 								? "bg-red-50 text-red-700 dark:bg-red-950/30 dark:text-red-400"
-								: "bg-emerald-50 text-emerald-700 dark:bg-emerald-950/30 dark:text-emerald-400",
+								: "bg-blue-50 text-blue-700 dark:bg-blue-950/30 dark:text-blue-400",
 						)}
 					>
 						<div className="flex items-center gap-2">
@@ -87,7 +87,7 @@ export function AntiCheatIndicator({
 						"flex items-center justify-between p-2 rounded-md text-sm",
 						fullscreenWarning
 							? "bg-amber-50 text-amber-700 dark:bg-amber-950/30 dark:text-amber-400"
-							: "bg-emerald-50 text-emerald-700 dark:bg-emerald-950/30 dark:text-emerald-400",
+							: "bg-blue-50 text-blue-700 dark:bg-blue-950/30 dark:text-blue-400",
 					)}
 				>
 					<div className="flex items-center gap-2">

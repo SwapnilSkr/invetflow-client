@@ -18,8 +18,8 @@ const FEATURES = [
 		title: "AI Interviewer",
 		description:
 			"Natural conversational AI that asks dynamic follow-up questions based on candidate responses.",
-		color: "rgba(79,184,178,0.14)",
-		iconColor: "text-[var(--lagoon-deep)]",
+		color: "rgba(37,99,235,0.12)",
+		iconColor: "text-blue-600 dark:text-blue-400",
 	},
 	{
 		icon: Zap,
@@ -76,8 +76,8 @@ function App() {
 		<main className="page-wrap px-4 pb-8 pt-14">
 			{/* Hero */}
 			<section className="island-shell rise-in relative overflow-hidden rounded-4xl px-6 py-12 sm:px-10 sm:py-16">
-				<div className="pointer-events-none absolute -left-20 -top-24 h-56 w-56 rounded-full bg-[radial-gradient(circle,rgba(79,184,178,0.32),transparent_66%)]" />
-				<div className="pointer-events-none absolute -bottom-20 -right-20 h-56 w-56 rounded-full bg-[radial-gradient(circle,rgba(47,106,74,0.18),transparent_66%)]" />
+				<div className="pointer-events-none absolute -left-20 -top-24 h-56 w-56 rounded-full bg-[radial-gradient(circle,rgba(37,99,235,0.2),transparent_66%)]" />
+				<div className="pointer-events-none absolute -bottom-20 -right-20 h-56 w-56 rounded-full bg-[radial-gradient(circle,rgba(15,23,42,0.08),transparent_66%)]" />
 				<p className="island-kicker mb-3">AI-Powered Interview Intelligence</p>
 				<h1 className="display-title mb-5 max-w-3xl text-4xl leading-[1.02] font-bold tracking-tight text-(--sea-ink) sm:text-6xl">
 					InvetFlow
@@ -91,15 +91,15 @@ function App() {
 					{!isLoading && isAuthenticated && user ? (
 						<Link
 							to={isCandidate ? "/candidate" : "/dashboard"}
-							className="inline-flex items-center gap-2 rounded-full border border-[rgba(50,143,151,0.3)] bg-[rgba(79,184,178,0.14)] px-5 py-2.5 text-sm font-semibold text-(--lagoon-deep) no-underline transition hover:-translate-y-0.5 hover:bg-[rgba(79,184,178,0.24)]"
+							className="inline-flex items-center gap-2 rounded-full border border-blue-200 bg-blue-50 px-5 py-2.5 text-sm font-semibold text-blue-700 no-underline transition hover:-translate-y-0.5 hover:bg-blue-100 dark:border-blue-500/30 dark:bg-blue-500/10 dark:text-blue-100 dark:hover:bg-blue-500/20"
 						>
 							<LayoutDashboard className="h-4 w-4" />
 							{isCandidate ? "My interviews" : "Dashboard"}
 						</Link>
 					) : (
 						<Link
-							to="/auth"
-							className="inline-flex items-center gap-2 rounded-full border border-[rgba(50,143,151,0.3)] bg-[rgba(79,184,178,0.14)] px-5 py-2.5 text-sm font-semibold text-(--lagoon-deep) no-underline transition hover:-translate-y-0.5 hover:bg-[rgba(79,184,178,0.24)]"
+							to="/onboarding"
+							className="inline-flex items-center gap-2 rounded-full border border-blue-200 bg-blue-50 px-5 py-2.5 text-sm font-semibold text-blue-700 no-underline transition hover:-translate-y-0.5 hover:bg-blue-100 dark:border-blue-500/30 dark:bg-blue-500/10 dark:text-blue-100 dark:hover:bg-blue-500/20"
 						>
 							Get started
 						</Link>
@@ -107,7 +107,7 @@ function App() {
 					{!isLoading && !isAuthenticated ? (
 						<Link
 							to="/auth"
-							className="inline-flex items-center gap-2 rounded-full border border-[rgba(23,58,64,0.2)] bg-white/50 px-5 py-2.5 text-sm font-semibold text-(--sea-ink) no-underline transition hover:-translate-y-0.5 hover:border-[rgba(23,58,64,0.35)]"
+							className="inline-flex items-center gap-2 rounded-full border border-(--line) bg-white px-5 py-2.5 text-sm font-semibold text-(--sea-ink) no-underline shadow-sm transition hover:-translate-y-0.5 hover:border-slate-300 dark:border-slate-600 dark:bg-slate-900"
 						>
 							Sign in
 						</Link>
@@ -153,7 +153,7 @@ function App() {
 				<div className="grid gap-6 sm:grid-cols-3">
 					{HIGHLIGHTS.map(({ icon: Icon, title, description }) => (
 						<div key={title} className="flex gap-3">
-							<div className="shrink-0 rounded-lg bg-[rgba(79,184,178,0.1)] p-2 text-(--lagoon-deep)">
+							<div className="shrink-0 rounded-lg bg-blue-50 p-2 text-blue-600 dark:bg-blue-500/15 dark:text-blue-300">
 								<Icon className="h-5 w-5" />
 							</div>
 							<div>

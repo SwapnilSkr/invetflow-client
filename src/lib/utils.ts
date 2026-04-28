@@ -30,7 +30,7 @@ export function getStatusColor(status: string): string {
 			return "bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300 border-slate-200 dark:border-slate-700";
 		case "active":
 		case "in_progress":
-			return "bg-emerald-100 text-emerald-700 dark:bg-emerald-900 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800";
+			return "bg-blue-100 text-blue-800 dark:bg-blue-950 dark:text-blue-200 border-blue-200 dark:border-blue-800";
 		case "completed":
 		case "done":
 			return "bg-zinc-100 text-zinc-700 dark:bg-zinc-800 dark:text-zinc-300 border-zinc-200 dark:border-zinc-700";
@@ -46,7 +46,7 @@ export function getStatusColor(status: string): string {
 }
 
 export function getScoreColor(score: number): string {
-	if (score >= 8) return "text-emerald-600 dark:text-emerald-400";
+	if (score >= 8) return "text-blue-600 dark:text-blue-400";
 	if (score >= 6) return "text-amber-600 dark:text-amber-400";
 	if (score >= 4) return "text-orange-600 dark:text-orange-400";
 	return "text-red-600 dark:text-red-400";
@@ -54,7 +54,7 @@ export function getScoreColor(score: number): string {
 
 export function getScoreBgColor(score: number): string {
 	if (score >= 8)
-		return "bg-emerald-50 dark:bg-emerald-950/30 border-emerald-200 dark:border-emerald-800";
+		return "bg-blue-50 dark:bg-blue-950/30 border-blue-200 dark:border-blue-800";
 	if (score >= 6)
 		return "bg-amber-50 dark:bg-amber-950/30 border-amber-200 dark:border-amber-800";
 	if (score >= 4)

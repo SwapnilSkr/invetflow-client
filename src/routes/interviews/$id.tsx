@@ -560,7 +560,7 @@ function InterviewDetailPage() {
 							</CardHeader>
 							<CardContent>
 								<div className="flex items-center gap-3">
-									<div className="flex h-10 w-10 items-center justify-center rounded-full bg-[rgba(79,184,178,0.14)] text-(--lagoon-deep)">
+									<div className="flex h-10 w-10 items-center justify-center rounded-full bg-blue-50 text-blue-700 dark:bg-blue-500/15 dark:text-blue-200">
 										<Users className="h-5 w-5" />
 									</div>
 									<div className="min-w-0">
@@ -605,7 +605,7 @@ function InterviewDetailPage() {
 									</Button>
 								</div>
 								{copied ? (
-									<p className="mt-2 text-xs text-emerald-600 dark:text-emerald-400">
+									<p className="mt-2 text-xs text-blue-600 dark:text-blue-400">
 										Copied to clipboard.
 									</p>
 								) : null}

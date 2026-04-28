@@ -144,7 +144,7 @@ export function TechCheck({ onComplete, onCancel }: TechCheckProps) {
 					className={cn(
 						"p-4 rounded-lg border transition-colors",
 						audioEnabled
-							? "bg-emerald-50 border-emerald-200 dark:bg-emerald-950/30 dark:border-emerald-800"
+							? "bg-blue-50 border-blue-200 dark:bg-blue-950/30 dark:border-blue-800"
 							: "bg-card",
 					)}
 				>
@@ -154,7 +154,7 @@ export function TechCheck({ onComplete, onCancel }: TechCheckProps) {
 								className={cn(
 									"p-2 rounded-full",
 									audioEnabled
-										? "bg-emerald-100 text-emerald-600 dark:bg-emerald-900 dark:text-emerald-400"
+										? "bg-blue-100 text-blue-600 dark:bg-blue-900 dark:text-blue-400"
 										: "bg-muted",
 								)}
 							>
@@ -181,7 +181,7 @@ export function TechCheck({ onComplete, onCancel }: TechCheckProps) {
 									{AUDIO_BARS.map((bar) => (
 										<div
 											key={bar.id}
-											className="w-1 bg-emerald-500 rounded-full transition-all duration-100"
+											className="w-1 bg-blue-500 rounded-full transition-all duration-100"
 											style={{
 												height: `${Math.max(8, Math.min(32, (audioLevel / 255) * 32 * bar.multiplier))}px`,
 												opacity: audioLevel > 20 ? 1 : 0.3,
@@ -263,7 +263,7 @@ export function TechCheck({ onComplete, onCancel }: TechCheckProps) {
 					className={cn(
 						"p-4 rounded-lg border transition-colors",
 						videoEnabled
-							? "bg-emerald-50 border-emerald-200 dark:bg-emerald-950/30 dark:border-emerald-800"
+							? "bg-blue-50 border-blue-200 dark:bg-blue-950/30 dark:border-blue-800"
 							: "bg-card",
 					)}
 				>
@@ -273,7 +273,7 @@ export function TechCheck({ onComplete, onCancel }: TechCheckProps) {
 								className={cn(
 									"p-2 rounded-full",
 									videoEnabled
-										? "bg-emerald-100 text-emerald-600 dark:bg-emerald-900 dark:text-emerald-400"
+										? "bg-blue-100 text-blue-600 dark:bg-blue-900 dark:text-blue-400"
 										: "bg-muted",
 								)}
 							>
@@ -316,7 +316,7 @@ export function TechCheck({ onComplete, onCancel }: TechCheckProps) {
 					className={cn(
 						"p-4 rounded-lg border transition-colors",
 						screenEnabled
-							? "bg-emerald-50 border-emerald-200 dark:bg-emerald-950/30 dark:border-emerald-800"
+							? "bg-blue-50 border-blue-200 dark:bg-blue-950/30 dark:border-blue-800"
 							: "bg-card",
 					)}
 				>
@@ -326,7 +326,7 @@ export function TechCheck({ onComplete, onCancel }: TechCheckProps) {
 								className={cn(
 									"p-2 rounded-full",
 									screenEnabled
-										? "bg-emerald-100 text-emerald-600 dark:bg-emerald-900 dark:text-emerald-400"
+										? "bg-blue-100 text-blue-600 dark:bg-blue-900 dark:text-blue-400"
 										: "bg-muted",
 								)}
 							>

@@ -69,7 +69,7 @@ function InterviewCard({
 		<Card
 			className={cn(
 				"cursor-pointer transition-all hover:shadow-md",
-				isActive && "ring-2 ring-emerald-500/20",
+				isActive && "ring-2 ring-blue-500/20",
 			)}
 			onClick={onSelect}
 		>
@@ -81,7 +81,7 @@ function InterviewCard({
 							className={cn(
 								"w-3 h-3 rounded-full",
 								isActive
-									? "bg-emerald-500 animate-pulse"
+									? "bg-blue-500 animate-pulse"
 									: isCompleted
 										? "bg-zinc-400"
 										: interview.status === "Scheduled"
@@ -162,7 +162,7 @@ function InterviewCard({
 											className={cn(
 												"flex items-center gap-1 px-2 py-1 rounded-md text-sm font-medium",
 												interview.score >= 8
-													? "bg-emerald-100 text-emerald-700 dark:bg-emerald-900 dark:text-emerald-300"
+													? "bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300"
 													: interview.score >= 6
 														? "bg-amber-100 text-amber-700 dark:bg-amber-900 dark:text-amber-300"
 														: interview.score >= 4

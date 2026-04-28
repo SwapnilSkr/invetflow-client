@@ -10,12 +10,7 @@ import {
 } from "lucide-react";
 import { Badge } from "#/components/ui/badge";
 import { Button } from "#/components/ui/button";
-import {
-	Card,
-	CardContent,
-	CardHeader,
-	CardTitle,
-} from "#/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "#/components/ui/card";
 import { Skeleton } from "#/components/ui/skeleton";
 import type { Interview } from "#/integrations/api/client";
 import { interviewQueries } from "#/integrations/api/queries";
@@ -38,7 +33,8 @@ function RecruiterDashboard() {
 				<div>
 					<h1 className="text-3xl font-bold tracking-tight">Dashboard</h1>
 					<p className="mt-1 text-muted-foreground">
-						Manage interview templates, assign candidates, and share invite links.
+						Manage interview templates, assign candidates, and share invite
+						links.
 					</p>
 				</div>
 				<Button asChild>
@@ -59,8 +55,7 @@ function RecruiterDashboard() {
 				<StatCard
 					title="Draft"
 					value={
-						interviewsList.filter((i: Interview) => i.status === "Draft")
-							.length
+						interviewsList.filter((i: Interview) => i.status === "Draft").length
 					}
 					icon={Calendar}
 					loading={isLoading}
@@ -76,7 +71,7 @@ function RecruiterDashboard() {
 					}
 					icon={Users}
 					loading={isLoading}
-					color="emerald"
+					color="blue"
 				/>
 				<StatCard
 					title="Completed"
@@ -174,15 +169,12 @@ function StatCard({
 	value: number;
 	icon: React.ComponentType<{ className?: string }>;
 	loading?: boolean;
-	color?: "zinc" | "emerald" | "amber" | "blue" | "slate";
+	color?: "zinc" | "amber" | "blue" | "slate";
 }) {
 	const colorClasses = {
 		zinc: "bg-zinc-100 text-zinc-600 dark:bg-zinc-800 dark:text-zinc-400",
 		slate: "bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400",
-		emerald:
-			"bg-emerald-100 text-emerald-600 dark:bg-emerald-900 dark:text-emerald-400",
-		amber:
-			"bg-amber-100 text-amber-600 dark:bg-amber-900 dark:text-amber-400",
+		amber: "bg-amber-100 text-amber-600 dark:bg-amber-900 dark:text-amber-400",
 		blue: "bg-blue-100 text-blue-600 dark:bg-blue-900 dark:text-blue-400",
 	};
 

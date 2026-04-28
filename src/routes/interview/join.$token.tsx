@@ -108,7 +108,7 @@ function JoinByTokenPage() {
 			<Card className="w-full max-w-lg">
 				<CardHeader className="text-center">
 					<div className="mx-auto mb-2 flex items-center gap-2">
-						<span className="h-2 w-2 rounded-full bg-[linear-gradient(90deg,#56c6be,#7ed3bf)]" />
+						<span className="h-2 w-2 rounded-full bg-[linear-gradient(90deg,#3b82f6,#60a5fa)]" />
 						<span className="text-sm font-semibold text-[var(--sea-ink)]">
 							InvetFlow
 						</span>
@@ -145,11 +145,11 @@ function JoinByTokenPage() {
 						<p className="text-sm font-medium">Before you begin</p>
 						<div className="grid grid-cols-2 gap-2">
 							<div className="flex items-center gap-2 rounded-md bg-muted/50 px-3 py-2 text-sm text-muted-foreground">
-								<Video className="h-4 w-4 text-emerald-500" />
+								<Video className="h-4 w-4 text-blue-500" />
 								Working camera
 							</div>
 							<div className="flex items-center gap-2 rounded-md bg-muted/50 px-3 py-2 text-sm text-muted-foreground">
-								<Mic className="h-4 w-4 text-emerald-500" />
+								<Mic className="h-4 w-4 text-blue-500" />
 								Working microphone
 							</div>
 						</div>

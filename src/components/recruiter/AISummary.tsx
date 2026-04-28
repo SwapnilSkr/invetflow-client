@@ -51,13 +51,13 @@ export function AISummary({
 		strong_hire: {
 			label: "Strong Hire",
 			color:
-				"bg-emerald-100 text-emerald-700 dark:bg-emerald-900 dark:text-emerald-300",
+				"bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300",
 			icon: ThumbsUp,
 		},
 		hire: {
 			label: "Hire",
 			color:
-				"bg-emerald-50 text-emerald-600 dark:bg-emerald-950 dark:text-emerald-400",
+				"bg-blue-50 text-blue-600 dark:bg-blue-950 dark:text-blue-400",
 			icon: ThumbsUp,
 		},
 		neutral: {
@@ -89,7 +89,7 @@ export function AISummary({
 						"flex flex-col items-center justify-center w-24 h-24 rounded-2xl border-2",
 						getScoreBgColor(overallScore),
 						overallScore >= 8
-							? "border-emerald-300"
+							? "border-blue-300"
 							: overallScore >= 6
 								? "border-amber-300"
 								: overallScore >= 4
@@ -153,14 +153,14 @@ export function AISummary({
 			{/* Strengths & Weaknesses */}
 			<div className="grid grid-cols-2 gap-6">
 				<div>
-					<h4 className="text-sm font-medium mb-3 flex items-center gap-2 text-emerald-600 dark:text-emerald-400">
+					<h4 className="text-sm font-medium mb-3 flex items-center gap-2 text-blue-600 dark:text-blue-400">
 						<ThumbsUp className="h-4 w-4" />
 						Key Strengths
 					</h4>
 					<ul className="space-y-2">
 						{strengths.map((strength) => (
 							<li key={strength} className="text-sm flex items-start gap-2">
-								<span className="text-emerald-500 mt-1">•</span>
+								<span className="text-blue-500 mt-1">•</span>
 								<span className="text-muted-foreground">{strength}</span>
 							</li>
 						))}

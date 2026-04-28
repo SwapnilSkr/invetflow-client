@@ -7,7 +7,7 @@ export default function Footer() {
 		<footer className="mt-20 border-t border-[var(--line)] px-4 pb-14 pt-10 text-[var(--sea-ink-soft)]">
 			<div className="page-wrap flex flex-col items-center justify-between gap-6 text-center sm:flex-row sm:text-left">
 				<div className="flex items-center gap-2">
-					<span className="h-2 w-2 rounded-full bg-[linear-gradient(90deg,#56c6be,#7ed3bf)]" />
+					<span className="h-2 w-2 rounded-full bg-[linear-gradient(90deg,#3b82f6,#60a5fa)]" />
 					<span className="text-sm font-semibold text-[var(--sea-ink)]">
 						InvetFlow
 					</span>

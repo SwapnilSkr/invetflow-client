@@ -68,7 +68,7 @@ function About() {
 							className="feature-card border-(--line) bg-transparent"
 						>
 							<CardContent className="p-5">
-								<div className="mb-3 inline-flex rounded-xl bg-[rgba(79,184,178,0.12)] p-2.5 text-[var(--lagoon-deep)]">
+								<div className="mb-3 inline-flex rounded-xl bg-blue-50 p-2.5 text-blue-600 dark:bg-blue-500/15 dark:text-blue-300">
 									<Icon className="h-5 w-5" />
 								</div>
 								<h3 className="mb-1.5 text-sm font-semibold text-(--sea-ink)">
@@ -113,7 +113,7 @@ function About() {
 							key={milestone.version}
 							className="flex gap-4 rounded-lg border border-(--line) bg-(--surface) p-4"
 						>
-							<div className="shrink-0 rounded-lg bg-[rgba(79,184,178,0.14)] px-3 py-1.5 text-sm font-bold text-[var(--lagoon-deep)]">
+							<div className="shrink-0 rounded-lg bg-blue-50 px-3 py-1.5 text-sm font-bold text-blue-700 dark:bg-blue-500/15 dark:text-blue-200">
 								{milestone.version}
 							</div>
 							<div>

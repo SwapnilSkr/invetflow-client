@@ -1,5 +1,6 @@
 import { useQueryClient } from "@tanstack/react-query";
 import {
+	Link,
 	createFileRoute,
 	useNavigate,
 	useRouter,
@@ -63,7 +64,7 @@ function AuthPage() {
 					</CardHeader>
 					<CardContent className="space-y-4">
 						<div className="flex items-center gap-3">
-							<div className="flex h-10 w-10 items-center justify-center rounded-full bg-[rgba(79,184,178,0.14)] text-(--lagoon-deep)">
+							<div className="flex h-10 w-10 items-center justify-center rounded-full bg-blue-50 text-blue-700 dark:bg-blue-500/15 dark:text-blue-200">
 								<span className="text-sm font-semibold">
 									{user.name?.charAt(0).toUpperCase() || "U"}
 								</span>
@@ -158,7 +159,7 @@ function AuthPage() {
 			<Card className="w-full max-w-md">
 				<CardHeader>
 					<div className="mb-2 flex items-center gap-2">
-						<span className="h-2 w-2 rounded-full bg-[linear-gradient(90deg,#56c6be,#7ed3bf)]" />
+						<span className="h-2 w-2 rounded-full bg-[linear-gradient(90deg,#3b82f6,#60a5fa)]" />
 						<span className="text-sm font-semibold text-(--sea-ink)">
 							InvetFlow
 						</span>
@@ -296,6 +297,15 @@ function AuthPage() {
 								: "Don't have an account? Sign up"}
 						</button>
 					</div>
+					<p className="mt-3 text-center text-sm text-muted-foreground">
+						<span>Hiring or HR? </span>
+						<Link
+							to="/onboarding"
+							className="font-medium text-(--lagoon-deep) no-underline hover:underline"
+						>
+							Guided onboarding
+						</Link>
+					</p>
 				</CardContent>
 			</Card>
 		</main>

@@ -52,8 +52,8 @@ export function InterviewStatusBar({
 					)}
 					{status === "connected" && (
 						<>
-							<div className="h-2 w-2 rounded-full bg-emerald-500" />
-							<span className="text-sm text-emerald-600 dark:text-emerald-400">
+							<div className="h-2 w-2 rounded-full bg-blue-500" />
+							<span className="text-sm text-blue-600 dark:text-blue-400">
 								Connected
 							</span>
 						</>
@@ -96,12 +96,12 @@ export function InterviewStatusBar({
 						{candidateSpeaking && (
 							<Badge
 								variant="secondary"
-								className="bg-emerald-100 text-emerald-700 dark:bg-emerald-900 dark:text-emerald-300"
+								className="bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300"
 							>
 								<span className="flex items-center gap-1">
 									<span className="relative flex h-2 w-2">
-										<span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-										<span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+										<span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75"></span>
+										<span className="relative inline-flex rounded-full h-2 w-2 bg-blue-500"></span>
 									</span>
 									You
 								</span>
@@ -122,12 +122,12 @@ export function InterviewStatusBar({
 				{/* Device Status */}
 				<div className="flex items-center gap-2">
 					{audioEnabled ? (
-						<Mic className="h-4 w-4 text-emerald-500" />
+						<Mic className="h-4 w-4 text-blue-500" />
 					) : (
 						<MicOff className="h-4 w-4 text-red-500" />
 					)}
 					{videoEnabled ? (
-						<Video className="h-4 w-4 text-emerald-500" />
+						<Video className="h-4 w-4 text-blue-500" />
 					) : (
 						<VideoOff className="h-4 w-4 text-red-500" />
 					)}
@@ -139,7 +139,7 @@ export function InterviewStatusBar({
 					title={`Latency: ${latency}ms`}
 				>
 					{networkQuality === "good" ? (
-						<Wifi className="h-4 w-4 text-emerald-500" />
+						<Wifi className="h-4 w-4 text-blue-500" />
 					) : networkQuality === "fair" ? (
 						<Wifi className="h-4 w-4 text-amber-500" />
 					) : (
@@ -150,7 +150,7 @@ export function InterviewStatusBar({
 							className={cn(
 								"text-xs",
 								latency < 150
-									? "text-emerald-600 dark:text-emerald-400"
+									? "text-blue-600 dark:text-blue-400"
 									: latency < 300
 										? "text-amber-600 dark:text-amber-400"
 										: "text-red-600 dark:text-red-400",
