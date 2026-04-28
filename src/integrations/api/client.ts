@@ -3,7 +3,11 @@
 import { getAuthStoreState } from "#/integrations/auth/auth-store";
 import { parseHttpError } from "./errors";
 import { getApiToken } from "./token-storage";
-import type { AuthResponse } from "./types";
+import type {
+	AuthResponse,
+	UpdateRecruiterOnboardingBody,
+	User,
+} from "./types";
 
 export {
 	ApiError,
@@ -13,7 +17,11 @@ export {
 	type ServerErrorJson,
 } from "./errors";
 export { hasValidAccessToken } from "./token-storage";
-export type { AuthResponse, User } from "./types";
+export type {
+	AuthResponse,
+	UpdateRecruiterOnboardingBody,
+	User,
+} from "./types";
 export { fetchCurrentUserFromApi as fetchCurrentUser } from "./user-api";
 
 const API_BASE = import.meta.env.VITE_API_URL || "http://localhost:3001";
@@ -184,6 +192,32 @@ export async function registerWithPassword(
 	const data: AuthResponse = await response.json();
 	applyAuthResponse(data);
 	return data;
+}
+
+export async function updateRecruiterOnboarding(
+	body: UpdateRecruiterOnboardingBody,
+): Promise<User> {
+	const data = await apiClient<User>("/api/auth/onboarding", {
+		method: "PATCH",
+		body: JSON.stringify(body),
+	});
+	getAuthStoreState().applyUser(data);
+	return data;
+}
+
+export interface ResendVerificationResponse {
+	sent: boolean;
+	message: string;
+}
+
+export async function resendVerificationEmail(): Promise<ResendVerificationResponse> {
+	return apiClient<ResendVerificationResponse>(
+		"/api/auth/resend-verification",
+		{
+			method: "POST",
+			body: "{}",
+		},
+	);
 }
 
 export async function apiClientPublic<T>(

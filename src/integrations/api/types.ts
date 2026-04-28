@@ -6,8 +6,19 @@ export interface User {
 	id: string;
 	email: string;
 	name: string | null;
+	company_name: string | null;
+	company_size: string | null;
+	job_title: string | null;
 	email_verified: boolean;
 	role: AppUserRole;
+}
+
+/** PATCH /api/auth/onboarding — recruiter profile after sign-up. */
+export interface UpdateRecruiterOnboardingBody {
+	name?: string;
+	company_name?: string;
+	company_size?: string;
+	job_title?: string;
 }
 
 /** invetflow-server: `AuthResponse` (flattened `TokenResponse` + `user`) from `api/dto/auth_dto.rs`. */

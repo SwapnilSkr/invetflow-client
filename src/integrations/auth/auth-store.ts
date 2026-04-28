@@ -11,7 +11,13 @@ import { fetchCurrentUserFromApi } from "#/integrations/api/user-api";
 function normalizeUser(u: User): User {
 	const role: AppUserRole =
 		u.role === "Candidate" || u.role === "Recruiter" ? u.role : "Recruiter";
-	return { ...u, role };
+	return {
+		...u,
+		role,
+		company_name: u.company_name ?? null,
+		company_size: u.company_size ?? null,
+		job_title: u.job_title ?? null,
+	};
 }
 
 export type AuthStatus = "initializing" | "unauthenticated" | "authenticated";
@@ -40,6 +46,8 @@ type AuthState = {
 	) => void;
 	/** Local sign-out: clears session storage and zustand (invetflow-server is JWT-only, no server revoke). */
 	signOut: () => void;
+	/** After PATCH profile / me refresh — keeps JWT, updates `user` in zustand. */
+	applyUser: (user: User) => void;
 };
 
 export const useAuthStore = create<AuthState>((set, get) => ({
@@ -78,6 +86,10 @@ export const useAuthStore = create<AuthState>((set, get) => ({
 	applyTokenResponse: (accessToken, expiresIn, user) => {
 		setStoredToken(accessToken, expiresIn);
 		rememberAccessToken(accessToken);
+		set({ user: normalizeUser(user), status: "authenticated" });
+	},
+
+	applyUser: (user) => {
 		set({ user: normalizeUser(user), status: "authenticated" });
 	},
 
