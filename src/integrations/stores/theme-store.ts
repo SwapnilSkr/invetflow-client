@@ -4,13 +4,14 @@ export type ThemeMode = "light" | "dark" | "auto";
 
 function readStoredMode(): ThemeMode {
 	if (typeof window === "undefined") {
-		return "auto";
+		return "light";
 	}
 	const stored = window.localStorage.getItem("theme");
 	if (stored === "light" || stored === "dark" || stored === "auto") {
 		return stored;
 	}
-	return "auto";
+	/** App default: light minimal SaaS (see DESIGN.md) — not system `prefers-color-scheme`. */
+	return "light";
 }
 
 /**
