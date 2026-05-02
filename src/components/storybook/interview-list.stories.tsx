@@ -60,7 +60,8 @@ const mockInterviews = [
 export const Default: Story = {
 	args: {
 		interviews: mockInterviews,
-		onSelect: (interview: { id: string }) => console.log("Selected:", interview),
+		onSelect: (interview: { id: string }) =>
+			console.log("Selected:", interview),
 		onDelete: (id: string) => console.log("Delete:", id),
 	},
 };
@@ -68,6 +69,7 @@ export const Default: Story = {
 export const WithoutDelete: Story = {
 	args: {
 		interviews: mockInterviews,
-		onSelect: (interview: { id: string }) => console.log("Selected:", interview),
+		onSelect: (interview: { id: string }) =>
+			console.log("Selected:", interview),
 	},
 };

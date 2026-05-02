@@ -14,13 +14,21 @@ type Story = StoryObj<typeof TechCheck>;
 
 export const Default: Story = {
 	args: {
-		onComplete: (devices: { audio: boolean; video: boolean; screen: boolean }) => console.log("Devices ready:", devices),
+		onComplete: (devices: {
+			audio: boolean;
+			video: boolean;
+			screen: boolean;
+		}) => console.log("Devices ready:", devices),
 		onCancel: () => console.log("Cancelled"),
 	},
 };
 
 export const WithoutCancel: Story = {
 	args: {
-		onComplete: (devices: { audio: boolean; video: boolean; screen: boolean }) => console.log("Devices ready:", devices),
+		onComplete: (devices: {
+			audio: boolean;
+			video: boolean;
+			screen: boolean;
+		}) => console.log("Devices ready:", devices),
 	},
 };

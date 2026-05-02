@@ -49,8 +49,9 @@ export function MarketingColumn({ className }: { className?: string }) {
 					</div>
 				</div>
 				<blockquote className="mt-6 text-sm leading-relaxed text-(--onb-muted)">
-					&ldquo;InvetFlow streamlined our first-round interviews. Clear scorecards and
-					highlights help us find strong candidates without resume chaos.&rdquo;
+					&ldquo;InvetFlow streamlined our first-round interviews. Clear
+					scorecards and highlights help us find strong candidates without
+					resume chaos.&rdquo;
 				</blockquote>
 				<div className="mt-4 flex items-center gap-2">
 					<div className="h-8 w-8 rounded-full bg-(--onb-border)" />

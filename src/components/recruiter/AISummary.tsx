@@ -50,14 +50,12 @@ export function AISummary({
 	const recommendationConfig = {
 		strong_hire: {
 			label: "Strong Hire",
-			color:
-				"bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300",
+			color: "bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300",
 			icon: ThumbsUp,
 		},
 		hire: {
 			label: "Hire",
-			color:
-				"bg-blue-50 text-blue-600 dark:bg-blue-950 dark:text-blue-400",
+			color: "bg-blue-50 text-blue-600 dark:bg-blue-950 dark:text-blue-400",
 			icon: ThumbsUp,
 		},
 		neutral: {
