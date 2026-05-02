@@ -94,7 +94,7 @@ export function DashboardSidebar({
 						type="button"
 						variant="outline"
 						size="icon"
-						className="h-8 w-8 shrink-0 rounded-lg border-black/[0.08] bg-white text-[#6b7280] shadow-none transition-colors hover:bg-[#f9fafb]"
+						className="h-8 w-8 shrink-0 rounded-lg border-black/8 bg-white text-[#6b7280] shadow-none transition-colors hover:bg-[#f9fafb]"
 						aria-label="Collapse sidebar"
 						aria-expanded={open}
 						onClick={onToggle}
@@ -103,7 +103,7 @@ export function DashboardSidebar({
 					</Button>
 				</div>
 
-				<div className="mt-5 rounded-xl border border-black/[0.08] bg-white px-3 py-2.5 shadow-sm">
+				<div className="mt-5 rounded-xl border border-black/8 bg-white px-3 py-2.5">
 					<button
 						type="button"
 						className="flex w-full items-center gap-2 rounded-lg text-left transition-colors hover:bg-[#f9fafb]"
@@ -147,8 +147,8 @@ export function DashboardSidebar({
 								className={cn(
 									"flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium no-underline transition-colors",
 									active
-										? "border border-black/[0.08] bg-white text-[#111827] shadow-sm"
-										: "border border-transparent text-[#6b7280] hover:bg-black/[0.03] hover:text-[#111827]",
+										? "border border-black/8 bg-white text-[#111827]"
+										: "border border-transparent text-[#6b7280] hover:bg-black/3 hover:text-[#111827]",
 								)}
 							>
 								<Icon className="size-[18px] shrink-0 opacity-90" />
@@ -159,7 +159,7 @@ export function DashboardSidebar({
 				</nav>
 
 				<div className="mt-auto pt-8">
-					<div className="rounded-xl border border-black/[0.08] bg-white p-2 shadow-sm">
+					<div className="rounded-xl border border-black/8 bg-white p-2">
 						<DropdownMenu>
 							<DropdownMenuTrigger asChild>
 								<button
