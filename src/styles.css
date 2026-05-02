@@ -209,17 +209,6 @@ body {
   -moz-osx-font-smoothing: grayscale;
 }
 
-a {
-  color: var(--lagoon);
-  text-decoration-color: color-mix(in srgb, var(--lagoon) 45%, transparent);
-  text-decoration-thickness: 1px;
-  text-underline-offset: 2px;
-}
-
-a:hover {
-  color: var(--lagoon-deep);
-}
-
 code {
   font-size: 0.9em;
   border: 1px solid var(--line);
@@ -342,5 +331,15 @@ a {
   body {
     background-color: var(--background);
     color: var(--foreground);
+  }
+  a {
+    color: var(--lagoon);
+    text-decoration-color: color-mix(in srgb, var(--lagoon) 45%, transparent);
+    text-decoration-thickness: 1px;
+    text-underline-offset: 2px;
+  }
+
+  a:hover {
+    color: var(--lagoon-deep);
   }
 }
