@@ -7,7 +7,7 @@ import {
 	useRouterState,
 } from "@tanstack/react-router";
 import { TanStackRouterDevtoolsPanel } from "@tanstack/react-router-devtools";
-import { DashboardSidebar } from "#/components/dashboard/DashboardSidebar";
+import { DashboardAppShell } from "#/components/dashboard/DashboardAppShell";
 import { useAuth } from "#/integrations/api/hooks";
 import Header from "../components/Header";
 import { AuthBootstrap } from "../integrations/auth/auth-bootstrap";
@@ -45,14 +45,7 @@ function AppShell({ children }: { children: React.ReactNode }) {
 	}
 
 	if (!isLoading && isAuthenticated && user) {
-		return (
-			<div className="flex min-h-svh w-full bg-white text-[#111827]">
-				<DashboardSidebar />
-				<div className="min-h-svh min-w-0 flex-1 overflow-auto bg-white">
-					{children}
-				</div>
-			</div>
-		);
+		return <DashboardAppShell>{children}</DashboardAppShell>;
 	}
 
 	return (
