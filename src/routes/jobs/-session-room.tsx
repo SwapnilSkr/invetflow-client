@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { getRouteApi, Link, useNavigate } from "@tanstack/react-router";
 import { ConnectionState } from "livekit-client";
 import { CheckCircle2 } from "lucide-react";
 import {
@@ -16,50 +16,27 @@ import { InterviewStatusBar } from "#/components/candidate/InterviewStatusBar";
 import { TechCheck } from "#/components/candidate/TechCheck";
 import { Button } from "#/components/ui/button";
 import { Card, CardContent } from "#/components/ui/card";
+import { useAuth } from "#/integrations/api/hooks";
 import {
-	sessionQueries,
-	useEndSession,
-	useJoinInterview,
+	candidateInterviewQueries,
+	useEndCandidateInterview,
+	useJoinJob,
 } from "#/integrations/api/queries";
 import { useInterviewRoom } from "#/integrations/livekit/use-interview-room";
 import { readStoredInterviewAudioDevices } from "#/lib/interview-audio-prefs";
-import { requireSession } from "#/lib/require-session";
 
-interface SessionSearch {
-	sessionId: string;
-	token?: string;
-	url?: string;
-	/** Set to `"1"` after tech check so refresh / Strict remounts can resume the same step. */
-	startRoom?: string;
-}
-
-function parseSessionSearch(search: Record<string, unknown>): SessionSearch {
-	const token = typeof search.token === "string" ? search.token.trim() : "";
-	const url = typeof search.url === "string" ? search.url.trim() : "";
-	return {
-		sessionId: String(search.sessionId ?? ""),
-		token: token || undefined,
-		url: url || undefined,
-		startRoom:
-			typeof search.startRoom === "string" ? search.startRoom : undefined,
-	};
-}
+const routeApi = getRouteApi("/jobs/$id/session");
 
 function isTerminalSessionStatus(status?: string) {
 	return status === "Completed" || status === "Cancelled";
 }
 
-export const Route = createFileRoute("/interviews/$id/session")({
-	beforeLoad: requireSession,
-	validateSearch: (search: Record<string, unknown>): SessionSearch =>
-		parseSessionSearch(search),
-	component: InterviewSessionPage,
-});
-
-function InterviewSessionPage() {
-	const { id } = Route.useParams();
-	const { sessionId, token, url, startRoom } = Route.useSearch();
+export function InterviewSessionPage() {
+	const { id } = routeApi.useParams();
+	const { sessionId, token, url, startRoom } = routeApi.useSearch();
 	const navigate = useNavigate();
+	const { user } = useAuth();
+	const isCandidate = user?.role === "Candidate";
 
 	const pastTechCheck = startRoom === "1";
 	const [phase, setPhase] = useState<"tech-check" | "interview">(() =>
@@ -81,11 +58,11 @@ function InterviewSessionPage() {
 		connectionState,
 		disconnect: disconnectFromRoom,
 	} = room;
-	const endSession = useEndSession();
-	const joinInterview = useJoinInterview();
+	const endCandidateInterview = useEndCandidateInterview();
+	const joinJob = useJoinJob();
 
 	const { data: session, isLoading: isSessionLoading } = useQuery({
-		...sessionQueries.detail(sessionId),
+		...candidateInterviewQueries.detail(sessionId),
 		enabled: !!sessionId,
 		refetchInterval: phase === "interview" ? 10000 : false,
 	});
@@ -93,13 +70,11 @@ function InterviewSessionPage() {
 	const isLiveInterview = phase === "interview" && !isTerminalSession;
 
 	const { data: transcriptData } = useQuery({
-		...sessionQueries.transcript(sessionId),
+		...candidateInterviewQueries.transcript(sessionId),
 		enabled: !!sessionId && isLiveInterview,
 		refetchInterval: isLiveInterview ? 1500 : false,
 	});
 
-	// After the interview layout commits, connect so the video ref exists. useLayoutEffect
-	// + URL `startRoom=1` avoid losing this step to React Strict Mode remounts.
 	useLayoutEffect(() => {
 		if (!shouldConnectToLiveKit || !isLiveInterview) return;
 		if (!sessionId || !token || !url) return;
@@ -136,7 +111,6 @@ function InterviewSessionPage() {
 		void disconnectFromRoom();
 	}, [disconnectFromRoom, isTerminalSession]);
 
-	// Duration timer
 	useEffect(() => {
 		if (
 			phase === "interview" &&
@@ -156,7 +130,7 @@ function InterviewSessionPage() {
 		setPhase("interview");
 		setShouldConnectToLiveKit(true);
 		void navigate({
-			to: "/interviews/$id/session",
+			to: "/jobs/$id/session",
 			params: { id },
 			search: { sessionId, token, url, startRoom: "1" },
 			replace: true,
@@ -164,13 +138,13 @@ function InterviewSessionPage() {
 	}, [navigate, id, sessionId, token, url]);
 
 	const handleEndCall = useCallback(async () => {
-		if (!sessionId || endSession.isPending) return;
+		if (!sessionId || endCandidateInterview.isPending) return;
 		setSessionActionError(null);
 		try {
-			const ended = await endSession.mutateAsync(sessionId);
+			const ended = await endCandidateInterview.mutateAsync(sessionId);
 			await disconnectFromRoom();
 			await navigate({
-				to: "/interviews/$id/session",
+				to: "/jobs/$id/session",
 				params: { id },
 				search: { sessionId: ended.id },
 				replace: true,
@@ -180,19 +154,19 @@ function InterviewSessionPage() {
 				err instanceof Error ? err.message : "Could not end the interview",
 			);
 		}
-	}, [disconnectFromRoom, endSession, id, navigate, sessionId]);
+	}, [disconnectFromRoom, endCandidateInterview, id, navigate, sessionId]);
 
 	const handleReconnect = useCallback(async () => {
 		setSessionActionError(null);
 		try {
-			const result = await joinInterview.mutateAsync(id);
+			const result = await joinJob.mutateAsync(id);
 			setPhase("interview");
 			setShouldConnectToLiveKit(true);
 			await navigate({
-				to: "/interviews/$id/session",
+				to: "/jobs/$id/session",
 				params: { id },
 				search: {
-					sessionId: result.session_id,
+					sessionId: result.interview_id,
 					token: result.livekit_token,
 					url: result.livekit_url,
 					startRoom: "1",
@@ -204,7 +178,7 @@ function InterviewSessionPage() {
 				err instanceof Error ? err.message : "Could not reconnect to the room",
 			);
 		}
-	}, [id, joinInterview, navigate]);
+	}, [id, joinJob, navigate]);
 
 	const getConnectionStatus = ():
 		| "connecting"
@@ -278,8 +252,8 @@ function InterviewSessionPage() {
 							interview page again.
 						</p>
 						<Button asChild>
-							<Link to="/interviews/$id" params={{ id }}>
-								Back to interview
+							<Link to="/jobs/$id" params={{ id }}>
+								Back to job
 							</Link>
 						</Button>
 					</CardContent>
@@ -322,13 +296,13 @@ function InterviewSessionPage() {
 						<div className="flex gap-2">
 							<Button
 								onClick={() => void handleReconnect()}
-								disabled={joinInterview.isPending}
+								disabled={joinJob.isPending}
 							>
-								{joinInterview.isPending ? "Reconnecting..." : "Reconnect"}
+								{joinJob.isPending ? "Reconnecting..." : "Reconnect"}
 							</Button>
 							<Button variant="outline" asChild>
-								<Link to="/interviews/$id" params={{ id }}>
-									Back to interview
+								<Link to="/jobs/$id" params={{ id }}>
+									Back to job
 								</Link>
 							</Button>
 						</div>
@@ -343,7 +317,7 @@ function InterviewSessionPage() {
 			<main className="page-wrap mx-auto max-w-2xl px-4 py-8">
 				<TechCheck
 					onComplete={handleTechCheckComplete}
-					onCancel={() => navigate({ to: "/interviews/$id", params: { id } })}
+					onCancel={() => navigate({ to: "/jobs/$id", params: { id } })}
 				/>
 			</main>
 		);
@@ -375,7 +349,9 @@ function InterviewSessionPage() {
 							</p>
 						) : null}
 						<Button asChild className="mt-2">
-							<Link to="/interviews">Back to Interviews</Link>
+							<Link to={isCandidate ? "/candidate" : "/jobs"}>
+								{isCandidate ? "Back to My jobs" : "Back to Jobs"}
+							</Link>
 						</Button>
 					</CardContent>
 				</Card>
@@ -384,7 +360,7 @@ function InterviewSessionPage() {
 	}
 
 	return (
-		<div className="flex flex-col h-[calc(100vh-64px)]">
+		<div className="flex min-h-svh flex-col">
 			<InterviewStatusBar
 				status={getConnectionStatus()}
 				audioEnabled={room.isMicEnabled}
@@ -421,7 +397,6 @@ function InterviewSessionPage() {
 				)}
 
 			<div className="flex-1 flex overflow-hidden">
-				{/* Video area */}
 				<div className="flex-1 flex items-center justify-center bg-neutral-950 relative">
 					<div
 						id="livekit-video-container"
@@ -441,7 +416,6 @@ function InterviewSessionPage() {
 					)}
 				</div>
 
-				{/* Transcript sidebar */}
 				<div className="w-96 border-l flex flex-col bg-white dark:bg-neutral-900">
 					<div className="px-4 py-3 border-b">
 						<h2 className="text-sm font-semibold">Interview Transcript</h2>
@@ -467,7 +441,7 @@ function InterviewSessionPage() {
 				onToggleScreenShare={() => void room.toggleScreenShare()}
 				onEndCall={() => void handleEndCall()}
 				disabled={connectionState !== ConnectionState.Connected}
-				endDisabled={endSession.isPending}
+				endDisabled={endCandidateInterview.isPending}
 				audioInputDevices={room.audioInputDevices}
 				audioOutputDevices={room.audioOutputDevices}
 				activeAudioInputDeviceId={room.activeAudioInputDeviceId}

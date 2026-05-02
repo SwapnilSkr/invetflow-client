@@ -29,25 +29,20 @@ import { Skeleton } from "#/components/ui/skeleton";
 import { ApiError } from "#/integrations/api/errors";
 import { useAuth } from "#/integrations/api/hooks";
 import {
-	interviewQueries,
+	jobQueries,
 	useAssignCandidate,
-	useJoinInterview,
-	useScheduleInterview,
-	useUpdateInterview,
+	useJoinJob,
+	useScheduleJob,
+	useUpdateJob,
 } from "#/integrations/api/queries";
 import { requireSession } from "#/lib/require-role";
 import { getStatusColor } from "#/lib/utils";
 
-export const Route = createFileRoute("/interviews/$id")({
+export const Route = createFileRoute("/jobs/$id")({
 	beforeLoad: requireSession,
 	component: InterviewIdRoute,
 });
 
-/**
- * `/interviews/$id/session` is a **child** route of this file. Without an
- * `<Outlet />`, TanStack Router updates the URL but never mounts the session
- * screen (only the parent component runs).
- */
 function InterviewIdRoute() {
 	const isSessionChild = useRouterState({
 		select: (s) => s.location.pathname.endsWith("/session"),
@@ -63,23 +58,17 @@ function InterviewDetailPage() {
 	const { user } = useAuth();
 	const isRecruiter = user?.role === "Recruiter";
 	const navigate = useNavigate();
-	const {
-		data: interview,
-		isLoading,
-		error,
-	} = useQuery(interviewQueries.detail(id));
-	const { data: sessionList } = useQuery({
-		...interviewQueries.sessions(id),
+	const { data: job, isLoading, error } = useQuery(jobQueries.detail(id));
+	const { data: interviewList } = useQuery({
+		...jobQueries.jobInterviews(id),
 		enabled: Boolean(
-			user?.role === "Recruiter" &&
-				interview &&
-				user.id === interview.recruiter_id,
+			user?.role === "Recruiter" && job && user.id === job.recruiter_id,
 		),
 	});
-	const joinInterview = useJoinInterview();
+	const joinJob = useJoinJob();
 	const assignCandidate = useAssignCandidate();
-	const scheduleInterview = useScheduleInterview();
-	const updateInterview = useUpdateInterview();
+	const scheduleJob = useScheduleJob();
+	const updateJob = useUpdateJob();
 	const [joining, setJoining] = useState(false);
 	const [copied, setCopied] = useState(false);
 	const [joinError, setJoinError] = useState<string | null>(null);
@@ -92,12 +81,12 @@ function InterviewDetailPage() {
 		setJoinError(null);
 		setJoining(true);
 		try {
-			const result = await joinInterview.mutateAsync(id);
+			const result = await joinJob.mutateAsync(id);
 			navigate({
-				to: "/interviews/$id/session",
+				to: "/jobs/$id/session",
 				params: { id },
 				search: {
-					sessionId: result.session_id,
+					sessionId: result.interview_id,
 					token: result.livekit_token,
 					url: result.livekit_url,
 				},
@@ -114,12 +103,12 @@ function InterviewDetailPage() {
 	};
 
 	const copyInviteLink = async () => {
-		if (!interview?.invite_link) {
+		if (!job?.invite_link) {
 			return;
 		}
-		const link = interview.invite_link.startsWith("http")
-			? interview.invite_link
-			: `${window.location.origin}${interview.invite_link.startsWith("/") ? "" : "/"}${interview.invite_link}`;
+		const link = job.invite_link.startsWith("http")
+			? job.invite_link
+			: `${window.location.origin}${job.invite_link.startsWith("/") ? "" : "/"}${job.invite_link}`;
 		await navigator.clipboard.writeText(link);
 		setCopied(true);
 		setTimeout(() => setCopied(false), 2000);
@@ -136,15 +125,12 @@ function InterviewDetailPage() {
 		);
 	}
 
-	if (error || !interview) {
+	if (error || !job) {
 		return (
 			<div className="flex flex-col items-center justify-center py-20">
-				<p className="text-lg font-medium text-destructive">
-					Interview not found
-				</p>
+				<p className="text-lg font-medium text-destructive">Job not found</p>
 				<p className="mt-2 text-sm text-muted-foreground text-center max-w-sm">
-					This interview may have been removed or you don&rsquo;t have access to
-					it.
+					This job may have been removed or you don&rsquo;t have access to it.
 				</p>
 				<Button variant="outline" className="mt-4" asChild>
 					<Link to={isRecruiter ? "/dashboard" : "/candidate"}>Back</Link>
@@ -153,28 +139,27 @@ function InterviewDetailPage() {
 		);
 	}
 
-	const isOwner = user?.id === interview.recruiter_id;
+	const isOwner = user?.id === job.recruiter_id;
 
 	const isScheduledOrActive =
-		interview.status === "Scheduled" || interview.status === "Active";
-	/** Owner HR can test from Draft without publishing; candidates when scheduled+ */
+		job.status === "Scheduled" || job.status === "Active";
 	const showJoinButton =
 		(user?.role === "Candidate" && isScheduledOrActive) ||
 		(user?.role === "Recruiter" &&
 			isOwner &&
-			(interview.status === "Draft" || isScheduledOrActive)) ||
+			(job.status === "Draft" || isScheduledOrActive)) ||
 		(user?.role === "Recruiter" &&
 			!isOwner &&
-			interview.is_public &&
+			job.is_public &&
 			isScheduledOrActive);
 
 	return (
 		<div className="container mx-auto max-w-5xl px-4 py-8">
 			<div className="mb-6">
 				<Button variant="ghost" size="sm" asChild>
-					<Link to={isRecruiter ? "/interviews" : "/candidate"}>
+					<Link to={isRecruiter ? "/jobs" : "/candidate"}>
 						<ArrowLeft className="mr-2 h-4 w-4" />
-						{isRecruiter ? "All interviews" : "My interviews"}
+						{isRecruiter ? "All jobs" : "My jobs"}
 					</Link>
 				</Button>
 			</div>
@@ -182,14 +167,10 @@ function InterviewDetailPage() {
 			<div className="mb-6 flex flex-wrap items-start justify-between gap-4">
 				<div>
 					<div className="flex flex-wrap items-center gap-3">
-						<h1 className="text-2xl font-bold tracking-tight">
-							{interview.title}
-						</h1>
-						<Badge className={getStatusColor(interview.status)}>
-							{interview.status}
-						</Badge>
+						<h1 className="text-2xl font-bold tracking-tight">{job.title}</h1>
+						<Badge className={getStatusColor(job.status)}>{job.status}</Badge>
 					</div>
-					<p className="mt-1 text-muted-foreground">{interview.job_title}</p>
+					<p className="mt-1 text-muted-foreground">{job.job_title}</p>
 				</div>
 				{showJoinButton ? (
 					<Button onClick={handleJoin} disabled={joining}>
@@ -218,7 +199,7 @@ function InterviewDetailPage() {
 				</Alert>
 			) : null}
 
-			{!isRecruiter && !isScheduledOrActive && interview.status === "Draft" ? (
+			{!isRecruiter && !isScheduledOrActive && job.status === "Draft" ? (
 				<Alert className="mb-6">
 					<AlertTitle>Not ready yet</AlertTitle>
 					<AlertDescription>
@@ -231,14 +212,14 @@ function InterviewDetailPage() {
 
 			<div className="grid gap-6 lg:grid-cols-3">
 				<div className="space-y-6 lg:col-span-2">
-					{interview.job_description ? (
+					{job.job_description ? (
 						<Card>
 							<CardHeader>
 								<CardTitle className="text-base">Description</CardTitle>
 							</CardHeader>
 							<CardContent>
 								<p className="text-sm leading-relaxed text-muted-foreground">
-									{interview.job_description}
+									{job.job_description}
 								</p>
 							</CardContent>
 						</Card>
@@ -247,13 +228,13 @@ function InterviewDetailPage() {
 					<Card>
 						<CardHeader>
 							<CardTitle className="text-base">
-								Question plan ({interview.questions?.length ?? 0})
+								Question plan ({job.questions?.length ?? 0})
 							</CardTitle>
 						</CardHeader>
 						<CardContent>
-							{interview.questions && interview.questions.length > 0 ? (
+							{job.questions && job.questions.length > 0 ? (
 								<ol className="space-y-3">
-									{interview.questions.map((q, idx) => (
+									{job.questions.map((q, idx) => (
 										<li key={q.id || idx} className="flex gap-3">
 											<span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-muted text-xs font-medium">
 												{idx + 1}
@@ -295,9 +276,7 @@ function InterviewDetailPage() {
 									<Clock className="h-4 w-4 shrink-0" />
 									Duration
 								</span>
-								<span className="font-medium">
-									{interview.duration_minutes} min
-								</span>
+								<span className="font-medium">{job.duration_minutes} min</span>
 							</div>
 							<Separator />
 							<div className="flex justify-between gap-2">
@@ -306,7 +285,7 @@ function InterviewDetailPage() {
 									Created
 								</span>
 								<span className="font-medium">
-									{new Date(interview.created_at).toLocaleString()}
+									{new Date(job.created_at).toLocaleString()}
 								</span>
 							</div>
 						</CardContent>
@@ -317,20 +296,21 @@ function InterviewDetailPage() {
 							<CardHeader>
 								<CardTitle className="flex items-center gap-2 text-base">
 									<History className="h-4 w-4" />
-									Answer sessions
+									Interviews
 								</CardTitle>
 							</CardHeader>
 							<CardContent>
 								<p className="mb-3 text-sm text-muted-foreground">
-									Joining resumes an unfinished answer session for that
-									candidate. Ending a call finishes that session; the next join
-									can start a new one while the job is
+									Joining resumes an unfinished interview for that candidate.
+									Ending a call finishes that interview; the next join can start
+									a new one while the job is
 									<strong> scheduled or active</strong> (until you mark the role
 									complete or cancelled below).
 								</p>
-								{sessionList?.sessions && sessionList.sessions.length > 0 ? (
+								{interviewList?.interviews &&
+								interviewList.interviews.length > 0 ? (
 									<ul className="max-h-48 space-y-2 overflow-y-auto text-sm">
-										{sessionList.sessions.map((s) => (
+										{interviewList.interviews.map((s) => (
 											<li
 												key={s.id}
 												className="flex flex-col gap-1 border-b border-border py-2 last:border-0 sm:flex-row sm:items-center sm:justify-between"
@@ -345,7 +325,7 @@ function InterviewDetailPage() {
 									</ul>
 								) : (
 									<p className="text-sm text-muted-foreground">
-										No answer sessions recorded yet.
+										No interviews recorded yet.
 									</p>
 								)}
 							</CardContent>
@@ -354,8 +334,8 @@ function InterviewDetailPage() {
 
 					{isRecruiter &&
 					isOwner &&
-					interview.status !== "Completed" &&
-					interview.status !== "Cancelled" ? (
+					job.status !== "Completed" &&
+					job.status !== "Cancelled" ? (
 						<Card>
 							<CardHeader>
 								<CardTitle className="text-base">Hiring status</CardTitle>
@@ -369,7 +349,7 @@ function InterviewDetailPage() {
 								<Button
 									variant="secondary"
 									className="w-full"
-									disabled={updateInterview.isPending}
+									disabled={updateJob.isPending}
 									onClick={() => {
 										if (
 											!window.confirm(
@@ -378,7 +358,7 @@ function InterviewDetailPage() {
 										) {
 											return;
 										}
-										void updateInterview.mutateAsync({
+										void updateJob.mutateAsync({
 											id,
 											data: { status: "Completed" },
 										});
@@ -389,7 +369,7 @@ function InterviewDetailPage() {
 								<Button
 									variant="outline"
 									className="w-full"
-									disabled={updateInterview.isPending}
+									disabled={updateJob.isPending}
 									onClick={() => {
 										if (
 											!window.confirm(
@@ -398,7 +378,7 @@ function InterviewDetailPage() {
 										) {
 											return;
 										}
-										void updateInterview.mutateAsync({
+										void updateJob.mutateAsync({
 											id,
 											data: { status: "Cancelled" },
 										});
@@ -412,8 +392,8 @@ function InterviewDetailPage() {
 
 					{isRecruiter &&
 					isOwner &&
-					interview.status !== "Completed" &&
-					interview.status !== "Cancelled" ? (
+					job.status !== "Completed" &&
+					job.status !== "Cancelled" ? (
 						<Card>
 							<CardHeader>
 								<CardTitle className="flex items-center gap-2 text-base">
@@ -426,14 +406,14 @@ function InterviewDetailPage() {
 									<input
 										type="checkbox"
 										className="mt-1 size-4 rounded border-input"
-										checked={interview.is_public}
+										checked={job.is_public}
 										onChange={(e) => {
-											void updateInterview.mutateAsync({
+											void updateJob.mutateAsync({
 												id,
 												data: { is_public: e.target.checked },
 											});
 										}}
-										disabled={updateInterview.isPending}
+										disabled={updateJob.isPending}
 									/>
 									<span>
 										<span className="font-medium">
@@ -450,7 +430,7 @@ function InterviewDetailPage() {
 						</Card>
 					) : null}
 
-					{isRecruiter && interview.status === "Draft" ? (
+					{isRecruiter && job.status === "Draft" ? (
 						<Card>
 							<CardHeader>
 								<CardTitle className="flex items-center gap-2 text-base">
@@ -507,9 +487,7 @@ function InterviewDetailPage() {
 											});
 											setAssignName("");
 											setAssignEmail("");
-										} catch {
-											// Error text shown via mutation state below
-										}
+										} catch {}
 									}}
 								>
 									{assignCandidate.isPending ? "Saving…" : "Assign & schedule"}
@@ -525,26 +503,20 @@ function InterviewDetailPage() {
 						</Card>
 					) : null}
 
-					{isRecruiter &&
-					interview.candidate_email &&
-					interview.status === "Draft" ? (
+					{isRecruiter && job.candidate_email && job.status === "Draft" ? (
 						<Card>
 							<CardContent className="pt-6">
 								<Button
 									variant="secondary"
 									className="w-full"
-									disabled={scheduleInterview.isPending}
+									disabled={scheduleJob.isPending}
 									onClick={async () => {
 										try {
-											await scheduleInterview.mutateAsync(id);
-										} catch {
-											// handled by network layer if needed
-										}
+											await scheduleJob.mutateAsync(id);
+										} catch {}
 									}}
 								>
-									{scheduleInterview.isPending
-										? "Scheduling…"
-										: "Schedule interview"}
+									{scheduleJob.isPending ? "Scheduling…" : "Schedule interview"}
 								</Button>
 								<p className="mt-2 text-center text-xs text-muted-foreground">
 									Use if the role stayed in Draft after data import.
@@ -553,7 +525,7 @@ function InterviewDetailPage() {
 						</Card>
 					) : null}
 
-					{interview.candidate_name || interview.candidate_email ? (
+					{job.candidate_name || job.candidate_email ? (
 						<Card>
 							<CardHeader>
 								<CardTitle className="text-base">Candidate</CardTitle>
@@ -565,10 +537,10 @@ function InterviewDetailPage() {
 									</div>
 									<div className="min-w-0">
 										<p className="truncate text-sm font-medium">
-											{interview.candidate_name ?? "—"}
+											{job.candidate_name ?? "—"}
 										</p>
 										<p className="truncate text-xs text-muted-foreground">
-											{interview.candidate_email ?? ""}
+											{job.candidate_email ?? ""}
 										</p>
 									</div>
 								</div>
@@ -576,7 +548,7 @@ function InterviewDetailPage() {
 						</Card>
 					) : null}
 
-					{isRecruiter && interview.invite_link ? (
+					{isRecruiter && job.invite_link ? (
 						<Card>
 							<CardHeader>
 								<CardTitle className="flex items-center gap-2 text-base">
@@ -586,14 +558,14 @@ function InterviewDetailPage() {
 							</CardHeader>
 							<CardContent>
 								<p className="mb-3 text-sm text-muted-foreground">
-									{interview.is_public
+									{job.is_public
 										? "Anyone signed in can use this link once the interview is scheduled (or use the interview from their account). "
 										: "Share with the assignee. They sign in, then open this link. "}
 									Candidate accounts work best for the interview experience.
 								</p>
 								<div className="flex gap-2">
 									<code className="min-w-0 flex-1 truncate rounded-md bg-muted px-3 py-2 text-xs">
-										{interview.invite_link}
+										{job.invite_link}
 									</code>
 									<Button
 										variant="outline"

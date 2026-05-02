@@ -38,6 +38,8 @@ export function BrandMark({ className, linkTo }: BrandMarkProps) {
 	}
 
 	return (
-		<div className={cn("inline-flex items-center gap-2", className)}>{inner}</div>
+		<div className={cn("inline-flex items-center gap-2", className)}>
+			{inner}
+		</div>
 	);
 }

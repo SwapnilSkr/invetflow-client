@@ -1,5 +1,3 @@
-// API client for the Invetflow Rust backend (Bearer JWT, invetflow-server /api/*)
-
 import { getAuthStoreState } from "#/integrations/auth/auth-store";
 import { parseHttpError } from "./errors";
 import { getApiToken } from "./token-storage";
@@ -26,9 +24,9 @@ export { fetchCurrentUserFromApi as fetchCurrentUser } from "./user-api";
 
 const API_BASE = import.meta.env.VITE_API_URL || "http://localhost:3001";
 
-// --- Interview and domain DTOs (align with invetflow-server JSON) ---
+// --- Jobs and candidate interviews (align with invetflow-server JSON) ---
 
-export interface Interview {
+export interface Job {
 	id: string;
 	title: string;
 	job_title: string;
@@ -64,7 +62,7 @@ export interface Question {
 	order: number;
 }
 
-export interface CreateInterviewRequest {
+export interface CreateJobRequest {
 	title: string;
 	job_title: string;
 	job_description?: string;
@@ -79,7 +77,7 @@ export interface CreateQuestionRequest {
 	follow_up_prompts: string[];
 }
 
-export interface UpdateInterviewRequest {
+export interface UpdateJobRequest {
 	title?: string;
 	job_title?: string;
 	job_description?: string;
@@ -89,8 +87,8 @@ export interface UpdateInterviewRequest {
 	status?: "Completed" | "Cancelled";
 }
 
-export interface InterviewSessionListResponse {
-	sessions: Session[];
+export interface JobInterviewsListResponse {
+	interviews: CandidateInterview[];
 }
 
 export interface AssignCandidateRequest {
@@ -98,17 +96,17 @@ export interface AssignCandidateRequest {
 	candidate_email: string;
 }
 
-export interface JoinInterviewResponse {
+export interface JoinJobResponse {
+	job_id: string;
 	interview_id: string;
-	session_id: string;
 	livekit_token: string;
 	livekit_url: string;
-	interview: Interview;
+	job: Job;
 }
 
-export interface Session {
+export interface CandidateInterview {
 	id: string;
-	interview_id: string;
+	job_id: string;
 	candidate_id: string;
 	livekit_room: string;
 	status: "Waiting" | "Active" | "Paused" | "Completed" | "Cancelled";

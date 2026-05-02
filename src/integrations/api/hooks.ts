@@ -1,5 +1,4 @@
 // Auth-related React hooks (Zustand + invetflow-server JWT contract)
-// Interview/session query hooks and mutations live in ./queries.ts
 
 import { useQueryClient } from "@tanstack/react-query";
 import { useNavigate, useRouter } from "@tanstack/react-router";
@@ -7,11 +6,10 @@ import { useShallow } from "zustand/shallow";
 import { useAuthStore } from "#/integrations/auth/auth-store";
 import { logout } from "./client";
 
-/** Routes that use `beforeLoad: requireSession` — sign-out must `navigate` or user stays on the page. */
 function isSessionGuardedPath(pathname: string): boolean {
 	return (
 		pathname.startsWith("/dashboard") ||
-		pathname.startsWith("/interviews") ||
+		pathname.startsWith("/jobs") ||
 		pathname.startsWith("/interview/") ||
 		pathname.startsWith("/candidate")
 	);

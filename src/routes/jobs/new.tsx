@@ -16,13 +16,13 @@ import type {
 	Question,
 } from "#/integrations/api/client";
 import { isApiError } from "#/integrations/api/errors";
-import { useCreateInterview } from "#/integrations/api/queries";
+import { useCreateJob } from "#/integrations/api/queries";
 import { requireRecruiter } from "#/lib/require-role";
 import { cn } from "#/lib/utils";
 
-export const Route = createFileRoute("/interviews/new")({
+export const Route = createFileRoute("/jobs/new")({
 	beforeLoad: requireRecruiter,
-	component: CreateInterviewPage,
+	component: CreateJobPage,
 });
 
 const QUESTION_CATEGORIES: Question["category"][] = [
@@ -60,10 +60,10 @@ const selectClassName = cn(
 	"focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring",
 );
 
-function CreateInterviewPage() {
+function CreateJobPage() {
 	const navigate = useNavigate();
 	const baseId = useId();
-	const createInterview = useCreateInterview();
+	const createJob = useCreateJob();
 
 	const [title, setTitle] = useState("");
 	const [jobTitle, setJobTitle] = useState("");
@@ -91,7 +91,7 @@ function CreateInterviewPage() {
 			}))
 			.filter((q) => q.question.length > 0);
 
-		const body: Parameters<typeof createInterview.mutateAsync>[0] = {
+		const body: Parameters<typeof createJob.mutateAsync>[0] = {
 			title: trimmedTitle,
 			job_title: trimmedJob,
 			duration_minutes: duration,
@@ -104,10 +104,10 @@ function CreateInterviewPage() {
 		}
 
 		try {
-			const interview = await createInterview.mutateAsync(body);
+			const row = await createJob.mutateAsync(body);
 			navigate({
-				to: "/interviews/$id",
-				params: { id: interview.id },
+				to: "/jobs/$id",
+				params: { id: row.id },
 			});
 		} catch (e: unknown) {
 			if (isApiError(e)) {
@@ -118,21 +118,21 @@ function CreateInterviewPage() {
 				setErrorMessage(e.message);
 				return;
 			}
-			setErrorMessage("Could not create the interview. Try again.");
+			setErrorMessage("Could not create the job. Try again.");
 		}
 	};
 
 	return (
 		<div className="container mx-auto max-w-3xl px-4 py-8">
 			<Button variant="ghost" className="mb-6 -ml-2 gap-1" asChild>
-				<Link to="/interviews">
+				<Link to="/jobs">
 					<ArrowLeft className="h-4 w-4" />
-					All interviews
+					All jobs
 				</Link>
 			</Button>
 
 			<div className="mb-8">
-				<h1 className="text-2xl font-bold tracking-tight">Create interview</h1>
+				<h1 className="text-2xl font-bold tracking-tight">Create job</h1>
 				<p className="mt-1 text-sm text-muted-foreground">
 					Set the basics, then add an optional full job description and expected
 					questions so the AI interviewer can use them in the session.
@@ -330,16 +330,16 @@ function CreateInterviewPage() {
 
 				<div className="flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
 					<Button type="button" variant="outline" asChild>
-						<Link to="/interviews">Cancel</Link>
+						<Link to="/jobs">Cancel</Link>
 					</Button>
-					<Button type="submit" disabled={createInterview.isPending}>
-						{createInterview.isPending ? (
+					<Button type="submit" disabled={createJob.isPending}>
+						{createJob.isPending ? (
 							<>
 								<Loader2 className="mr-2 h-4 w-4 animate-spin" />
 								Creating…
 							</>
 						) : (
-							"Create interview"
+							"Create job"
 						)}
 					</Button>
 				</div>

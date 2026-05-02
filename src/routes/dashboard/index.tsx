@@ -12,23 +12,20 @@ import { Badge } from "#/components/ui/badge";
 import { Button } from "#/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "#/components/ui/card";
 import { Skeleton } from "#/components/ui/skeleton";
-import type { Interview } from "#/integrations/api/client";
-import { interviewQueries } from "#/integrations/api/queries";
-import { requireRecruiter } from "#/lib/require-role";
+import type { Job } from "#/integrations/api/client";
+import { jobQueries } from "#/integrations/api/queries";
 import { cn, getStatusColor } from "#/lib/utils";
-
 export const Route = createFileRoute("/dashboard/")({
-	beforeLoad: requireRecruiter,
 	component: RecruiterDashboard,
 });
 
 function RecruiterDashboard() {
-	const { data: interviews, isLoading } = useQuery(interviewQueries.list());
+	const { data: jobsPayload, isLoading } = useQuery(jobQueries.list());
 
-	const interviewsList = interviews?.interviews ?? [];
+	const jobsList = jobsPayload?.jobs ?? [];
 
 	return (
-		<div className="mx-auto max-w-6xl px-4 py-8 text-[#111827]">
+		<div className="mx-auto max-w-6xl px-6 py-8 text-[#111827] lg:px-10">
 			<div className="mb-8 flex flex-wrap items-end justify-between gap-4">
 				<div>
 					<h1 className="text-3xl font-bold tracking-wide">Dashboard</h1>
@@ -41,9 +38,9 @@ function RecruiterDashboard() {
 					asChild
 					className="h-11 rounded-xl bg-[#0052cc] font-medium text-white hover:bg-[#0041a3]"
 				>
-					<Link to="/interviews">
+					<Link to="/jobs/new">
 						<Plus className="mr-2 h-4 w-4" />
-						New interview
+						New job
 					</Link>
 				</Button>
 			</div>
@@ -51,15 +48,13 @@ function RecruiterDashboard() {
 			<div className="mb-8 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
 				<StatCard
 					title="Total"
-					value={interviewsList.length}
+					value={jobsList.length}
 					icon={Calendar}
 					loading={isLoading}
 				/>
 				<StatCard
 					title="Draft"
-					value={
-						interviewsList.filter((i: Interview) => i.status === "Draft").length
-					}
+					value={jobsList.filter((j: Job) => j.status === "Draft").length}
 					icon={Calendar}
 					loading={isLoading}
 					color="slate"
@@ -67,9 +62,8 @@ function RecruiterDashboard() {
 				<StatCard
 					title="Scheduled / active"
 					value={
-						interviewsList.filter(
-							(i: Interview) =>
-								i.status === "Scheduled" || i.status === "Active",
+						jobsList.filter(
+							(j: Job) => j.status === "Scheduled" || j.status === "Active",
 						).length
 					}
 					icon={Users}
@@ -78,10 +72,7 @@ function RecruiterDashboard() {
 				/>
 				<StatCard
 					title="Completed"
-					value={
-						interviewsList.filter((i: Interview) => i.status === "Completed")
-							.length
-					}
+					value={jobsList.filter((j: Job) => j.status === "Completed").length}
 					icon={BarChart3}
 					loading={isLoading}
 					color="blue"
@@ -89,10 +80,16 @@ function RecruiterDashboard() {
 			</div>
 
 			<Card className="border-black/8 shadow-sm">
-				<CardHeader>
+				<CardHeader className="flex flex-row flex-wrap items-center justify-between gap-2 space-y-0">
 					<CardTitle className="text-lg font-semibold tracking-tight">
-						Interviews
+						Recent jobs
 					</CardTitle>
+					<Link
+						to="/dashboard/jobs"
+						className="text-sm font-medium text-[#0052cc] no-underline hover:underline"
+					>
+						View all
+					</Link>
 				</CardHeader>
 				<CardContent>
 					{isLoading ? (
@@ -101,12 +98,12 @@ function RecruiterDashboard() {
 							<Skeleton className="h-20 w-full" />
 							<Skeleton className="h-20 w-full" />
 						</div>
-					) : interviewsList.length === 0 ? (
+					) : jobsList.length === 0 ? (
 						<div className="py-12 text-center">
 							<div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-[#f3f4f6]">
 								<Calendar className="h-7 w-7 text-[#6b7280]" />
 							</div>
-							<p className="font-medium">No interviews yet</p>
+							<p className="font-medium">No jobs yet</p>
 							<p className="mt-1 text-sm text-[#6b7280]">
 								Create a job opening and configure AI questions, then invite
 								candidates.
@@ -115,46 +112,43 @@ function RecruiterDashboard() {
 								className="mt-4 h-11 rounded-xl bg-[#0052cc] font-medium hover:bg-[#0041a3]"
 								asChild
 							>
-								<Link to="/interviews">
+								<Link to="/jobs/new">
 									<Plus className="mr-2 h-4 w-4" />
-									Create interview
+									Create job
 								</Link>
 							</Button>
 						</div>
 					) : (
 						<ul className="divide-y divide-black/8 overflow-hidden rounded-xl border border-black/8">
-							{interviewsList.map((interview: Interview) => (
-								<li key={interview.id}>
+							{jobsList.map((row: Job) => (
+								<li key={row.id}>
 									<Link
-										to="/interviews/$id"
-										params={{ id: interview.id }}
+										to="/jobs/$id"
+										params={{ id: row.id }}
 										className="flex flex-wrap items-center gap-3 bg-white px-4 py-4 transition-colors hover:bg-[#f9fafb]"
 									>
 										<div className="min-w-0 flex-1">
 											<div className="flex flex-wrap items-center gap-2">
 												<span className="font-medium text-[#111827]">
-													{interview.title}
+													{row.title}
 												</span>
 												<Badge
-													className={cn(
-														"text-xs",
-														getStatusColor(interview.status),
-													)}
+													className={cn("text-xs", getStatusColor(row.status))}
 												>
-													{interview.status}
+													{row.status}
 												</Badge>
 											</div>
 											<p className="mt-0.5 text-sm text-[#6b7280]">
-												{interview.job_title}
-												{interview.candidate_name
-													? ` · ${interview.candidate_name}`
+												{row.job_title}
+												{row.candidate_name
+													? ` · ${row.candidate_name}`
 													: " · No candidate yet"}
 											</p>
 										</div>
 										<div className="flex items-center gap-3 text-sm text-[#6b7280]">
 											<span className="inline-flex items-center gap-1">
 												<Clock className="h-3.5 w-3.5" />
-												{interview.duration_minutes} min
+												{row.duration_minutes} min
 											</span>
 											<ChevronRight className="h-4 w-4 shrink-0 opacity-50" />
 										</div>

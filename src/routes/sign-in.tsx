@@ -14,6 +14,7 @@ import { Button } from "#/components/ui/button";
 import { Input } from "#/components/ui/input";
 import { ApiError, loginWithPassword } from "#/integrations/api/client";
 import { useAuth, useLogout } from "#/integrations/api/hooks";
+import { jobKeys } from "#/integrations/api/queries";
 import {
 	ensureAuthResolved,
 	useAuthStore,
@@ -117,7 +118,7 @@ function SignInPage() {
 							{getSafeInternalRedirect(redirectTo)
 								? "Continue"
 								: user.role === "Candidate"
-									? "My interviews"
+									? "My jobs"
 									: "Go to dashboard"}
 						</Button>
 						<Button
@@ -142,7 +143,7 @@ function SignInPage() {
 
 		try {
 			await loginWithPassword({ email, password });
-			await queryClient.invalidateQueries({ queryKey: ["interviews"] });
+			await queryClient.invalidateQueries({ queryKey: jobKeys.all });
 			const role = useAuthStore.getState().user?.role;
 			const next = getSafeInternalRedirect(redirectTo);
 			startTransition(() => {

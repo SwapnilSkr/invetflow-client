@@ -1,5 +1,5 @@
 import { Link } from "@tanstack/react-router";
-import { LayoutDashboard, ListVideo } from "lucide-react";
+import { Briefcase, LayoutDashboard, ListVideo } from "lucide-react";
 import { BrandMark } from "#/components/onboarding/BrandMark";
 import { useAuth } from "#/integrations/api/hooks";
 import AuthHeaderUser from "../integrations/auth/header-user.tsx";
@@ -37,7 +37,7 @@ export default function Header() {
 								activeProps={{ className: "nav-link is-active text-[#111827]" }}
 							>
 								<ListVideo className="h-3.5 w-3.5 opacity-80" />
-								My interviews
+								My jobs
 							</Link>
 						) : (
 							<>
@@ -52,13 +52,14 @@ export default function Header() {
 									Dashboard
 								</Link>
 								<Link
-									to="/interviews"
-									className="nav-link text-[#6b7280] no-underline hover:text-[#111827]"
+									to="/dashboard/jobs"
+									className="nav-link inline-flex items-center gap-1.5 text-[#6b7280] no-underline hover:text-[#111827]"
 									activeProps={{
 										className: "nav-link is-active text-[#111827]",
 									}}
 								>
-									Interviews
+									<Briefcase className="h-3.5 w-3.5 opacity-80" />
+									Jobs
 								</Link>
 							</>
 						)

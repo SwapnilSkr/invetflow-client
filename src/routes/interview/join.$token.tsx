@@ -8,7 +8,7 @@ import { Separator } from "#/components/ui/separator";
 import { Skeleton } from "#/components/ui/skeleton";
 import { ApiError } from "#/integrations/api/errors";
 import { useAuth } from "#/integrations/api/hooks";
-import { interviewQueries, useJoinInterview } from "#/integrations/api/queries";
+import { jobQueries, useJoinJob } from "#/integrations/api/queries";
 import { requireSessionWithReturnTo } from "#/lib/require-role";
 
 export const Route = createFileRoute("/interview/join/$token")({
@@ -23,28 +23,28 @@ function JoinByTokenPage() {
 	const { user } = useAuth();
 	const navigate = useNavigate();
 	const {
-		data: interview,
+		data: job,
 		isLoading,
 		error,
 	} = useQuery({
-		...interviewQueries.byToken(token),
+		...jobQueries.byToken(token),
 		enabled: Boolean(token),
 	});
-	const joinInterview = useJoinInterview();
+	const joinJob = useJoinJob();
 	const [joining, setJoining] = useState(false);
 	const [joinError, setJoinError] = useState<string | null>(null);
 
 	const handleJoin = async () => {
-		if (!interview) return;
+		if (!job) return;
 		setJoining(true);
 		setJoinError(null);
 		try {
-			const result = await joinInterview.mutateAsync(interview.id);
+			const result = await joinJob.mutateAsync(job.id);
 			navigate({
-				to: "/interviews/$id/session",
-				params: { id: interview.id },
+				to: "/jobs/$id/session",
+				params: { id: job.id },
 				search: {
-					sessionId: result.session_id,
+					sessionId: result.interview_id,
 					token: result.livekit_token,
 					url: result.livekit_url,
 				},
@@ -77,7 +77,7 @@ function JoinByTokenPage() {
 		);
 	}
 
-	if (error || !interview) {
+	if (error || !job) {
 		return (
 			<main className="page-wrap flex justify-center px-4 py-16">
 				<Card className="w-full max-w-lg">
@@ -97,11 +97,11 @@ function JoinByTokenPage() {
 		);
 	}
 
-	const isOwner = Boolean(user?.id && user.id === interview.recruiter_id);
+	const isOwner = Boolean(user?.id && user.id === job.recruiter_id);
 	const isJoinable =
-		interview.status === "Scheduled" ||
-		interview.status === "Active" ||
-		(interview.status === "Draft" && isOwner && user?.role === "Recruiter");
+		job.status === "Scheduled" ||
+		job.status === "Active" ||
+		(job.status === "Draft" && isOwner && user?.role === "Recruiter");
 
 	return (
 		<main className="page-wrap flex justify-center px-4 py-16">
@@ -113,11 +113,10 @@ function JoinByTokenPage() {
 							InvetFlow
 						</span>
 					</div>
-					<CardTitle className="text-xl">{interview.title}</CardTitle>
-					<p className="text-muted-foreground">{interview.job_title}</p>
+					<CardTitle className="text-xl">{job.title}</CardTitle>
+					<p className="text-muted-foreground">{job.job_title}</p>
 				</CardHeader>
 				<CardContent className="space-y-6">
-					{/* Interview Details */}
 					<div className="space-y-3 rounded-lg bg-muted/50 p-4">
 						<div className="flex items-center justify-between text-sm">
 							<span className="flex items-center gap-2 text-muted-foreground">
@@ -125,7 +124,7 @@ function JoinByTokenPage() {
 								Duration
 							</span>
 							<span className="font-medium">
-								{interview.duration_minutes} minutes
+								{job.duration_minutes} minutes
 							</span>
 						</div>
 						<Separator />
@@ -134,13 +133,10 @@ function JoinByTokenPage() {
 								<Users className="h-4 w-4" />
 								Questions
 							</span>
-							<span className="font-medium">
-								{interview.questions?.length || 0}
-							</span>
+							<span className="font-medium">{job.questions?.length || 0}</span>
 						</div>
 					</div>
 
-					{/* Requirements */}
 					<div className="space-y-2">
 						<p className="text-sm font-medium">Before you begin</p>
 						<div className="grid grid-cols-2 gap-2">

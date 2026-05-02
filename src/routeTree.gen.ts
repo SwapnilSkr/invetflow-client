@@ -12,13 +12,17 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as SignInRouteImport } from './routes/sign-in'
 import { Route as OnboardingRouteImport } from './routes/onboarding'
 import { Route as AboutRouteImport } from './routes/about'
+import { Route as DashboardRouteRouteImport } from './routes/dashboard/route'
 import { Route as IndexRouteImport } from './routes/index'
-import { Route as InterviewsIndexRouteImport } from './routes/interviews/index'
+import { Route as JobsIndexRouteImport } from './routes/jobs/index'
 import { Route as DashboardIndexRouteImport } from './routes/dashboard/index'
 import { Route as CandidateIndexRouteImport } from './routes/candidate/index'
-import { Route as InterviewsNewRouteImport } from './routes/interviews/new'
-import { Route as InterviewsIdRouteImport } from './routes/interviews/$id'
-import { Route as InterviewsIdSessionRouteImport } from './routes/interviews/$id.session'
+import { Route as JobsNewRouteImport } from './routes/jobs/new'
+import { Route as JobsIdRouteImport } from './routes/jobs/$id'
+import { Route as DashboardSettingsRouteImport } from './routes/dashboard/settings'
+import { Route as DashboardJobsRouteImport } from './routes/dashboard/jobs'
+import { Route as DashboardCandidatesRouteImport } from './routes/dashboard/candidates'
+import { Route as JobsIdSessionRouteImport } from './routes/jobs/$id.session'
 import { Route as InterviewJoinTokenRouteImport } from './routes/interview/join.$token'
 
 const SignInRoute = SignInRouteImport.update({
@@ -36,40 +40,60 @@ const AboutRoute = AboutRouteImport.update({
   path: '/about',
   getParentRoute: () => rootRouteImport,
 } as any)
+const DashboardRouteRoute = DashboardRouteRouteImport.update({
+  id: '/dashboard',
+  path: '/dashboard',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
-const InterviewsIndexRoute = InterviewsIndexRouteImport.update({
-  id: '/interviews/',
-  path: '/interviews/',
+const JobsIndexRoute = JobsIndexRouteImport.update({
+  id: '/jobs/',
+  path: '/jobs/',
   getParentRoute: () => rootRouteImport,
 } as any)
 const DashboardIndexRoute = DashboardIndexRouteImport.update({
-  id: '/dashboard/',
-  path: '/dashboard/',
-  getParentRoute: () => rootRouteImport,
+  id: '/',
+  path: '/',
+  getParentRoute: () => DashboardRouteRoute,
 } as any)
 const CandidateIndexRoute = CandidateIndexRouteImport.update({
   id: '/candidate/',
   path: '/candidate/',
   getParentRoute: () => rootRouteImport,
 } as any)
-const InterviewsNewRoute = InterviewsNewRouteImport.update({
-  id: '/interviews/new',
-  path: '/interviews/new',
+const JobsNewRoute = JobsNewRouteImport.update({
+  id: '/jobs/new',
+  path: '/jobs/new',
   getParentRoute: () => rootRouteImport,
 } as any)
-const InterviewsIdRoute = InterviewsIdRouteImport.update({
-  id: '/interviews/$id',
-  path: '/interviews/$id',
+const JobsIdRoute = JobsIdRouteImport.update({
+  id: '/jobs/$id',
+  path: '/jobs/$id',
   getParentRoute: () => rootRouteImport,
 } as any)
-const InterviewsIdSessionRoute = InterviewsIdSessionRouteImport.update({
+const DashboardSettingsRoute = DashboardSettingsRouteImport.update({
+  id: '/settings',
+  path: '/settings',
+  getParentRoute: () => DashboardRouteRoute,
+} as any)
+const DashboardJobsRoute = DashboardJobsRouteImport.update({
+  id: '/jobs',
+  path: '/jobs',
+  getParentRoute: () => DashboardRouteRoute,
+} as any)
+const DashboardCandidatesRoute = DashboardCandidatesRouteImport.update({
+  id: '/candidates',
+  path: '/candidates',
+  getParentRoute: () => DashboardRouteRoute,
+} as any)
+const JobsIdSessionRoute = JobsIdSessionRouteImport.update({
   id: '/session',
   path: '/session',
-  getParentRoute: () => InterviewsIdRoute,
+  getParentRoute: () => JobsIdRoute,
 } as any)
 const InterviewJoinTokenRoute = InterviewJoinTokenRouteImport.update({
   id: '/interview/join/$token',
@@ -79,96 +103,118 @@ const InterviewJoinTokenRoute = InterviewJoinTokenRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/dashboard': typeof DashboardRouteRouteWithChildren
   '/about': typeof AboutRoute
   '/onboarding': typeof OnboardingRoute
   '/sign-in': typeof SignInRoute
-  '/interviews/$id': typeof InterviewsIdRouteWithChildren
-  '/interviews/new': typeof InterviewsNewRoute
+  '/dashboard/candidates': typeof DashboardCandidatesRoute
+  '/dashboard/jobs': typeof DashboardJobsRoute
+  '/dashboard/settings': typeof DashboardSettingsRoute
+  '/jobs/$id': typeof JobsIdRouteWithChildren
+  '/jobs/new': typeof JobsNewRoute
   '/candidate/': typeof CandidateIndexRoute
   '/dashboard/': typeof DashboardIndexRoute
-  '/interviews/': typeof InterviewsIndexRoute
+  '/jobs/': typeof JobsIndexRoute
   '/interview/join/$token': typeof InterviewJoinTokenRoute
-  '/interviews/$id/session': typeof InterviewsIdSessionRoute
+  '/jobs/$id/session': typeof JobsIdSessionRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/about': typeof AboutRoute
   '/onboarding': typeof OnboardingRoute
   '/sign-in': typeof SignInRoute
-  '/interviews/$id': typeof InterviewsIdRouteWithChildren
-  '/interviews/new': typeof InterviewsNewRoute
+  '/dashboard/candidates': typeof DashboardCandidatesRoute
+  '/dashboard/jobs': typeof DashboardJobsRoute
+  '/dashboard/settings': typeof DashboardSettingsRoute
+  '/jobs/$id': typeof JobsIdRouteWithChildren
+  '/jobs/new': typeof JobsNewRoute
   '/candidate': typeof CandidateIndexRoute
   '/dashboard': typeof DashboardIndexRoute
-  '/interviews': typeof InterviewsIndexRoute
+  '/jobs': typeof JobsIndexRoute
   '/interview/join/$token': typeof InterviewJoinTokenRoute
-  '/interviews/$id/session': typeof InterviewsIdSessionRoute
+  '/jobs/$id/session': typeof JobsIdSessionRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/dashboard': typeof DashboardRouteRouteWithChildren
   '/about': typeof AboutRoute
   '/onboarding': typeof OnboardingRoute
   '/sign-in': typeof SignInRoute
-  '/interviews/$id': typeof InterviewsIdRouteWithChildren
-  '/interviews/new': typeof InterviewsNewRoute
+  '/dashboard/candidates': typeof DashboardCandidatesRoute
+  '/dashboard/jobs': typeof DashboardJobsRoute
+  '/dashboard/settings': typeof DashboardSettingsRoute
+  '/jobs/$id': typeof JobsIdRouteWithChildren
+  '/jobs/new': typeof JobsNewRoute
   '/candidate/': typeof CandidateIndexRoute
   '/dashboard/': typeof DashboardIndexRoute
-  '/interviews/': typeof InterviewsIndexRoute
+  '/jobs/': typeof JobsIndexRoute
   '/interview/join/$token': typeof InterviewJoinTokenRoute
-  '/interviews/$id/session': typeof InterviewsIdSessionRoute
+  '/jobs/$id/session': typeof JobsIdSessionRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/dashboard'
     | '/about'
     | '/onboarding'
     | '/sign-in'
-    | '/interviews/$id'
-    | '/interviews/new'
+    | '/dashboard/candidates'
+    | '/dashboard/jobs'
+    | '/dashboard/settings'
+    | '/jobs/$id'
+    | '/jobs/new'
     | '/candidate/'
     | '/dashboard/'
-    | '/interviews/'
+    | '/jobs/'
     | '/interview/join/$token'
-    | '/interviews/$id/session'
+    | '/jobs/$id/session'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
     | '/about'
     | '/onboarding'
     | '/sign-in'
-    | '/interviews/$id'
-    | '/interviews/new'
+    | '/dashboard/candidates'
+    | '/dashboard/jobs'
+    | '/dashboard/settings'
+    | '/jobs/$id'
+    | '/jobs/new'
     | '/candidate'
     | '/dashboard'
-    | '/interviews'
+    | '/jobs'
     | '/interview/join/$token'
-    | '/interviews/$id/session'
+    | '/jobs/$id/session'
   id:
     | '__root__'
     | '/'
+    | '/dashboard'
     | '/about'
     | '/onboarding'
     | '/sign-in'
-    | '/interviews/$id'
-    | '/interviews/new'
+    | '/dashboard/candidates'
+    | '/dashboard/jobs'
+    | '/dashboard/settings'
+    | '/jobs/$id'
+    | '/jobs/new'
     | '/candidate/'
     | '/dashboard/'
-    | '/interviews/'
+    | '/jobs/'
     | '/interview/join/$token'
-    | '/interviews/$id/session'
+    | '/jobs/$id/session'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  DashboardRouteRoute: typeof DashboardRouteRouteWithChildren
   AboutRoute: typeof AboutRoute
   OnboardingRoute: typeof OnboardingRoute
   SignInRoute: typeof SignInRoute
-  InterviewsIdRoute: typeof InterviewsIdRouteWithChildren
-  InterviewsNewRoute: typeof InterviewsNewRoute
+  JobsIdRoute: typeof JobsIdRouteWithChildren
+  JobsNewRoute: typeof JobsNewRoute
   CandidateIndexRoute: typeof CandidateIndexRoute
-  DashboardIndexRoute: typeof DashboardIndexRoute
-  InterviewsIndexRoute: typeof InterviewsIndexRoute
+  JobsIndexRoute: typeof JobsIndexRoute
   InterviewJoinTokenRoute: typeof InterviewJoinTokenRoute
 }
 
@@ -195,6 +241,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AboutRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/dashboard': {
+      id: '/dashboard'
+      path: '/dashboard'
+      fullPath: '/dashboard'
+      preLoaderRoute: typeof DashboardRouteRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/': {
       id: '/'
       path: '/'
@@ -202,19 +255,19 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/interviews/': {
-      id: '/interviews/'
-      path: '/interviews'
-      fullPath: '/interviews/'
-      preLoaderRoute: typeof InterviewsIndexRouteImport
+    '/jobs/': {
+      id: '/jobs/'
+      path: '/jobs'
+      fullPath: '/jobs/'
+      preLoaderRoute: typeof JobsIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/dashboard/': {
       id: '/dashboard/'
-      path: '/dashboard'
+      path: '/'
       fullPath: '/dashboard/'
       preLoaderRoute: typeof DashboardIndexRouteImport
-      parentRoute: typeof rootRouteImport
+      parentRoute: typeof DashboardRouteRoute
     }
     '/candidate/': {
       id: '/candidate/'
@@ -223,26 +276,47 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof CandidateIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/interviews/new': {
-      id: '/interviews/new'
-      path: '/interviews/new'
-      fullPath: '/interviews/new'
-      preLoaderRoute: typeof InterviewsNewRouteImport
+    '/jobs/new': {
+      id: '/jobs/new'
+      path: '/jobs/new'
+      fullPath: '/jobs/new'
+      preLoaderRoute: typeof JobsNewRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/interviews/$id': {
-      id: '/interviews/$id'
-      path: '/interviews/$id'
-      fullPath: '/interviews/$id'
-      preLoaderRoute: typeof InterviewsIdRouteImport
+    '/jobs/$id': {
+      id: '/jobs/$id'
+      path: '/jobs/$id'
+      fullPath: '/jobs/$id'
+      preLoaderRoute: typeof JobsIdRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/interviews/$id/session': {
-      id: '/interviews/$id/session'
+    '/dashboard/settings': {
+      id: '/dashboard/settings'
+      path: '/settings'
+      fullPath: '/dashboard/settings'
+      preLoaderRoute: typeof DashboardSettingsRouteImport
+      parentRoute: typeof DashboardRouteRoute
+    }
+    '/dashboard/jobs': {
+      id: '/dashboard/jobs'
+      path: '/jobs'
+      fullPath: '/dashboard/jobs'
+      preLoaderRoute: typeof DashboardJobsRouteImport
+      parentRoute: typeof DashboardRouteRoute
+    }
+    '/dashboard/candidates': {
+      id: '/dashboard/candidates'
+      path: '/candidates'
+      fullPath: '/dashboard/candidates'
+      preLoaderRoute: typeof DashboardCandidatesRouteImport
+      parentRoute: typeof DashboardRouteRoute
+    }
+    '/jobs/$id/session': {
+      id: '/jobs/$id/session'
       path: '/session'
-      fullPath: '/interviews/$id/session'
-      preLoaderRoute: typeof InterviewsIdSessionRouteImport
-      parentRoute: typeof InterviewsIdRoute
+      fullPath: '/jobs/$id/session'
+      preLoaderRoute: typeof JobsIdSessionRouteImport
+      parentRoute: typeof JobsIdRoute
     }
     '/interview/join/$token': {
       id: '/interview/join/$token'
@@ -254,28 +328,45 @@ declare module '@tanstack/react-router' {
   }
 }
 
-interface InterviewsIdRouteChildren {
-  InterviewsIdSessionRoute: typeof InterviewsIdSessionRoute
+interface DashboardRouteRouteChildren {
+  DashboardCandidatesRoute: typeof DashboardCandidatesRoute
+  DashboardJobsRoute: typeof DashboardJobsRoute
+  DashboardSettingsRoute: typeof DashboardSettingsRoute
+  DashboardIndexRoute: typeof DashboardIndexRoute
 }
 
-const InterviewsIdRouteChildren: InterviewsIdRouteChildren = {
-  InterviewsIdSessionRoute: InterviewsIdSessionRoute,
+const DashboardRouteRouteChildren: DashboardRouteRouteChildren = {
+  DashboardCandidatesRoute: DashboardCandidatesRoute,
+  DashboardJobsRoute: DashboardJobsRoute,
+  DashboardSettingsRoute: DashboardSettingsRoute,
+  DashboardIndexRoute: DashboardIndexRoute,
 }
 
-const InterviewsIdRouteWithChildren = InterviewsIdRoute._addFileChildren(
-  InterviewsIdRouteChildren,
+const DashboardRouteRouteWithChildren = DashboardRouteRoute._addFileChildren(
+  DashboardRouteRouteChildren,
 )
+
+interface JobsIdRouteChildren {
+  JobsIdSessionRoute: typeof JobsIdSessionRoute
+}
+
+const JobsIdRouteChildren: JobsIdRouteChildren = {
+  JobsIdSessionRoute: JobsIdSessionRoute,
+}
+
+const JobsIdRouteWithChildren =
+  JobsIdRoute._addFileChildren(JobsIdRouteChildren)
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  DashboardRouteRoute: DashboardRouteRouteWithChildren,
   AboutRoute: AboutRoute,
   OnboardingRoute: OnboardingRoute,
   SignInRoute: SignInRoute,
-  InterviewsIdRoute: InterviewsIdRouteWithChildren,
-  InterviewsNewRoute: InterviewsNewRoute,
+  JobsIdRoute: JobsIdRouteWithChildren,
+  JobsNewRoute: JobsNewRoute,
   CandidateIndexRoute: CandidateIndexRoute,
-  DashboardIndexRoute: DashboardIndexRoute,
-  InterviewsIndexRoute: InterviewsIndexRoute,
+  JobsIndexRoute: JobsIndexRoute,
   InterviewJoinTokenRoute: InterviewJoinTokenRoute,
 }
 export const routeTree = rootRouteImport

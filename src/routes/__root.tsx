@@ -7,6 +7,8 @@ import {
 	useRouterState,
 } from "@tanstack/react-router";
 import { TanStackRouterDevtoolsPanel } from "@tanstack/react-router-devtools";
+import { DashboardSidebar } from "#/components/dashboard/DashboardSidebar";
+import { useAuth } from "#/integrations/api/hooks";
 import Header from "../components/Header";
 import { AuthBootstrap } from "../integrations/auth/auth-bootstrap";
 import TanStackQueryDevtools from "../integrations/tanstack-query/devtools";
@@ -32,14 +34,30 @@ export const Route = createRootRouteWithContext<MyRouterContext>()({
 });
 
 function AppShell({ children }: { children: React.ReactNode }) {
-	const hideHeader = useRouterState({
-		select: (s) =>
-			s.location.pathname.startsWith("/onboarding") ||
-			s.location.pathname.startsWith("/sign-in"),
-	});
+	const pathname = useRouterState({ select: (s) => s.location.pathname });
+	const { user, isAuthenticated, isLoading } = useAuth();
+
+	const isBareRoute =
+		pathname.startsWith("/onboarding") || pathname.startsWith("/sign-in");
+
+	if (isBareRoute) {
+		return <>{children}</>;
+	}
+
+	if (!isLoading && isAuthenticated && user) {
+		return (
+			<div className="flex min-h-svh w-full bg-white text-[#111827]">
+				<DashboardSidebar />
+				<div className="min-h-svh min-w-0 flex-1 overflow-auto bg-white">
+					{children}
+				</div>
+			</div>
+		);
+	}
+
 	return (
 		<>
-			{!hideHeader && <Header />}
+			<Header />
 			{children}
 		</>
 	);

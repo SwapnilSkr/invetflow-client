@@ -12,22 +12,19 @@ import { Badge } from "#/components/ui/badge";
 import { Button } from "#/components/ui/button";
 import { Card, CardContent } from "#/components/ui/card";
 import { Skeleton } from "#/components/ui/skeleton";
-import type { Interview } from "#/integrations/api/client";
-import {
-	interviewQueries,
-	useDeleteInterview,
-} from "#/integrations/api/queries";
+import type { Job } from "#/integrations/api/client";
+import { jobQueries, useDeleteJob } from "#/integrations/api/queries";
 import { requireRecruiter } from "#/lib/require-role";
 import { cn, getStatusColor } from "#/lib/utils";
 
-export const Route = createFileRoute("/interviews/")({
+export const Route = createFileRoute("/jobs/")({
 	beforeLoad: requireRecruiter,
 	component: InterviewsPage,
 });
 
 function InterviewsPage() {
-	const { data, isLoading, error } = useQuery(interviewQueries.list());
-	const deleteInterview = useDeleteInterview();
+	const { data, isLoading, error } = useQuery(jobQueries.list());
+	const deleteJob = useDeleteJob();
 
 	if (isLoading) {
 		return (
@@ -49,7 +46,7 @@ function InterviewsPage() {
 		return (
 			<div className="flex flex-col items-center justify-center py-20">
 				<p className="text-destructive text-lg font-medium">
-					Error loading interviews
+					Error loading jobs
 				</p>
 				<p className="mt-2 text-sm text-muted-foreground">
 					{(error as Error).message}
@@ -69,48 +66,46 @@ function InterviewsPage() {
 		<div className="container mx-auto px-4 py-8">
 			<div className="mb-8 flex items-center justify-between">
 				<div>
-					<h1 className="text-2xl font-bold">Interviews</h1>
+					<h1 className="text-2xl font-bold">Jobs</h1>
 					<p className="mt-1 text-sm text-muted-foreground">
-						{data?.total ?? 0} total interviews
+						{data?.total ?? 0} total jobs
 					</p>
 				</div>
 				<Button asChild>
-					<Link to="/interviews/new">
+					<Link to="/jobs/new">
 						<Plus className="mr-2 h-4 w-4" />
-						Create Interview
+						Create job
 					</Link>
 				</Button>
 			</div>
 
 			<div className="space-y-3">
-				{data?.interviews?.length === 0 ? (
+				{data?.jobs?.length === 0 ? (
 					<Card>
 						<CardContent className="flex flex-col items-center justify-center py-16">
 							<div className="mb-4 rounded-full bg-muted p-4">
 								<Calendar className="h-8 w-8 text-muted-foreground" />
 							</div>
-							<p className="text-lg font-medium">No interviews yet</p>
+							<p className="text-lg font-medium">No jobs yet</p>
 							<p className="mt-1 text-sm text-muted-foreground">
-								Create your first interview to get started
+								Create your first job to get started
 							</p>
 							<Button className="mt-4" asChild>
-								<Link to="/interviews/new">
+								<Link to="/jobs/new">
 									<Plus className="mr-2 h-4 w-4" />
-									Create Interview
+									Create job
 								</Link>
 							</Button>
 						</CardContent>
 					</Card>
 				) : (
-					data?.interviews?.map((interview: Interview) => (
-						<InterviewCard
-							key={interview.id}
-							interview={interview}
-							onDelete={(id) => {
-								if (
-									confirm("Are you sure you want to delete this interview?")
-								) {
-									deleteInterview.mutate(id);
+					data?.jobs?.map((row: Job) => (
+						<JobRowCard
+							key={row.id}
+							job={row}
+							onDelete={(jid) => {
+								if (confirm("Are you sure you want to delete this job?")) {
+									deleteJob.mutate(jid);
 								}
 							}}
 						/>
@@ -121,11 +116,11 @@ function InterviewsPage() {
 	);
 }
 
-function InterviewCard({
-	interview,
+function JobRowCard({
+	job,
 	onDelete,
 }: {
-	interview: Interview;
+	job: Job;
 	onDelete: (id: string) => void;
 }) {
 	return (
@@ -136,39 +131,36 @@ function InterviewCard({
 						<div className="flex items-start justify-between gap-3">
 							<div className="min-w-0">
 								<Link
-									to="/interviews/$id"
-									params={{ id: interview.id }}
+									to="/jobs/$id"
+									params={{ id: job.id }}
 									className="text-lg font-semibold no-underline hover:underline text-foreground"
 								>
-									{interview.title}
+									{job.title}
 								</Link>
 								<p className="mt-0.5 text-sm text-muted-foreground">
-									{interview.job_title}
+									{job.job_title}
 								</p>
 							</div>
 							<Badge
-								className={cn(
-									"flex-shrink-0",
-									getStatusColor(interview.status),
-								)}
+								className={cn("flex-shrink-0", getStatusColor(job.status))}
 							>
-								{interview.status}
+								{job.status}
 							</Badge>
 						</div>
 
 						<div className="mt-3 flex flex-wrap items-center gap-4 text-sm text-muted-foreground">
 							<div className="flex items-center gap-1">
 								<Clock className="h-3.5 w-3.5" />
-								<span>{interview.duration_minutes} min</span>
+								<span>{job.duration_minutes} min</span>
 							</div>
 							<div className="flex items-center gap-1">
 								<Users className="h-3.5 w-3.5" />
-								<span>{interview.questions?.length || 0} questions</span>
+								<span>{job.questions?.length || 0} questions</span>
 							</div>
-							{interview.candidate_name && (
+							{job.candidate_name && (
 								<div className="flex items-center gap-1">
 									<span className="font-medium text-foreground">
-										{interview.candidate_name}
+										{job.candidate_name}
 									</span>
 								</div>
 							)}
@@ -177,7 +169,7 @@ function InterviewCard({
 
 					<div className="flex items-center gap-1">
 						<Button variant="ghost" size="icon-sm" asChild>
-							<Link to="/interviews/$id" params={{ id: interview.id }}>
+							<Link to="/jobs/$id" params={{ id: job.id }}>
 								<ExternalLink className="h-4 w-4" />
 							</Link>
 						</Button>
@@ -185,7 +177,7 @@ function InterviewCard({
 							variant="ghost"
 							size="icon-sm"
 							className="text-destructive hover:text-destructive"
-							onClick={() => onDelete(interview.id)}
+							onClick={() => onDelete(job.id)}
 						>
 							<Trash2 className="h-4 w-4" />
 						</Button>

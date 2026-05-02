@@ -7,143 +7,138 @@ import {
 	type AssignCandidateRequest,
 	apiClient,
 	apiClientPublic,
-	type CreateInterviewRequest,
-	type Interview,
+	type CandidateInterview,
+	type CreateJobRequest,
 	type InterviewScores,
-	type InterviewSessionListResponse,
-	type JoinInterviewResponse,
-	type Session,
+	type Job,
+	type JobInterviewsListResponse,
+	type JoinJobResponse,
 	type TranscriptEntry,
-	type UpdateInterviewRequest,
+	type UpdateJobRequest,
 } from "./client";
 
-// Interview Query Keys
-export const interviewKeys = {
-	all: ["interviews"] as const,
-	lists: () => [...interviewKeys.all, "list"] as const,
+export const jobKeys = {
+	all: ["jobs"] as const,
+	lists: () => [...jobKeys.all, "list"] as const,
 	list: (filters?: Record<string, string>) =>
-		[...interviewKeys.lists(), filters] as const,
-	details: () => [...interviewKeys.all, "detail"] as const,
-	detail: (id: string) => [...interviewKeys.details(), id] as const,
-	byToken: (token: string) => [...interviewKeys.all, "token", token] as const,
-	sessions: (id: string) => [...interviewKeys.all, "sessions", id] as const,
+		[...jobKeys.lists(), filters] as const,
+	details: () => [...jobKeys.all, "detail"] as const,
+	detail: (id: string) => [...jobKeys.details(), id] as const,
+	byToken: (token: string) => [...jobKeys.all, "token", token] as const,
+	jobInterviews: (jobId: string) =>
+		[...jobKeys.all, "jobInterviews", jobId] as const,
 };
 
-// Session Query Keys
-export const sessionKeys = {
-	all: ["sessions"] as const,
-	details: () => [...sessionKeys.all, "detail"] as const,
-	detail: (id: string) => [...sessionKeys.details(), id] as const,
-	transcript: (id: string) => [...sessionKeys.all, "transcript", id] as const,
-	scores: (id: string) => [...sessionKeys.all, "scores", id] as const,
+export const candidateInterviewKeys = {
+	all: ["candidateInterviews"] as const,
+	details: () => [...candidateInterviewKeys.all, "detail"] as const,
+	detail: (id: string) => [...candidateInterviewKeys.details(), id] as const,
+	transcript: (id: string) =>
+		[...candidateInterviewKeys.all, "transcript", id] as const,
+	scores: (id: string) =>
+		[...candidateInterviewKeys.all, "scores", id] as const,
 };
 
-// Interview Queries
-export const interviewQueries = {
+export const jobQueries = {
 	list: (limit = 20, offset = 0) =>
 		queryOptions({
-			queryKey: interviewKeys.list({
+			queryKey: jobKeys.list({
 				limit: String(limit),
 				offset: String(offset),
 			}),
 			queryFn: () =>
 				apiClient<{
-					interviews: Interview[];
+					jobs: Job[];
 					total: number;
 					limit: number;
 					offset: number;
-				}>(`/api/interviews?limit=${limit}&offset=${offset}`),
+				}>(`/api/jobs?limit=${limit}&offset=${offset}`),
 		}),
 
 	detail: (id: string) =>
 		queryOptions({
-			queryKey: interviewKeys.detail(id),
-			queryFn: () => apiClient<Interview>(`/api/interviews/${id}`),
+			queryKey: jobKeys.detail(id),
+			queryFn: () => apiClient<Job>(`/api/jobs/${id}`),
 		}),
 
 	byToken: (token: string) =>
 		queryOptions({
-			queryKey: interviewKeys.byToken(token),
-			queryFn: () =>
-				apiClientPublic<Interview>(`/api/interviews/token/${token}`),
+			queryKey: jobKeys.byToken(token),
+			queryFn: () => apiClientPublic<Job>(`/api/jobs/token/${token}`),
 		}),
 
-	sessions: (id: string) =>
+	jobInterviews: (jobId: string) =>
 		queryOptions({
-			queryKey: interviewKeys.sessions(id),
+			queryKey: jobKeys.jobInterviews(jobId),
 			queryFn: () =>
-				apiClient<InterviewSessionListResponse>(
-					`/api/interviews/${id}/sessions`,
-				),
+				apiClient<JobInterviewsListResponse>(`/api/jobs/${jobId}/interviews`),
 		}),
 };
 
-// Session Queries
-export const sessionQueries = {
+export const candidateInterviewQueries = {
 	detail: (id: string) =>
 		queryOptions({
-			queryKey: sessionKeys.detail(id),
-			queryFn: () => apiClient<Session>(`/api/sessions/${id}`),
+			queryKey: candidateInterviewKeys.detail(id),
+			queryFn: () => apiClient<CandidateInterview>(`/api/interviews/${id}`),
 		}),
 
 	transcript: (id: string) =>
 		queryOptions({
-			queryKey: sessionKeys.transcript(id),
+			queryKey: candidateInterviewKeys.transcript(id),
 			queryFn: () =>
 				apiClient<{ entries: TranscriptEntry[]; total: number }>(
-					`/api/sessions/${id}/transcript`,
+					`/api/interviews/${id}/transcript`,
 				),
 		}),
 
 	scores: (id: string) =>
 		queryOptions({
-			queryKey: sessionKeys.scores(id),
+			queryKey: candidateInterviewKeys.scores(id),
 			queryFn: () =>
-				apiClient<InterviewScores | null>(`/api/sessions/${id}/scores`),
+				apiClient<InterviewScores | null>(`/api/interviews/${id}/scores`),
 		}),
 };
 
-// Interview Mutations
-export function useCreateInterview() {
+export function useCreateJob() {
 	const queryClient = useQueryClient();
 
 	return useMutation({
-		mutationFn: (data: CreateInterviewRequest) =>
-			apiClient<Interview>("/api/interviews", {
+		mutationFn: (data: CreateJobRequest) =>
+			apiClient<Job>("/api/jobs", {
 				method: "POST",
 				body: JSON.stringify(data),
 			}),
 		onSuccess: () => {
-			queryClient.invalidateQueries({ queryKey: interviewKeys.lists() });
+			queryClient.invalidateQueries({ queryKey: jobKeys.lists() });
 		},
 	});
 }
 
-export function useUpdateInterview() {
+export function useUpdateJob() {
 	const queryClient = useQueryClient();
 
 	return useMutation({
-		mutationFn: ({ id, data }: { id: string; data: UpdateInterviewRequest }) =>
-			apiClient<Interview>(`/api/interviews/${id}`, {
+		mutationFn: ({ id, data }: { id: string; data: UpdateJobRequest }) =>
+			apiClient<Job>(`/api/jobs/${id}`, {
 				method: "PUT",
 				body: JSON.stringify(data),
 			}),
 		onSuccess: (_, { id }) => {
-			queryClient.invalidateQueries({ queryKey: interviewKeys.detail(id) });
-			queryClient.invalidateQueries({ queryKey: interviewKeys.sessions(id) });
-			queryClient.invalidateQueries({ queryKey: interviewKeys.lists() });
+			queryClient.invalidateQueries({ queryKey: jobKeys.detail(id) });
+			queryClient.invalidateQueries({ queryKey: jobKeys.jobInterviews(id) });
+			queryClient.invalidateQueries({ queryKey: jobKeys.lists() });
 		},
 	});
 }
 
-export function useDeleteInterview() {
+export function useDeleteJob() {
 	const queryClient = useQueryClient();
 
 	return useMutation({
 		mutationFn: (id: string) =>
-			apiClient<void>(`/api/interviews/${id}`, { method: "DELETE" }),
+			apiClient<void>(`/api/jobs/${id}`, { method: "DELETE" }),
 		onSuccess: () => {
-			queryClient.invalidateQueries({ queryKey: interviewKeys.lists() });
+			queryClient.invalidateQueries({ queryKey: jobKeys.lists() });
 		},
 	});
 }
@@ -153,61 +148,66 @@ export function useAssignCandidate() {
 
 	return useMutation({
 		mutationFn: ({ id, data }: { id: string; data: AssignCandidateRequest }) =>
-			apiClient<Interview>(`/api/interviews/${id}/assign`, {
+			apiClient<Job>(`/api/jobs/${id}/assign`, {
 				method: "POST",
 				body: JSON.stringify(data),
 			}),
 		onSuccess: (_, { id }) => {
-			queryClient.invalidateQueries({ queryKey: interviewKeys.detail(id) });
-			queryClient.invalidateQueries({ queryKey: interviewKeys.lists() });
+			queryClient.invalidateQueries({ queryKey: jobKeys.detail(id) });
+			queryClient.invalidateQueries({ queryKey: jobKeys.lists() });
 		},
 	});
 }
 
-export function useScheduleInterview() {
+export function useScheduleJob() {
 	const queryClient = useQueryClient();
 
 	return useMutation({
 		mutationFn: (id: string) =>
-			apiClient<Interview>(`/api/interviews/${id}/schedule`, {
+			apiClient<Job>(`/api/jobs/${id}/schedule`, {
 				method: "POST",
 			}),
 		onSuccess: (_, id) => {
-			queryClient.invalidateQueries({ queryKey: interviewKeys.detail(id) });
-			queryClient.invalidateQueries({ queryKey: interviewKeys.lists() });
+			queryClient.invalidateQueries({ queryKey: jobKeys.detail(id) });
+			queryClient.invalidateQueries({ queryKey: jobKeys.lists() });
 		},
 	});
 }
 
-export function useJoinInterview() {
+export function useJoinJob() {
 	const queryClient = useQueryClient();
 
 	return useMutation({
-		mutationFn: (id: string) =>
-			apiClient<JoinInterviewResponse>(`/api/interviews/${id}/join`, {
+		mutationFn: (jobId: string) =>
+			apiClient<JoinJobResponse>(`/api/jobs/${jobId}/join`, {
 				method: "POST",
 			}),
 		onSuccess: (res) => {
 			queryClient.invalidateQueries({
-				queryKey: interviewKeys.sessions(res.interview_id),
+				queryKey: jobKeys.jobInterviews(res.job_id),
 			});
 		},
 	});
 }
 
-// Session Mutations
-export function useEndSession() {
+export function useEndCandidateInterview() {
 	const queryClient = useQueryClient();
 
 	return useMutation({
 		mutationFn: (id: string) =>
-			apiClient<Session>(`/api/sessions/${id}/end`, { method: "POST" }),
-		onSuccess: (session, id) => {
-			queryClient.setQueryData(sessionKeys.detail(id), session);
-			queryClient.invalidateQueries({ queryKey: sessionKeys.detail(id) });
-			queryClient.invalidateQueries({ queryKey: sessionKeys.scores(id) });
+			apiClient<CandidateInterview>(`/api/interviews/${id}/end`, {
+				method: "POST",
+			}),
+		onSuccess: (row, id) => {
+			queryClient.setQueryData(candidateInterviewKeys.detail(id), row);
 			queryClient.invalidateQueries({
-				queryKey: interviewKeys.sessions(session.interview_id),
+				queryKey: candidateInterviewKeys.detail(id),
+			});
+			queryClient.invalidateQueries({
+				queryKey: candidateInterviewKeys.scores(id),
+			});
+			queryClient.invalidateQueries({
+				queryKey: jobKeys.jobInterviews(row.job_id),
 			});
 		},
 	});
@@ -218,10 +218,10 @@ export function useAppendTranscript() {
 
 	return useMutation({
 		mutationFn: ({
-			sessionId,
+			interviewId,
 			data,
 		}: {
-			sessionId: string;
+			interviewId: string;
 			data: {
 				speaker: string;
 				content: string;
@@ -229,13 +229,13 @@ export function useAppendTranscript() {
 				confidence?: number;
 			};
 		}) =>
-			apiClient<void>(`/api/sessions/${sessionId}/transcript`, {
+			apiClient<void>(`/api/interviews/${interviewId}/transcript`, {
 				method: "POST",
 				body: JSON.stringify(data),
 			}),
-		onSuccess: (_, { sessionId }) => {
+		onSuccess: (_, { interviewId }) => {
 			queryClient.invalidateQueries({
-				queryKey: sessionKeys.transcript(sessionId),
+				queryKey: candidateInterviewKeys.transcript(interviewId),
 			});
 		},
 	});
@@ -246,19 +246,19 @@ export function useSaveScores() {
 
 	return useMutation({
 		mutationFn: ({
-			sessionId,
+			interviewId,
 			data,
 		}: {
-			sessionId: string;
+			interviewId: string;
 			data: Omit<InterviewScores, "evaluated_at">;
 		}) =>
-			apiClient<InterviewScores>(`/api/sessions/${sessionId}/scores`, {
+			apiClient<InterviewScores>(`/api/interviews/${interviewId}/scores`, {
 				method: "POST",
 				body: JSON.stringify(data),
 			}),
-		onSuccess: (_, { sessionId }) => {
+		onSuccess: (_, { interviewId }) => {
 			queryClient.invalidateQueries({
-				queryKey: sessionKeys.scores(sessionId),
+				queryKey: candidateInterviewKeys.scores(interviewId),
 			});
 		},
 	});
