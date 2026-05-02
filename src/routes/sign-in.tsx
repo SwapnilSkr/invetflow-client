@@ -53,7 +53,7 @@ export const Route = createFileRoute("/sign-in")({
 });
 
 const fieldInputClass =
-	"h-[50px] rounded-[12px] border border-black/8 bg-white px-4 text-base text-[#111827] placeholder:text-[#111827]/50 focus-visible:border-[#0052cc] focus-visible:ring-[#0052cc]/25";
+	"h-[50px] rounded-[12px] border border-black/8 bg-white px-4 text-base text-[#111827] shadow-none placeholder:text-[#111827]/50 focus-visible:border-primary focus-visible:ring-0 focus-visible:ring-offset-0";
 
 function SignInPage() {
 	const { user, isAuthenticated, isLoading } = useAuth();

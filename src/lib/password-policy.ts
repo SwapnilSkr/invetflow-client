@@ -2,11 +2,7 @@
  * Mirrors `invetflow-server` `auth::password::validate_password_policy` for client-side UX.
  * Keep in sync when server rules change.
  */
-export type PasswordRuleId =
-	| "length"
-	| "mixed_case"
-	| "digit"
-	| "punctuation";
+export type PasswordRuleId = "length" | "mixed_case" | "digit" | "punctuation";
 
 export interface PasswordRuleState {
 	id: PasswordRuleId;
@@ -54,4 +50,24 @@ export function evaluatePasswordRules(password: string): PasswordRuleState[] {
 
 export function passwordMeetsPolicy(rules: PasswordRuleState[]): boolean {
 	return rules.every((r) => r.ok);
+}
+
+/** Three rows for onboarding UI (matches design: number + punctuation combined). */
+export function getPasswordChecklistItems(password: string): {
+	label: string;
+	ok: boolean;
+}[] {
+	const rules = evaluatePasswordRules(password);
+	const byId = Object.fromEntries(rules.map((r) => [r.id, r])) as Record<
+		PasswordRuleId,
+		PasswordRuleState
+	>;
+	return [
+		{ label: byId.mixed_case.label, ok: byId.mixed_case.ok },
+		{ label: byId.length.label, ok: byId.length.ok },
+		{
+			label: "Contains at least 1 number and 1 punctuation",
+			ok: byId.digit.ok && byId.punctuation.ok,
+		},
+	];
 }

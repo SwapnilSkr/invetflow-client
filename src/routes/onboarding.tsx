@@ -5,13 +5,7 @@ import {
 	useNavigate,
 } from "@tanstack/react-router";
 import { Check, Eye, EyeOff, Loader2, MailCheck } from "lucide-react";
-import {
-	useEffect,
-	useLayoutEffect,
-	useMemo,
-	useState,
-	useTransition,
-} from "react";
+import { useMemo, useState, useTransition } from "react";
 import { BrandMark } from "#/components/onboarding/BrandMark";
 import { ChipSelect } from "#/components/onboarding/ChipSelect";
 import { GoogleMark } from "#/components/onboarding/GoogleMark";
@@ -31,10 +25,7 @@ import {
 	ensureAuthResolved,
 	useAuthStore,
 } from "#/integrations/auth/auth-store";
-import {
-	evaluatePasswordRules,
-	passwordMeetsPolicy,
-} from "#/lib/password-policy";
+import { getPasswordChecklistItems } from "#/lib/password-policy";
 import { cn } from "#/lib/utils";
 
 const EMAIL_KEY = "invetflow.onboarding_email";
@@ -68,17 +59,43 @@ export const Route = createFileRoute("/onboarding")({
 	validateSearch: (search: Record<string, unknown>): OnboardingSearch => ({
 		step: parseStep(search.step),
 	}),
+	/**
+	 * Single place for onboarding URL ↔ session rules (see `.agents/skills/vercel-react-best-practices`:
+	 * prefer router/data flow over effect-driven navigation).
+	 */
 	beforeLoad: async ({ search }) => {
 		if (typeof window === "undefined") return;
 		await ensureAuthResolved();
 		const { status, user } = useAuthStore.getState();
-		if (status !== "authenticated" || !user) return;
+		const step = parseStep(search.step);
+
+		if (step === "password" && !readStoredEmail()) {
+			throw redirect({
+				to: "/onboarding",
+				search: { step: "email" },
+				replace: true,
+			});
+		}
+
+		if (
+			(step === "profile" || step === "verify") &&
+			(status !== "authenticated" || !user)
+		) {
+			throw redirect({
+				to: "/onboarding",
+				search: { step: "email" },
+				replace: true,
+			});
+		}
+
+		if (status !== "authenticated" || !user) {
+			return;
+		}
 
 		if (user.role === "Candidate") {
 			throw redirect({ to: "/candidate" });
 		}
 
-		const step = parseStep(search.step);
 		if (step === "email" || step === "password") {
 			if (user.onboarding_completed_at) {
 				throw redirect({ to: "/dashboard" });
@@ -94,78 +111,107 @@ export const Route = createFileRoute("/onboarding")({
 });
 
 const fieldInputClass =
-	"h-[50px] rounded-[12px] border border-black/[0.08] bg-white px-4 text-base text-[#111827] placeholder:text-[#111827]/50 focus-visible:border-[#0052cc] focus-visible:ring-[#0052cc]/25";
+	"h-[50px] rounded-[12px] border border-black/[0.08] bg-white px-4 text-base text-[#111827] shadow-none placeholder:text-[#111827]/50 focus-visible:border-primary focus-visible:ring-0 focus-visible:ring-offset-0";
 
 const primaryBtnClass =
 	"h-12 w-full rounded-[12px] bg-[#0052cc] text-base font-medium text-white shadow-none hover:bg-[#0041a3]";
 
+/** Borderless field inside shell; focus ring is expressed on the shell via focus-within (avoids stacking with Input defaults). */
+const inputInShellClass =
+	"h-[50px] w-full border-0 rounded-none bg-transparent px-4 text-base text-[#111827] shadow-none placeholder:text-[#111827]/50 focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-offset-0";
+
+function fieldLabelClass(errored: boolean) {
+	return cn(
+		"text-[13.33px] font-medium",
+		errored ? "text-[#6B1D1D]" : "text-[#111827]",
+	);
+}
+
+function InputAttachedErrorShell({
+	hasError,
+	children,
+	banner,
+}: {
+	hasError: boolean;
+	children: React.ReactNode;
+	banner?: string | null;
+}) {
+	const showBanner = Boolean(banner);
+	return (
+		<div className="flex flex-col">
+			<div
+				className={cn(
+					"overflow-hidden border bg-white transition-colors",
+					showBanner ? "rounded-t-[12px] rounded-b-none" : "rounded-[12px]",
+					hasError
+						? "border-[#6B1D1D] focus-within:border-primary"
+						: "border-black/[0.08] focus-within:border-primary",
+				)}
+			>
+				{children}
+			</div>
+			{banner ? (
+				<div className="rounded-b-[12px] rounded-t-none bg-[#F9EAEA] px-4 py-2.5 text-[13.33px] leading-snug text-[#6B1D1D]">
+					{banner}
+				</div>
+			) : null}
+		</div>
+	);
+}
+
+function FormErrorBanner({ children }: { children: React.ReactNode }) {
+	return (
+		<div className="rounded-[12px] bg-[#F9EAEA] px-4 py-2.5 text-[13.33px] leading-snug text-[#6B1D1D]">
+			{children}
+		</div>
+	);
+}
+
+function PasswordRuleChecklist({
+	items,
+}: {
+	items: { label: string; ok: boolean }[];
+}) {
+	return (
+		<ul className="mt-2 space-y-1.5 text-[13.33px] leading-snug">
+			{items.map((item) => (
+				<li
+					key={item.label}
+					className={cn(
+						"flex items-start gap-2",
+						item.ok ? "text-[#2D6A4F]" : "text-[#2D6A4F]/45",
+					)}
+				>
+					<Check
+						className={cn(
+							"mt-0.5 h-4 w-4 shrink-0",
+							item.ok ? "text-[#2D6A4F]" : "text-[#2D6A4F]/35",
+						)}
+						strokeWidth={2.25}
+						aria-hidden
+					/>
+					<span>{item.label}</span>
+				</li>
+			))}
+		</ul>
+	);
+}
+
+function firstUnmetChecklistLabel(
+	items: { label: string; ok: boolean }[],
+): string | null {
+	for (const item of items) {
+		if (!item.ok) return item.label;
+	}
+	return null;
+}
+
 function OnboardingPage() {
 	const navigate = useNavigate();
-	const [, startTransition] = useTransition();
 	const { step: stepParam } = Route.useSearch();
 	const { isAuthenticated, isLoading, user } = useAuth();
 
 	const step = stepParam;
-
-	useLayoutEffect(() => {
-		if (typeof window === "undefined") return;
-		if (step === "password" && !readStoredEmail()) {
-			startTransition(() => {
-				void navigate({
-					to: "/onboarding",
-					search: { step: "email" },
-					replace: true,
-				});
-			});
-		}
-	}, [step, navigate]);
-
-	useLayoutEffect(() => {
-		if (typeof window === "undefined") return;
-		if (
-			(step === "profile" || step === "verify") &&
-			!isLoading &&
-			!isAuthenticated
-		) {
-			startTransition(() => {
-				void navigate({
-					to: "/onboarding",
-					search: { step: "email" },
-					replace: true,
-				});
-			});
-		}
-	}, [step, isLoading, isAuthenticated, navigate]);
-
-	/** Mirrors route `beforeLoad` so email/password steps never flash after the session hydrates. */
-	useLayoutEffect(() => {
-		if (typeof window === "undefined" || isLoading) return;
-		if (!isAuthenticated || !user) return;
-		if (user.role === "Candidate") return;
-		if (step !== "email" && step !== "password") return;
-		if (user.onboarding_completed_at) {
-			startTransition(() => {
-				void navigate({ to: "/dashboard", replace: true });
-			});
-			return;
-		}
-		startTransition(() => {
-			void navigate({
-				to: "/onboarding",
-				search: { step: "profile" },
-				replace: true,
-			});
-		});
-	}, [isLoading, isAuthenticated, user, step, navigate]);
-
-	useEffect(() => {
-		if (isLoading || !user) return;
-		if (user.role === "Candidate") {
-			startTransition(() => {
-				void navigate({ to: "/candidate", replace: true });
-			});
-		}
-	}, [isLoading, user, navigate]);
 
 	if (isLoading) {
 		return (
@@ -224,14 +270,9 @@ function SplitShell({
 }
 
 function EmailStep({ navigate }: { navigate: ReturnType<typeof useNavigate> }) {
-	const [, startTransition] = useTransition();
+	const [isPending, startTransition] = useTransition();
 	const [email, setEmail] = useState(() => readStoredEmail() ?? "");
-	const [emailFeedback, setEmailFeedback] = useState<{
-		message: string;
-		/** Only for “already registered” — do not show after network/API failures. */
-		signInLink?: boolean;
-	} | null>(null);
-	const [checkingEmail, setCheckingEmail] = useState(false);
+	const [emailFeedback, setEmailFeedback] = useState<string | null>(null);
 
 	return (
 		<SplitShell>
@@ -246,93 +287,68 @@ function EmailStep({ navigate }: { navigate: ReturnType<typeof useNavigate> }) {
 			</div>
 			<form
 				className="flex flex-col gap-6"
-				onSubmit={async (e) => {
+				onSubmit={(e) => {
 					e.preventDefault();
-					setEmailFeedback(null);
 					const t = email.trim().toLowerCase();
 					if (!t.includes("@")) return;
-					setCheckingEmail(true);
-					try {
-						const exists = await checkEmailRegistered(t);
-						if (exists) {
-							setEmailFeedback({
-								message: "This email is already registered.",
-								signInLink: true,
-							});
-							return;
-						}
-						writeStoredEmail(t);
-						startTransition(() => {
+					startTransition(async () => {
+						setEmailFeedback(null);
+						try {
+							const exists = await checkEmailRegistered(t);
+							if (exists) {
+								setEmailFeedback("This email is already registered.");
+								return;
+							}
+							writeStoredEmail(t);
 							void navigate({
 								to: "/onboarding",
 								search: { step: "password" },
 							});
-						});
-					} catch (err) {
-						let message: string;
-						if (err instanceof ApiError) {
-							message = err.message;
-						} else if (err instanceof TypeError) {
-							message =
-								"Could not reach the API. Check that invetflow-server is running and VITE_API_URL matches its address (for local dev, often http://localhost:3001).";
-						} else if (err instanceof Error && err.message) {
-							message = err.message;
-						} else {
-							message = "Something went wrong. Please try again.";
+						} catch (err) {
+							let message: string;
+							if (err instanceof ApiError) {
+								message = err.message;
+							} else if (err instanceof TypeError) {
+								message =
+									"Could not reach the API. Check that invetflow-server is running and VITE_API_URL matches its address (for local dev, often http://localhost:3001).";
+							} else if (err instanceof Error && err.message) {
+								message = err.message;
+							} else {
+								message = "Something went wrong. Please try again.";
+							}
+							setEmailFeedback(message);
 						}
-						setEmailFeedback({ message });
-					} finally {
-						setCheckingEmail(false);
-					}
+					});
 				}}
 			>
 				<div className="flex flex-col gap-2">
 					<label
 						htmlFor="ob-email"
-						className="text-[13.33px] font-medium text-[#111827]"
+						className={fieldLabelClass(!!emailFeedback)}
 					>
 						Email address
 					</label>
-					<Input
-						id="ob-email"
-						type="email"
-						autoComplete="email"
-						placeholder="you@company.com"
-						value={email}
-						onChange={(e) => {
-							setEmail(e.target.value);
-							setEmailFeedback(null);
-						}}
-						className={cn(
-							fieldInputClass,
-							"shadow-none",
-							emailFeedback && "border-red-300",
-						)}
-						required
-					/>
-					{emailFeedback && (
-						<p className="text-sm text-red-600">
-							{emailFeedback.message}
-							{emailFeedback.signInLink ? (
-								<>
-									{" "}
-									<Link
-										to="/sign-in"
-										className="font-medium text-[#0052cc] no-underline hover:underline"
-									>
-										Sign in
-									</Link>
-								</>
-							) : null}
-						</p>
-					)}
+					<InputAttachedErrorShell
+						hasError={!!emailFeedback}
+						banner={emailFeedback}
+					>
+						<Input
+							id="ob-email"
+							type="email"
+							autoComplete="email"
+							placeholder="you@company.com"
+							value={email}
+							onChange={(e) => {
+								setEmail(e.target.value);
+								setEmailFeedback(null);
+							}}
+							className={inputInShellClass}
+							required
+						/>
+					</InputAttachedErrorShell>
 				</div>
-				<button
-					type="submit"
-					className={primaryBtnClass}
-					disabled={checkingEmail}
-				>
-					{checkingEmail ? "Checking…" : "Continue"}
+				<button type="submit" className={primaryBtnClass} disabled={isPending}>
+					{isPending ? "Checking…" : "Continue"}
 				</button>
 			</form>
 			<div className="flex items-center gap-1">
@@ -390,18 +406,24 @@ function PasswordStep({
 }: {
 	navigate: ReturnType<typeof useNavigate>;
 }) {
-	const [, startTransition] = useTransition();
+	const [isPending, startTransition] = useTransition();
 	const email = readStoredEmail() ?? "";
 	const [password, setPassword] = useState("");
 	const [confirm, setConfirm] = useState("");
 	const [showPw, setShowPw] = useState(false);
 	const [showCf, setShowCf] = useState(false);
 	const [error, setError] = useState("");
-	const [submitting, setSubmitting] = useState(false);
 
-	const rules = useMemo(() => evaluatePasswordRules(password), [password]);
-	const valid = passwordMeetsPolicy(rules);
+	const checklist = useMemo(
+		() => getPasswordChecklistItems(password),
+		[password],
+	);
+	const valid = useMemo(() => checklist.every((i) => i.ok), [checklist]);
 	const mismatch = confirm.length > 0 && password !== confirm;
+	const passwordFieldErrored = password.length > 0 && !valid;
+	const passwordBanner = passwordFieldErrored
+		? firstUnmetChecklistLabel(checklist)
+		: null;
 
 	if (!email) {
 		return null;
@@ -422,7 +444,7 @@ function PasswordStep({
 			</div>
 			<form
 				className="flex flex-col gap-6"
-				onSubmit={async (e) => {
+				onSubmit={(e) => {
 					e.preventDefault();
 					setError("");
 					if (!valid || !password) {
@@ -431,138 +453,105 @@ function PasswordStep({
 					if (password !== confirm) {
 						return;
 					}
-					setSubmitting(true);
-					try {
-						await registerRecruiterWithPassword({
-							email,
-							password,
-						});
-						startTransition(() => {
+					startTransition(async () => {
+						try {
+							await registerRecruiterWithPassword({
+								email,
+								password,
+							});
 							void navigate({
 								to: "/onboarding",
 								search: { step: "profile" },
 								replace: true,
 							});
-						});
-					} catch (err) {
-						const msg =
-							err instanceof ApiError
-								? err.message
-								: "Could not create account. Is the API running?";
-						setError(msg);
-					} finally {
-						setSubmitting(false);
-					}
+						} catch (err) {
+							const msg =
+								err instanceof ApiError
+									? err.message
+									: "Could not create account. Is the API running?";
+							setError(msg);
+						}
+					});
 				}}
 			>
 				<div className="flex flex-col gap-2">
 					<label
 						htmlFor="ob-pw"
-						className={cn(
-							"text-[13.33px] font-medium",
-							!valid && password.length > 0 ? "text-red-600" : "text-[#111827]",
-						)}
+						className={fieldLabelClass(passwordFieldErrored)}
 					>
 						Password
 					</label>
-					<div className="relative">
-						<Input
-							id="ob-pw"
-							type={showPw ? "text" : "password"}
-							autoComplete="new-password"
-							value={password}
-							onChange={(e) => setPassword(e.target.value)}
-							className={cn(
-								fieldInputClass,
-								"pr-11 shadow-none",
-								!valid && password.length > 0 && "border-red-300",
-							)}
-						/>
-						<button
-							type="button"
-							aria-label={showPw ? "Hide password" : "Show password"}
-							className="absolute right-3 top-1/2 -translate-y-1/2 text-[#6b7280] hover:text-[#111827]"
-							onClick={() => setShowPw((s) => !s)}
-						>
-							{showPw ? (
-								<EyeOff className="h-4 w-4" />
-							) : (
-								<Eye className="h-4 w-4" />
-							)}
-						</button>
-					</div>
-					{!valid && password.length > 0 && (
-						<p className="text-sm text-red-600">
-							Follow the requirements below.
-						</p>
-					)}
-					<ul className="mt-1 space-y-1.5 text-[13.33px] text-[#6b7280]">
-						{rules.map((r) => (
-							<li key={r.id} className="flex items-center gap-2">
-								<Check
-									className={cn(
-										"h-4 w-4 shrink-0",
-										r.ok ? "text-[#0052cc]" : "text-gray-300",
-									)}
-								/>
-								<span className={cn(r.ok && "font-medium text-[#111827]")}>
-									{r.label}
-								</span>
-							</li>
-						))}
-					</ul>
+					<InputAttachedErrorShell
+						hasError={passwordFieldErrored}
+						banner={passwordBanner}
+					>
+						<div className="relative">
+							<Input
+								id="ob-pw"
+								type={showPw ? "text" : "password"}
+								autoComplete="new-password"
+								value={password}
+								onChange={(e) => setPassword(e.target.value)}
+								className={cn(inputInShellClass, "pr-11")}
+							/>
+							<button
+								type="button"
+								aria-label={showPw ? "Hide password" : "Show password"}
+								className="absolute right-3 top-1/2 -translate-y-1/2 text-[#6b7280] hover:text-[#111827]"
+								onClick={() => setShowPw((s) => !s)}
+							>
+								{showPw ? (
+									<EyeOff className="h-4 w-4" />
+								) : (
+									<Eye className="h-4 w-4" />
+								)}
+							</button>
+						</div>
+					</InputAttachedErrorShell>
+					<PasswordRuleChecklist items={checklist} />
 				</div>
 
 				<div className="flex flex-col gap-2">
-					<label
-						htmlFor="ob-confirm"
-						className="text-[13.33px] font-medium text-[#111827]"
-					>
+					<label htmlFor="ob-confirm" className={fieldLabelClass(mismatch)}>
 						Confirm password
 					</label>
-					<div className="relative">
-						<Input
-							id="ob-confirm"
-							type={showCf ? "text" : "password"}
-							autoComplete="new-password"
-							value={confirm}
-							onChange={(e) => setConfirm(e.target.value)}
-							className={cn(
-								fieldInputClass,
-								"pr-11 shadow-none",
-								mismatch && "border-red-300",
-							)}
-						/>
-						<button
-							type="button"
-							aria-label={showCf ? "Hide password" : "Show password"}
-							className="absolute right-3 top-1/2 -translate-y-1/2 text-[#6b7280]"
-							onClick={() => setShowCf((s) => !s)}
-						>
-							{showCf ? (
-								<EyeOff className="h-4 w-4" />
-							) : (
-								<Eye className="h-4 w-4" />
-							)}
-						</button>
-					</div>
-					{mismatch && (
-						<p className="text-sm text-red-600">Passwords do not match.</p>
-					)}
+					<InputAttachedErrorShell
+						hasError={mismatch}
+						banner={mismatch ? "Passwords do not match." : null}
+					>
+						<div className="relative">
+							<Input
+								id="ob-confirm"
+								type={showCf ? "text" : "password"}
+								autoComplete="new-password"
+								value={confirm}
+								onChange={(e) => setConfirm(e.target.value)}
+								className={cn(inputInShellClass, "pr-11")}
+							/>
+							<button
+								type="button"
+								aria-label={showCf ? "Hide password" : "Show password"}
+								className="absolute right-3 top-1/2 -translate-y-1/2 text-[#6b7280] hover:text-[#111827]"
+								onClick={() => setShowCf((s) => !s)}
+							>
+								{showCf ? (
+									<EyeOff className="h-4 w-4" />
+								) : (
+									<Eye className="h-4 w-4" />
+								)}
+							</button>
+						</div>
+					</InputAttachedErrorShell>
 				</div>
 
-				{error && (
-					<div className="rounded-xl border border-red-200 bg-red-50 p-3 text-sm text-red-800">
-						{error}
-					</div>
-				)}
+				{error ? <FormErrorBanner>{error}</FormErrorBanner> : null}
 
 				<button
 					type="submit"
-					disabled={submitting || !valid || mismatch || !password}
+					disabled={isPending || !valid || mismatch || !password}
 					className={cn(primaryBtnClass, "disabled:opacity-50")}
 				>
-					{submitting ? "…" : "Continue"}
+					{isPending ? "…" : "Continue"}
 				</button>
 			</form>
 			<p className="text-[13.33px] text-[#6b7280]">
@@ -593,7 +582,7 @@ function ProfileStep({
 }: {
 	navigate: ReturnType<typeof useNavigate>;
 }) {
-	const [, startTransition] = useTransition();
+	const [isPending, startTransition] = useTransition();
 	const { user } = useAuth();
 	const [name, setName] = useState(user?.name ?? "");
 	const [company, setCompany] = useState(user?.company_name ?? "");
@@ -604,7 +593,6 @@ function ProfileStep({
 		coerceChip(user?.job_title, JOB_TITLES),
 	);
 	const [error, setError] = useState("");
-	const [submitting, setSubmitting] = useState(false);
 
 	return (
 		<SplitShell>
@@ -620,32 +608,29 @@ function ProfileStep({
 			</div>
 			<form
 				className="flex flex-col gap-6"
-				onSubmit={async (e) => {
+				onSubmit={(e) => {
 					e.preventDefault();
 					setError("");
-					setSubmitting(true);
-					try {
-						await updateRecruiterOnboarding({
-							name: name.trim() || undefined,
-							company_name: company.trim() || undefined,
-							company_size: size,
-							job_title: title,
-						});
-						startTransition(() => {
+					startTransition(async () => {
+						try {
+							await updateRecruiterOnboarding({
+								name: name.trim() || undefined,
+								company_name: company.trim() || undefined,
+								company_size: size,
+								job_title: title,
+							});
 							void navigate({
 								to: "/onboarding",
 								search: { step: "verify" },
 							});
-						});
-					} catch (err) {
-						setError(
-							err instanceof ApiError
-								? err.message
-								: "Update failed. Try again.",
-						);
-					} finally {
-						setSubmitting(false);
-					}
+						} catch (err) {
+							setError(
+								err instanceof ApiError
+									? err.message
+									: "Update failed. Try again.",
+							);
+						}
+					});
 				}}
 			>
 				<div className="flex flex-col gap-2">
@@ -692,13 +677,13 @@ function ProfileStep({
 					onChange={setTitle}
 					layout="grid"
 				/>
-				{error && <p className="text-sm text-red-600">{error}</p>}
+				{error ? <FormErrorBanner>{error}</FormErrorBanner> : null}
 				<button
 					type="submit"
-					disabled={submitting}
+					disabled={isPending}
 					className={cn(primaryBtnClass, "disabled:opacity-50")}
 				>
-					{submitting ? "…" : "Continue"}
+					{isPending ? "…" : "Continue"}
 				</button>
 			</form>
 		</SplitShell>
@@ -710,11 +695,9 @@ function VerifyStep({
 }: {
 	navigate: ReturnType<typeof useNavigate>;
 }) {
-	const [, startTransition] = useTransition();
+	const [isResendPending, startResendTransition] = useTransition();
+	const [isNavPending, startNavTransition] = useTransition();
 	const { user } = useAuth();
-	const [resendState, setResendState] = useState<"idle" | "sending" | "done">(
-		"idle",
-	);
 	const [resendMessage, setResendMessage] = useState("");
 
 	if (!user) return null;
@@ -769,35 +752,36 @@ function VerifyStep({
 					<button
 						type="button"
 						className="text-xs text-black underline decoration-solid underline-offset-2 disabled:opacity-50"
-						disabled={resendState === "sending"}
-						onClick={async () => {
-							setResendState("sending");
-							setResendMessage("");
-							try {
-								const r = await resendVerificationEmail();
-								setResendState("done");
-								setResendMessage(r.message);
-							} catch {
-								setResendState("idle");
-							}
+						disabled={isResendPending}
+						onClick={() => {
+							startResendTransition(async () => {
+								setResendMessage("");
+								try {
+									const r = await resendVerificationEmail();
+									setResendMessage(r.message);
+								} catch {
+									/* keep UX quiet; API errors surface via console in dev */
+								}
+							});
 						}}
 					>
-						{resendState === "sending" ? "Sending…" : "Resend email"}
+						{isResendPending ? "Sending…" : "Resend email"}
 					</button>
-					{resendMessage && (
+					{resendMessage !== "" ? (
 						<p className="mt-1 text-xs text-[#6b7280]">{resendMessage}</p>
-					)}
+					) : null}
 				</div>
 				<Button
 					type="button"
-					className="mt-6 h-12 w-full rounded-[12px] bg-[#0052cc] text-base font-medium text-white hover:bg-[#0041a3]"
-					onClick={() =>
-						startTransition(() => {
+					className="mt-6 h-12 w-full rounded-[12px] bg-[#0052cc] text-base font-medium text-white hover:bg-[#0041a3] disabled:opacity-50"
+					disabled={isNavPending}
+					onClick={() => {
+						startNavTransition(() => {
 							void navigate({ to: "/dashboard" });
-						})
-					}
+						});
+					}}
 				>
-					Continue to dashboard
+					{isNavPending ? "…" : "Continue to dashboard"}
 				</Button>
 			</div>
 		</div>
