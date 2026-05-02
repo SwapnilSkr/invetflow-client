@@ -73,14 +73,14 @@ function DashboardJobsPage() {
 						className="h-11 rounded-xl bg-[#0052cc] font-medium text-white hover:bg-[#0041a3]"
 					>
 						<Link to="/jobs/new">
-							<Plus className="mr-2 h-4 w-4" />
-							New job
+							<Plus className="size-4" />
+							<p className="text-sm">New job</p>
 						</Link>
 					</Button>
 				</div>
 
 				{jobs.length === 0 ? (
-					<Card className="border-black/8 py-16 text-center shadow-sm">
+					<Card className="border-black/8 py-16 text-center">
 						<CardContent>
 							<div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-[#f3f4f6]">
 								<Calendar className="h-7 w-7 text-[#6b7280]" />
@@ -94,8 +94,8 @@ function DashboardJobsPage() {
 								asChild
 							>
 								<Link to="/jobs/new">
-									<Plus className="mr-2 h-4 w-4" />
-									Create job
+									<Plus className="size-4" />
+									<p className="text-sm">Create job</p>
 								</Link>
 							</Button>
 						</CardContent>
@@ -104,7 +104,7 @@ function DashboardJobsPage() {
 					<ul className="space-y-3">
 						{jobs.map((row: Job) => (
 							<li key={row.id}>
-								<Card className="overflow-hidden border-black/8 shadow-sm transition-shadow hover:shadow-md">
+								<Card className="overflow-hidden border-black/8">
 									<CardContent className="p-0">
 										<div className="flex flex-wrap items-center gap-3 px-4 py-4">
 											<Link

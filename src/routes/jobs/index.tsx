@@ -124,7 +124,7 @@ function JobRowCard({
 	onDelete: (id: string) => void;
 }) {
 	return (
-		<Card className="transition-all hover:shadow-md">
+		<Card className="transition-colors">
 			<CardContent className="p-4">
 				<div className="flex items-start gap-4">
 					<div className="flex-1 min-w-0">

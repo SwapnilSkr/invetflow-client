@@ -68,7 +68,7 @@ function InterviewCard({
 	return (
 		<Card
 			className={cn(
-				"cursor-pointer transition-all hover:shadow-md",
+				"cursor-pointer transition-colors",
 				isActive && "ring-2 ring-blue-500/20",
 			)}
 			onClick={onSelect}
