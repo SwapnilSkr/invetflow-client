@@ -244,7 +244,7 @@ export function InterviewSessionPage() {
 	if (!sessionId) {
 		return (
 			<main className="page-wrap mx-auto max-w-lg">
-				<Card>
+				<Card className="shadow-sm">
 					<CardContent className="space-y-3 p-8">
 						<h1 className="text-lg font-semibold">Invalid session link</h1>
 						<p className="text-sm text-muted-foreground">
@@ -265,7 +265,7 @@ export function InterviewSessionPage() {
 	if (isSessionLoading) {
 		return (
 			<main className="page-wrap mx-auto max-w-lg">
-				<Card>
+				<Card className="shadow-sm">
 					<CardContent className="space-y-3 p-8">
 						<h1 className="text-lg font-semibold">Loading session</h1>
 						<p className="text-sm text-muted-foreground">
@@ -280,7 +280,7 @@ export function InterviewSessionPage() {
 	if (!isTerminalSession && (!token || !url)) {
 		return (
 			<main className="page-wrap mx-auto max-w-lg">
-				<Card>
+				<Card className="shadow-sm">
 					<CardContent className="space-y-4 p-8">
 						<div>
 							<h1 className="text-lg font-semibold">Reconnect required</h1>
@@ -327,7 +327,7 @@ export function InterviewSessionPage() {
 		const completedDuration = session?.duration_seconds ?? duration;
 		return (
 			<main className="page-wrap flex justify-center">
-				<Card className="w-full max-w-md text-center">
+				<Card className="w-full max-w-md text-center shadow-sm">
 					<CardContent className="space-y-5 py-12">
 						<div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-blue-50 dark:bg-blue-900/30">
 							<CheckCircle2 className="h-8 w-8 text-blue-600 dark:text-blue-400" />

@@ -35,7 +35,7 @@ export function AntiCheatIndicator({
 		suspiciousActivity.length > 0;
 
 	return (
-		<Card className="border-amber-200 dark:border-amber-800">
+		<Card className="border-amber-200 shadow-sm dark:border-amber-800">
 			<CardHeader className="pb-3">
 				<CardTitle className="text-sm flex items-center gap-2">
 					<Shield className="h-4 w-4 text-amber-500" />

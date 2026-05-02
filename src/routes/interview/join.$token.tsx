@@ -65,7 +65,7 @@ function JoinByTokenPage() {
 	if (isLoading) {
 		return (
 			<main className="page-wrap flex justify-center">
-				<Card className="w-full max-w-lg">
+				<Card className="w-full max-w-lg shadow-sm">
 					<CardContent className="space-y-4 p-8">
 						<Skeleton className="mx-auto h-8 w-48" />
 						<Skeleton className="mx-auto h-5 w-32" />
@@ -80,7 +80,7 @@ function JoinByTokenPage() {
 	if (error || !job) {
 		return (
 			<main className="page-wrap flex justify-center">
-				<Card className="w-full max-w-lg">
+				<Card className="w-full max-w-lg shadow-sm">
 					<CardContent className="py-16 text-center">
 						<div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-red-50 dark:bg-red-900/20">
 							<HelpCircle className="h-7 w-7 text-red-500" />
@@ -105,7 +105,7 @@ function JoinByTokenPage() {
 
 	return (
 		<main className="page-wrap flex justify-center">
-			<Card className="w-full max-w-lg">
+			<Card className="w-full max-w-lg shadow-sm">
 				<CardHeader className="text-center">
 					<div className="mx-auto mb-2 flex items-center gap-2">
 						<span className="h-2 w-2 rounded-full bg-[linear-gradient(90deg,#3b82f6,#60a5fa)]" />
