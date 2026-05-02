@@ -25,7 +25,8 @@ function RecruiterDashboard() {
 	const jobsList = jobsPayload?.jobs ?? [];
 
 	return (
-		<div className="mx-auto max-w-6xl px-6 py-8 text-[#111827] lg:px-10">
+		<div>
+			<div className="mx-auto w-full max-w-6xl text-[#111827]">
 			<div className="mb-8 flex flex-wrap items-end justify-between gap-4">
 				<div>
 					<h1 className="text-3xl font-bold tracking-wide">Dashboard</h1>
@@ -159,6 +160,7 @@ function RecruiterDashboard() {
 					)}
 				</CardContent>
 			</Card>
+			</div>
 		</div>
 	);
 }

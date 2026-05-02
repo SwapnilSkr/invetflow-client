@@ -20,7 +20,7 @@ function CandidateHome() {
 
 	if (isLoading) {
 		return (
-			<div className="container mx-auto max-w-3xl px-4 py-10">
+			<div className="container mx-auto max-w-3xl">
 				<Skeleton className="mb-6 h-10 w-48" />
 				<div className="space-y-3">
 					<Skeleton className="h-24 w-full" />
@@ -32,7 +32,7 @@ function CandidateHome() {
 
 	if (error) {
 		return (
-			<div className="container mx-auto max-w-3xl px-4 py-16 text-center">
+			<div className="container mx-auto max-w-3xl py-16 text-center">
 				<p className="text-destructive font-medium">Could not load jobs</p>
 				<p className="mt-2 text-sm text-muted-foreground">
 					{(error as Error).message}
@@ -44,7 +44,7 @@ function CandidateHome() {
 	const list = data?.jobs ?? [];
 
 	return (
-		<div className="container mx-auto max-w-3xl px-4 py-10">
+		<div className="container mx-auto max-w-3xl">
 			<div className="mb-8">
 				<h1 className="text-3xl font-bold tracking-tight">My jobs</h1>
 				<p className="mt-2 text-muted-foreground">

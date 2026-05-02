@@ -10,8 +10,8 @@ function DashboardSettingsPage() {
 	const { user } = useAuth();
 
 	return (
-		<div className="px-6 py-8 lg:px-10">
-			<div className="mx-auto max-w-3xl">
+		<div>
+			<div className="mx-auto w-full max-w-6xl">
 				<div className="mb-6 flex items-center gap-2">
 					<div className="flex size-10 items-center justify-center rounded-xl bg-[#f3f4f6]">
 						<Settings className="size-5 text-[#6b7280]" />
@@ -20,7 +20,7 @@ function DashboardSettingsPage() {
 						Settings
 					</h1>
 				</div>
-				<dl className="space-y-4 rounded-xl border border-black/[0.08] bg-[#fafafa] p-6">
+				<dl className="space-y-4 rounded-[8px] border border-black/8 bg-[#fafafa] p-6">
 					<div>
 						<dt className="text-xs font-medium uppercase tracking-wide text-[#6b7280]">
 							Email

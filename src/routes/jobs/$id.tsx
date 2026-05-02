@@ -116,7 +116,7 @@ function InterviewDetailPage() {
 
 	if (isLoading) {
 		return (
-			<div className="container mx-auto max-w-5xl px-4 py-8">
+			<div className="container mx-auto max-w-5xl">
 				<Skeleton className="mb-6 h-5 w-32" />
 				<Skeleton className="mb-2 h-9 w-64" />
 				<Skeleton className="mb-8 h-5 w-48" />
@@ -154,7 +154,7 @@ function InterviewDetailPage() {
 			isScheduledOrActive);
 
 	return (
-		<div className="container mx-auto max-w-5xl px-4 py-8">
+		<div className="container mx-auto max-w-5xl">
 			<div className="mb-6">
 				<Button variant="ghost" size="sm" asChild>
 					<Link to={isRecruiter ? "/jobs" : "/candidate"}>

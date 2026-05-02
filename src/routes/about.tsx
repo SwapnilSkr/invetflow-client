@@ -6,7 +6,7 @@ export const Route = createFileRoute("/about")({
 
 function AboutLegalStub() {
 	return (
-		<main className="mx-auto max-w-xl px-4 py-16 text-[#111827]">
+		<main className="page-wrap mx-auto max-w-xl text-[#111827]">
 			<h1 className="text-2xl font-bold tracking-wide">Terms &amp; privacy</h1>
 			<p className="mt-4 text-[13.33px] leading-relaxed text-[#6b7280]">
 				Legal copy for Terms of Service and Privacy Policy will go here. This

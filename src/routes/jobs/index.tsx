@@ -28,7 +28,7 @@ function InterviewsPage() {
 
 	if (isLoading) {
 		return (
-			<div className="container mx-auto px-4 py-8">
+			<div className="container mx-auto">
 				<div className="mb-8 flex items-center justify-between">
 					<Skeleton className="h-9 w-40" />
 					<Skeleton className="h-9 w-36" />
@@ -63,7 +63,7 @@ function InterviewsPage() {
 	}
 
 	return (
-		<div className="container mx-auto px-4 py-8">
+		<div className="container mx-auto">
 			<div className="mb-8 flex items-center justify-between">
 				<div>
 					<h1 className="text-2xl font-bold">Jobs</h1>

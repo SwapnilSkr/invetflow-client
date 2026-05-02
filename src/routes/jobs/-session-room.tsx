@@ -243,7 +243,7 @@ export function InterviewSessionPage() {
 
 	if (!sessionId) {
 		return (
-			<main className="page-wrap mx-auto max-w-lg px-4 py-16">
+			<main className="page-wrap mx-auto max-w-lg">
 				<Card>
 					<CardContent className="space-y-3 p-8">
 						<h1 className="text-lg font-semibold">Invalid session link</h1>
@@ -264,7 +264,7 @@ export function InterviewSessionPage() {
 
 	if (isSessionLoading) {
 		return (
-			<main className="page-wrap mx-auto max-w-lg px-4 py-16">
+			<main className="page-wrap mx-auto max-w-lg">
 				<Card>
 					<CardContent className="space-y-3 p-8">
 						<h1 className="text-lg font-semibold">Loading session</h1>
@@ -279,7 +279,7 @@ export function InterviewSessionPage() {
 
 	if (!isTerminalSession && (!token || !url)) {
 		return (
-			<main className="page-wrap mx-auto max-w-lg px-4 py-16">
+			<main className="page-wrap mx-auto max-w-lg">
 				<Card>
 					<CardContent className="space-y-4 p-8">
 						<div>
@@ -314,7 +314,7 @@ export function InterviewSessionPage() {
 
 	if (phase === "tech-check" && !isTerminalSession) {
 		return (
-			<main className="page-wrap mx-auto max-w-2xl px-4 py-8">
+			<main className="page-wrap mx-auto max-w-2xl">
 				<TechCheck
 					onComplete={handleTechCheckComplete}
 					onCancel={() => navigate({ to: "/jobs/$id", params: { id } })}
@@ -326,7 +326,7 @@ export function InterviewSessionPage() {
 	if (isTerminalSession) {
 		const completedDuration = session?.duration_seconds ?? duration;
 		return (
-			<main className="page-wrap flex justify-center px-4 py-20">
+			<main className="page-wrap flex justify-center">
 				<Card className="w-full max-w-md text-center">
 					<CardContent className="space-y-5 py-12">
 						<div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-blue-50 dark:bg-blue-900/30">

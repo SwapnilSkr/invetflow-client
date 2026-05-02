@@ -19,8 +19,8 @@ function DashboardJobsPage() {
 
 	if (isLoading) {
 		return (
-			<div className="px-6 py-8 lg:px-10">
-				<div className="mx-auto max-w-6xl">
+			<div>
+				<div className="mx-auto w-full max-w-6xl">
 					<div className="mb-8 flex items-center justify-between">
 						<Skeleton className="h-9 w-40" />
 						<Skeleton className="h-9 w-36" />
@@ -36,7 +36,7 @@ function DashboardJobsPage() {
 
 	if (error) {
 		return (
-			<div className="flex flex-col items-center justify-center px-6 py-20">
+			<div className="flex flex-col items-center justify-center py-20">
 				<p className="text-lg font-medium text-destructive">
 					Error loading jobs
 				</p>
@@ -57,8 +57,8 @@ function DashboardJobsPage() {
 	const jobs = data?.jobs ?? [];
 
 	return (
-		<div className="px-6 py-8 lg:px-10">
-			<div className="mx-auto max-w-6xl">
+		<div>
+			<div className="mx-auto w-full max-w-6xl">
 				<div className="mb-8 flex flex-wrap items-end justify-between gap-4">
 					<div>
 						<h1 className="text-2xl font-bold tracking-tight text-[#111827]">

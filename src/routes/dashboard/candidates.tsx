@@ -7,8 +7,8 @@ export const Route = createFileRoute("/dashboard/candidates")({
 
 function DashboardCandidatesPage() {
 	return (
-		<div className="px-6 py-8 lg:px-10">
-			<div className="mx-auto max-w-3xl">
+		<div>
+			<div className="mx-auto w-full max-w-6xl">
 				<div className="mb-2 flex items-center gap-2">
 					<div className="flex size-10 items-center justify-center rounded-xl bg-[#f3f4f6]">
 						<Users className="size-5 text-[#6b7280]" />

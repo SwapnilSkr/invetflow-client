@@ -123,7 +123,7 @@ function CreateJobPage() {
 	};
 
 	return (
-		<div className="container mx-auto max-w-3xl px-4 py-8">
+		<div className="container mx-auto max-w-3xl">
 			<Button variant="ghost" className="mb-6 -ml-2 gap-1" asChild>
 				<Link to="/jobs">
 					<ArrowLeft className="h-4 w-4" />

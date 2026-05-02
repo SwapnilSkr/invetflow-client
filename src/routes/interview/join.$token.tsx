@@ -64,7 +64,7 @@ function JoinByTokenPage() {
 
 	if (isLoading) {
 		return (
-			<main className="page-wrap flex justify-center px-4 py-16">
+			<main className="page-wrap flex justify-center">
 				<Card className="w-full max-w-lg">
 					<CardContent className="space-y-4 p-8">
 						<Skeleton className="mx-auto h-8 w-48" />
@@ -79,7 +79,7 @@ function JoinByTokenPage() {
 
 	if (error || !job) {
 		return (
-			<main className="page-wrap flex justify-center px-4 py-16">
+			<main className="page-wrap flex justify-center">
 				<Card className="w-full max-w-lg">
 					<CardContent className="py-16 text-center">
 						<div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-red-50 dark:bg-red-900/20">
@@ -104,7 +104,7 @@ function JoinByTokenPage() {
 		(job.status === "Draft" && isOwner && user?.role === "Recruiter");
 
 	return (
-		<main className="page-wrap flex justify-center px-4 py-16">
+		<main className="page-wrap flex justify-center">
 			<Card className="w-full max-w-lg">
 				<CardHeader className="text-center">
 					<div className="mx-auto mb-2 flex items-center gap-2">

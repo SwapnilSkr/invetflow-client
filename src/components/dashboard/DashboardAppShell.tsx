@@ -29,7 +29,7 @@ export function DashboardAppShell({ children }: { children: React.ReactNode }) {
 						<Code2 className="h-4 w-4" />
 					</Button>
 				) : null}
-				<main className="flex min-h-0 flex-1 flex-col overflow-auto rounded-[8px] border border-black/8 bg-white">
+				<main className="min-h-0 w-full min-w-0 flex-1 overflow-auto rounded-[8px] border border-black/8 bg-white p-5">
 					{children}
 				</main>
 			</div>
