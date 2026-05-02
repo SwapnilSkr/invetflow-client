@@ -7,7 +7,6 @@ import {
 	useRouterState,
 } from "@tanstack/react-router";
 import { TanStackRouterDevtoolsPanel } from "@tanstack/react-router-devtools";
-import Footer from "../components/Footer";
 import Header from "../components/Header";
 import { AuthBootstrap } from "../integrations/auth/auth-bootstrap";
 import TanStackQueryDevtools from "../integrations/tanstack-query/devtools";
@@ -25,7 +24,7 @@ export const Route = createRootRouteWithContext<MyRouterContext>()({
 		meta: [
 			{ charSet: "utf-8" },
 			{ name: "viewport", content: "width=device-width, initial-scale=1" },
-			{ title: "InvetFlow - AI Interview Platform" },
+			{ title: "Invetflow — Hiring dashboard" },
 		],
 		links: [{ rel: "stylesheet", href: appCss }],
 	}),
@@ -33,14 +32,15 @@ export const Route = createRootRouteWithContext<MyRouterContext>()({
 });
 
 function AppShell({ children }: { children: React.ReactNode }) {
-	const minimal = useRouterState({
-		select: (s) => s.location.pathname.startsWith("/onboarding"),
+	const hideHeader = useRouterState({
+		select: (s) =>
+			s.location.pathname.startsWith("/onboarding") ||
+			s.location.pathname.startsWith("/auth"),
 	});
 	return (
 		<>
-			{!minimal && <Header />}
+			{!hideHeader && <Header />}
 			{children}
-			{!minimal && <Footer />}
 		</>
 	);
 }
@@ -52,7 +52,7 @@ function RootDocument({ children }: { children: React.ReactNode }) {
 				<script dangerouslySetInnerHTML={{ __html: THEME_INIT_SCRIPT }} />
 				<HeadContent />
 			</head>
-			<body className="font-sans antialiased wrap-anywhere selection:bg-blue-200/80 dark:selection:bg-blue-500/30">
+			<body className="font-sans antialiased wrap-anywhere selection:bg-[#0052cc]/20">
 				<TanStackQueryProvider>
 					<AuthBootstrap />
 					<AppShell>{children}</AppShell>

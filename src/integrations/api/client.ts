@@ -152,6 +152,8 @@ export interface RegisterRequestBody {
 	name?: string;
 	/** Must match invetflow-server `UserAccountRole` JSON ("Recruiter" | "Candidate"). */
 	role: "Recruiter" | "Candidate";
+	/** Optional; defaults to Password on the server. */
+	auth_provider?: "Password" | "Google";
 }
 
 function applyAuthResponse(data: AuthResponse) {

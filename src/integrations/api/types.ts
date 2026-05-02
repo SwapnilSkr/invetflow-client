@@ -11,6 +11,9 @@ export interface User {
 	job_title: string | null;
 	email_verified: boolean;
 	role: AppUserRole;
+	/** `"Password"` | `"Google"` — matches invetflow-server `UserResponse`. */
+	auth_provider?: string;
+	onboarding_completed_at?: string | null;
 }
 
 /** PATCH /api/auth/onboarding — recruiter profile after sign-up. */

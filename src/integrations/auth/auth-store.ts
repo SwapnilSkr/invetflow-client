@@ -17,6 +17,8 @@ function normalizeUser(u: User): User {
 		company_name: u.company_name ?? null,
 		company_size: u.company_size ?? null,
 		job_title: u.job_title ?? null,
+		auth_provider: u.auth_provider ?? "Password",
+		onboarding_completed_at: u.onboarding_completed_at ?? null,
 	};
 }
 

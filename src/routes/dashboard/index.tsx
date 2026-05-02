@@ -28,16 +28,19 @@ function RecruiterDashboard() {
 	const interviewsList = interviews?.interviews ?? [];
 
 	return (
-		<div className="container mx-auto px-4 py-8">
+		<div className="mx-auto max-w-6xl px-4 py-8 text-[#111827]">
 			<div className="mb-8 flex flex-wrap items-end justify-between gap-4">
 				<div>
-					<h1 className="text-3xl font-bold tracking-tight">Dashboard</h1>
-					<p className="mt-1 text-muted-foreground">
-						Manage interview templates, assign candidates, and share invite
-						links.
+					<h1 className="text-3xl font-bold tracking-wide">Dashboard</h1>
+					<p className="mt-1 text-[13.33px] text-[#6b7280]">
+						Manage interview flows, AI questions, and candidate invites from one
+						place.
 					</p>
 				</div>
-				<Button asChild>
+				<Button
+					asChild
+					className="h-11 rounded-xl bg-[#0052cc] font-medium text-white hover:bg-[#0041a3]"
+				>
 					<Link to="/interviews">
 						<Plus className="mr-2 h-4 w-4" />
 						New interview
@@ -85,9 +88,11 @@ function RecruiterDashboard() {
 				/>
 			</div>
 
-			<Card>
+			<Card className="border-black/8 shadow-sm">
 				<CardHeader>
-					<CardTitle>Interviews</CardTitle>
+					<CardTitle className="text-lg font-semibold tracking-tight">
+						Interviews
+					</CardTitle>
 				</CardHeader>
 				<CardContent>
 					{isLoading ? (
@@ -98,14 +103,18 @@ function RecruiterDashboard() {
 						</div>
 					) : interviewsList.length === 0 ? (
 						<div className="py-12 text-center">
-							<div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-muted">
-								<Calendar className="h-7 w-7 text-muted-foreground" />
+							<div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-[#f3f4f6]">
+								<Calendar className="h-7 w-7 text-[#6b7280]" />
 							</div>
 							<p className="font-medium">No interviews yet</p>
-							<p className="mt-1 text-sm text-muted-foreground">
-								Create an interview, then assign a candidate so they can join.
+							<p className="mt-1 text-sm text-[#6b7280]">
+								Create a job opening and configure AI questions, then invite
+								candidates.
 							</p>
-							<Button className="mt-4" asChild>
+							<Button
+								className="mt-4 h-11 rounded-xl bg-[#0052cc] font-medium hover:bg-[#0041a3]"
+								asChild
+							>
 								<Link to="/interviews">
 									<Plus className="mr-2 h-4 w-4" />
 									Create interview
@@ -113,17 +122,19 @@ function RecruiterDashboard() {
 							</Button>
 						</div>
 					) : (
-						<ul className="divide-y rounded-lg border">
+						<ul className="divide-y divide-black/8 overflow-hidden rounded-xl border border-black/8">
 							{interviewsList.map((interview: Interview) => (
 								<li key={interview.id}>
 									<Link
 										to="/interviews/$id"
 										params={{ id: interview.id }}
-										className="flex flex-wrap items-center gap-3 px-4 py-4 transition-colors hover:bg-muted/50"
+										className="flex flex-wrap items-center gap-3 bg-white px-4 py-4 transition-colors hover:bg-[#f9fafb]"
 									>
 										<div className="min-w-0 flex-1">
 											<div className="flex flex-wrap items-center gap-2">
-												<span className="font-medium">{interview.title}</span>
+												<span className="font-medium text-[#111827]">
+													{interview.title}
+												</span>
 												<Badge
 													className={cn(
 														"text-xs",
@@ -133,14 +144,14 @@ function RecruiterDashboard() {
 													{interview.status}
 												</Badge>
 											</div>
-											<p className="mt-0.5 text-sm text-muted-foreground">
+											<p className="mt-0.5 text-sm text-[#6b7280]">
 												{interview.job_title}
 												{interview.candidate_name
 													? ` · ${interview.candidate_name}`
 													: " · No candidate yet"}
 											</p>
 										</div>
-										<div className="flex items-center gap-3 text-sm text-muted-foreground">
+										<div className="flex items-center gap-3 text-sm text-[#6b7280]">
 											<span className="inline-flex items-center gap-1">
 												<Clock className="h-3.5 w-3.5" />
 												{interview.duration_minutes} min
@@ -179,15 +190,17 @@ function StatCard({
 	};
 
 	return (
-		<Card>
+		<Card className="border-black/8 shadow-sm">
 			<CardContent className="p-6">
 				<div className="flex items-center justify-between">
 					<div>
-						<p className="text-sm text-muted-foreground">{title}</p>
+						<p className="text-sm text-[#6b7280]">{title}</p>
 						{loading ? (
 							<Skeleton className="mt-1 h-8 w-16" />
 						) : (
-							<p className="mt-1 text-3xl font-bold tabular-nums">{value}</p>
+							<p className="mt-1 text-3xl font-bold tabular-nums tracking-tight text-[#111827]">
+								{value}
+							</p>
 						)}
 					</div>
 					<div className={cn("rounded-full p-3", colorClasses[color])}>

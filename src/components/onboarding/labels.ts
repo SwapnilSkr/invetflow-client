@@ -11,4 +11,5 @@ export const JOB_TITLES = [
 	"HR Manager",
 	"Founder/CEO",
 	"Hiring Manager",
+	"Others",
 ] as const;

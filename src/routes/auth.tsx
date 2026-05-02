@@ -1,21 +1,18 @@
 import { useQueryClient } from "@tanstack/react-query";
 import {
-	Link,
 	createFileRoute,
+	Link,
 	useNavigate,
 	useRouter,
 } from "@tanstack/react-router";
-import { useState } from "react";
+import { Loader2 } from "lucide-react";
+import { useState, useTransition } from "react";
+import { BrandMark } from "#/components/onboarding/BrandMark";
+import { OnboardingVisualPanel } from "#/components/onboarding/OnboardingVisualPanel";
 import { Button } from "#/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "#/components/ui/card";
 import { Input } from "#/components/ui/input";
-import {
-	ApiError,
-	loginWithPassword,
-	registerWithPassword,
-} from "#/integrations/api/client";
+import { ApiError, loginWithPassword } from "#/integrations/api/client";
 import { useAuth, useLogout } from "#/integrations/api/hooks";
-import type { AppUserRole } from "#/integrations/api/types";
 import { useAuthStore } from "#/integrations/auth/auth-store";
 import { getSafeInternalRedirect } from "#/lib/safe-redirect";
 
@@ -28,6 +25,9 @@ export const Route = createFileRoute("/auth")({
 	component: AuthPage,
 });
 
+const fieldInputClass =
+	"h-[50px] rounded-[12px] border border-black/8 bg-white px-4 text-base text-[#111827] placeholder:text-[#111827]/50 focus-visible:border-[#0052cc] focus-visible:ring-[#0052cc]/25";
+
 function AuthPage() {
 	const { user, isAuthenticated, isLoading } = useAuth();
 	const navigate = useNavigate();
@@ -35,55 +35,47 @@ function AuthPage() {
 	const { redirect: redirectTo } = Route.useSearch();
 	const queryClient = useQueryClient();
 	const doLogout = useLogout();
-	const [isSignUp, setIsSignUp] = useState(false);
 	const [email, setEmail] = useState("");
 	const [password, setPassword] = useState("");
-	const [name, setName] = useState("");
-	/** New accounts only: hiring vs candidate (sent as JSON `Recruiter` / `Candidate`). */
-	const [signUpRole, setSignUpRole] = useState<AppUserRole>("Recruiter");
 	const [error, setError] = useState("");
 	const [submitting, setSubmitting] = useState(false);
+	const [, startTransition] = useTransition();
 
 	if (isLoading) {
 		return (
-			<div className="flex items-center justify-center py-20">
-				<div className="h-6 w-6 animate-spin rounded-full border-2 border-(--line) border-t-(--lagoon)" />
+			<div className="flex min-h-svh items-center justify-center bg-[#f9fafb]">
+				<Loader2
+					className="h-6 w-6 animate-spin text-[#0052cc]"
+					aria-label="Loading"
+				/>
 			</div>
 		);
 	}
 
 	if (isAuthenticated && user) {
 		return (
-			<main className="page-wrap flex justify-center px-4 py-12">
-				<Card className="w-full max-w-md">
-					<CardHeader>
-						<CardTitle>Welcome back</CardTitle>
-						<p className="text-sm text-muted-foreground">
-							You&rsquo;re signed in as {user.email}
-						</p>
-					</CardHeader>
-					<CardContent className="space-y-4">
-						<div className="flex items-center gap-3">
-							<div className="flex h-10 w-10 items-center justify-center rounded-full bg-blue-50 text-blue-700 dark:bg-blue-500/15 dark:text-blue-200">
-								<span className="text-sm font-semibold">
-									{user.name?.charAt(0).toUpperCase() || "U"}
-								</span>
-							</div>
-							<div className="min-w-0 flex-1">
-								<p className="truncate text-sm font-medium">
-									{user.name ?? "—"}
-								</p>
-								<p className="truncate text-xs text-muted-foreground">
-									{user.email}
-								</p>
-							</div>
+			<div className="min-h-svh bg-[#f9fafb] px-4 py-10 text-[#111827]">
+				<div className="mx-auto w-full max-w-md rounded-[12px] border border-black/8 bg-white p-8 shadow-sm">
+					<BrandMark className="mb-6" />
+					<h1 className="text-2xl font-bold tracking-wide">Welcome back</h1>
+					<p className="mt-2 text-[13.33px] text-[#6b7280]">
+						You&rsquo;re signed in as {user.email}
+					</p>
+					<div className="mt-6 flex items-center gap-3 rounded-xl border border-black/8 p-4">
+						<div className="flex h-10 w-10 items-center justify-center rounded-full bg-[#0052cc]/10 text-sm font-semibold text-[#0052cc]">
+							{user.name?.charAt(0).toUpperCase() || "U"}
 						</div>
-
-						<div className="flex gap-3">
-							<Button
-								className="flex-1"
-								onClick={() => {
-									const next = getSafeInternalRedirect(redirectTo);
+						<div className="min-w-0 flex-1">
+							<p className="truncate text-sm font-medium">{user.name ?? "—"}</p>
+							<p className="truncate text-xs text-[#6b7280]">{user.email}</p>
+						</div>
+					</div>
+					<div className="mt-6 flex flex-col gap-3 sm:flex-row">
+						<Button
+							className="h-12 flex-1 rounded-[12px] bg-[#0052cc] font-medium text-white hover:bg-[#0041a3]"
+							onClick={() => {
+								const next = getSafeInternalRedirect(redirectTo);
+								startTransition(() => {
 									if (next) {
 										void router.history.push(next);
 									} else {
@@ -92,26 +84,27 @@ function AuthPage() {
 												user.role === "Candidate" ? "/candidate" : "/dashboard",
 										});
 									}
-								}}
-							>
-								{getSafeInternalRedirect(redirectTo)
-									? "Continue"
-									: user.role === "Candidate"
-										? "Go to my interviews"
-										: "Go to Dashboard"}
-							</Button>
-							<Button
-								variant="outline"
-								onClick={() => {
-									doLogout();
-								}}
-							>
-								Sign out
-							</Button>
-						</div>
-					</CardContent>
-				</Card>
-			</main>
+								});
+							}}
+						>
+							{getSafeInternalRedirect(redirectTo)
+								? "Continue"
+								: user.role === "Candidate"
+									? "My interviews"
+									: "Go to dashboard"}
+						</Button>
+						<Button
+							variant="outline"
+							className="h-12 flex-1 rounded-[12px] border-black/8 bg-white"
+							onClick={() => {
+								doLogout();
+							}}
+						>
+							Sign out
+						</Button>
+					</div>
+				</div>
+			</div>
 		);
 	}
 
@@ -121,28 +114,18 @@ function AuthPage() {
 		setSubmitting(true);
 
 		try {
-			if (isSignUp) {
-				await registerWithPassword({
-					email,
-					password,
-					name: name.trim() || undefined,
-					role: signUpRole,
-				});
-			} else {
-				await loginWithPassword({ email, password });
-			}
+			await loginWithPassword({ email, password });
 			await queryClient.invalidateQueries({ queryKey: ["interviews"] });
 			const role = useAuthStore.getState().user?.role;
 			const next = getSafeInternalRedirect(redirectTo);
-			if (next) {
-				void router.history.push(next);
-			} else {
-				const to =
-					role === "Candidate"
-						? ("/candidate" as const)
-						: ("/dashboard" as const);
-				void navigate({ to });
-			}
+			startTransition(() => {
+				if (next) {
+					void router.history.push(next);
+				} else {
+					const to = role === "Candidate" ? "/candidate" : "/dashboard";
+					void navigate({ to });
+				}
+			});
 		} catch (err) {
 			const msg =
 				err instanceof ApiError
@@ -155,159 +138,100 @@ function AuthPage() {
 	};
 
 	return (
-		<main className="page-wrap flex justify-center px-4 py-12">
-			<Card className="w-full max-w-md">
-				<CardHeader>
-					<div className="mb-2 flex items-center gap-2">
-						<span className="h-2 w-2 rounded-full bg-[linear-gradient(90deg,#3b82f6,#60a5fa)]" />
-						<span className="text-sm font-semibold text-(--sea-ink)">
-							InvetFlow
-						</span>
-					</div>
-					<CardTitle className="text-xl">
-						{isSignUp ? "Create an account" : "Sign in"}
-					</CardTitle>
-					<p className="text-sm text-muted-foreground">
-						{isSignUp
-							? "Enter your information to get started"
-							: "Sign in with the email and password for your account"}
-					</p>
-				</CardHeader>
-				<CardContent>
-					<form onSubmit={handleSubmit} className="grid gap-4">
-						{isSignUp && (
-							<div className="grid gap-2">
-								<span className="text-sm font-medium leading-none">
-									I am signing up as
-								</span>
-								<div className="grid grid-cols-2 gap-2">
-									<Button
-										type="button"
-										variant={signUpRole === "Recruiter" ? "default" : "outline"}
-										className="h-auto flex-col gap-1 py-3"
-										onClick={() => setSignUpRole("Recruiter")}
-									>
-										<span className="font-semibold">Recruiter / HR</span>
-										<span className="text-xs font-normal opacity-90">
-											Create interviews and invite candidates
-										</span>
-									</Button>
-									<Button
-										type="button"
-										variant={signUpRole === "Candidate" ? "default" : "outline"}
-										className="h-auto flex-col gap-1 py-3"
-										onClick={() => setSignUpRole("Candidate")}
-									>
-										<span className="font-semibold">Candidate</span>
-										<span className="text-xs font-normal opacity-90">
-											Join interviews you are invited to
-										</span>
-									</Button>
-								</div>
-							</div>
-						)}
-
-						{isSignUp && (
-							<div className="grid gap-2">
+		<div className="min-h-svh bg-[#f9fafb] text-[#111827]">
+			<div className="mx-auto flex min-h-svh max-w-[1200px] flex-col gap-8 px-4 py-6 sm:px-6 lg:flex-row lg:items-center lg:justify-between lg:gap-[30px] lg:px-[30px] lg:py-[30px]">
+				<div className="flex min-h-0 w-full max-w-[477px] flex-1 flex-col justify-center lg:min-h-[628px]">
+					<div className="flex flex-col gap-[18px] p-[18px]">
+						<BrandMark linkTo="/onboarding" />
+						<div className="flex flex-col gap-3">
+							<h1 className="text-[29.33px] font-bold leading-8 tracking-wide text-[#111827]">
+								Sign in to Invetflow
+							</h1>
+							<p className="max-w-md text-[13.33px] leading-5 tracking-tight text-[#6b7280]">
+								Enter your work email and password to open your hiring
+								dashboard.
+							</p>
+						</div>
+						<form className="flex flex-col gap-6" onSubmit={handleSubmit}>
+							<div className="flex flex-col gap-2">
 								<label
-									htmlFor="name"
-									className="text-sm font-medium leading-none"
+									htmlFor="auth-email"
+									className="text-[13.33px] font-medium text-[#111827]"
 								>
-									Name
+									Email address
 								</label>
 								<Input
-									id="name"
-									type="text"
-									value={name}
-									onChange={(e) => setName(e.target.value)}
-									placeholder="Your full name"
+									id="auth-email"
+									type="email"
+									autoComplete="email"
+									placeholder="you@company.com"
+									value={email}
+									onChange={(e) => setEmail(e.target.value)}
+									className={fieldInputClass}
 									required
 								/>
 							</div>
-						)}
-
-						<div className="grid gap-2">
-							<label
-								htmlFor="email"
-								className="text-sm font-medium leading-none"
-							>
-								Email
-							</label>
-							<Input
-								id="email"
-								type="email"
-								value={email}
-								onChange={(e) => setEmail(e.target.value)}
-								placeholder="you@example.com"
-								required
-							/>
-						</div>
-
-						<div className="grid gap-2">
-							<label
-								htmlFor="password"
-								className="text-sm font-medium leading-none"
-							>
-								Password
-							</label>
-							<Input
-								id="password"
-								type="password"
-								value={password}
-								onChange={(e) => setPassword(e.target.value)}
-								placeholder="Min. 8 characters"
-								required
-								minLength={8}
-							/>
-						</div>
-
-						{error && (
-							<div className="rounded-lg border border-red-200 bg-red-50 p-3 dark:border-red-800 dark:bg-red-900/20">
-								<p className="text-sm text-red-600 dark:text-red-400">
-									{error}
-								</p>
+							<div className="flex flex-col gap-2">
+								<label
+									htmlFor="auth-password"
+									className="text-[13.33px] font-medium text-[#111827]"
+								>
+									Password
+								</label>
+								<Input
+									id="auth-password"
+									type="password"
+									autoComplete="current-password"
+									placeholder="Your password"
+									value={password}
+									onChange={(e) => setPassword(e.target.value)}
+									className={fieldInputClass}
+									required
+								/>
 							</div>
-						)}
-
-						<Button type="submit" disabled={submitting} className="w-full">
-							{submitting ? (
-								<span className="flex items-center gap-2">
-									<span className="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
-									Please wait
-								</span>
-							) : isSignUp ? (
-								"Create account"
-							) : (
-								"Sign in"
+							{error && (
+								<div className="rounded-xl border border-red-200 bg-red-50 p-3 text-sm text-red-800">
+									{error}
+								</div>
 							)}
-						</Button>
-					</form>
-
-					<div className="mt-4 text-center">
-						<button
-							type="button"
-							onClick={() => {
-								setIsSignUp(!isSignUp);
-								setError("");
-							}}
-							className="text-sm text-muted-foreground transition-colors hover:text-foreground"
-						>
-							{isSignUp
-								? "Already have an account? Sign in"
-								: "Don't have an account? Sign up"}
-						</button>
+							<button
+								type="submit"
+								disabled={submitting}
+								className="h-12 w-full rounded-[12px] bg-[#0052cc] text-base font-medium text-white hover:bg-[#0041a3] disabled:opacity-50"
+							>
+								{submitting ? "Please wait…" : "Sign in"}
+							</button>
+						</form>
+						<p className="text-[13.33px] text-[#6b7280]">
+							New to Invetflow?{" "}
+							<Link
+								to="/onboarding"
+								className="font-medium text-[#0052cc] no-underline hover:underline"
+							>
+								Create an account
+							</Link>
+						</p>
+						<p className="text-[13.33px] leading-5 text-[#6b7280]">
+							By proceeding, you agree to our{" "}
+							<Link
+								to="/about"
+								className="text-[#0052cc] no-underline hover:underline"
+							>
+								Terms of Service
+							</Link>{" "}
+							and{" "}
+							<Link
+								to="/about"
+								className="text-[#0052cc] no-underline hover:underline"
+							>
+								Privacy Policy
+							</Link>
+							.
+						</p>
 					</div>
-					<p className="mt-3 text-center text-sm text-muted-foreground">
-						<span>Hiring or HR? </span>
-						<Link
-							to="/onboarding"
-							className="font-medium text-(--lagoon-deep) no-underline hover:underline"
-						>
-							Guided onboarding
-						</Link>
-					</p>
-				</CardContent>
-			</Card>
-		</main>
+				</div>
+				<OnboardingVisualPanel />
+			</div>
+		</div>
 	);
 }

@@ -1,5 +1,6 @@
 import { Link } from "@tanstack/react-router";
 import { LayoutDashboard, ListVideo } from "lucide-react";
+import { BrandMark } from "#/components/onboarding/BrandMark";
 import { useAuth } from "#/integrations/api/hooks";
 import AuthHeaderUser from "../integrations/auth/header-user.tsx";
 import ThemeToggle from "./ThemeToggle";
@@ -8,39 +9,32 @@ export default function Header() {
 	const { user, isAuthenticated, isLoading } = useAuth();
 	const isCandidate = user?.role === "Candidate";
 
-	return (
-		<header className="sticky top-0 z-50 border-b border-(--line) bg-(--header-bg) px-4 backdrop-blur-lg">
-			<nav className="page-wrap flex flex-wrap items-center gap-x-3 gap-y-2 py-3 sm:py-4">
-				<h2 className="m-0 shrink-0 text-base font-semibold tracking-tight">
-					<Link
-						to="/"
-						className="inline-flex items-center gap-2 rounded-full border border-(--chip-line) bg-(--chip-bg) px-3 py-1.5 text-sm text-(--sea-ink) no-underline shadow-sm sm:px-4 sm:py-2"
-					>
-						<span className="h-2 w-2 rounded-full bg-[linear-gradient(90deg,#3b82f6,#60a5fa)]" />
-						InvetFlow
-					</Link>
-				</h2>
+	const brandLink =
+		!isLoading && isAuthenticated && user
+			? isCandidate
+				? "/candidate"
+				: "/dashboard"
+			: "/onboarding";
 
-				<div className="ml-auto flex items-center gap-1.5 sm:ml-0 sm:gap-2">
+	return (
+		<header className="sticky top-0 z-50 border-b border-black/8 bg-[#ffffff]/92 px-4 backdrop-blur-lg">
+			<nav className="page-wrap flex flex-wrap items-center gap-x-4 gap-y-3 py-3 sm:py-4">
+				<div className="shrink-0">
+					<BrandMark linkTo={brandLink} />
+				</div>
+
+				<div className="ml-auto flex items-center gap-2">
 					<AuthHeaderUser />
 					<ThemeToggle />
 				</div>
 
-				<div className="order-3 flex w-full flex-wrap items-center gap-x-4 gap-y-1 pb-1 text-sm font-semibold sm:order-2 sm:w-auto sm:flex-nowrap sm:pb-0">
-					<Link
-						to="/"
-						className="nav-link"
-						activeProps={{ className: "nav-link is-active" }}
-						activeOptions={{ exact: true }}
-					>
-						Home
-					</Link>
+				<div className="order-3 flex w-full flex-wrap items-center gap-x-5 gap-y-1 pb-1 text-sm font-medium sm:order-2 sm:w-auto sm:flex-nowrap sm:pb-0">
 					{!isLoading && isAuthenticated && user ? (
 						isCandidate ? (
 							<Link
 								to="/candidate"
-								className="nav-link inline-flex items-center gap-1.5"
-								activeProps={{ className: "nav-link is-active" }}
+								className="nav-link inline-flex items-center gap-1.5 text-[#6b7280] no-underline hover:text-[#111827]"
+								activeProps={{ className: "nav-link is-active text-[#111827]" }}
 							>
 								<ListVideo className="h-3.5 w-3.5 opacity-80" />
 								My interviews
@@ -49,29 +43,26 @@ export default function Header() {
 							<>
 								<Link
 									to="/dashboard"
-									className="nav-link inline-flex items-center gap-1.5"
-									activeProps={{ className: "nav-link is-active" }}
+									className="nav-link inline-flex items-center gap-1.5 text-[#6b7280] no-underline hover:text-[#111827]"
+									activeProps={{
+										className: "nav-link is-active text-[#111827]",
+									}}
 								>
 									<LayoutDashboard className="h-3.5 w-3.5 opacity-80" />
 									Dashboard
 								</Link>
 								<Link
 									to="/interviews"
-									className="nav-link"
-									activeProps={{ className: "nav-link is-active" }}
+									className="nav-link text-[#6b7280] no-underline hover:text-[#111827]"
+									activeProps={{
+										className: "nav-link is-active text-[#111827]",
+									}}
 								>
 									Interviews
 								</Link>
 							</>
 						)
 					) : null}
-					<Link
-						to="/about"
-						className="nav-link"
-						activeProps={{ className: "nav-link is-active" }}
-					>
-						About
-					</Link>
 				</div>
 			</nav>
 		</header>

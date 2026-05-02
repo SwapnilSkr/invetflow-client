@@ -5,6 +5,8 @@ type ChipSelectProps<T extends string> = {
 	value: T;
 	onChange: (value: T) => void;
 	options: readonly T[];
+	/** Figma company-size row vs job-title grid. */
+	layout?: "row" | "grid";
 };
 
 export function ChipSelect<T extends string>({
@@ -12,11 +14,20 @@ export function ChipSelect<T extends string>({
 	value,
 	onChange,
 	options,
+	layout = "row",
 }: ChipSelectProps<T>) {
 	return (
-		<div className="grid gap-2">
-			<span className="text-sm font-semibold text-(--onb-text)">{label}</span>
-			<div className="flex flex-wrap gap-2">
+		<div className="flex w-full flex-col gap-2">
+			<span className="text-[13.33px] font-medium tracking-tight text-[#111827]">
+				{label}
+			</span>
+			<div
+				className={cn(
+					layout === "grid"
+						? "grid grid-cols-2 gap-2.5 sm:grid-cols-3"
+						: "flex flex-wrap gap-2.5",
+				)}
+			>
 				{options.map((opt) => {
 					const selected = value === opt;
 					return (
@@ -25,10 +36,11 @@ export function ChipSelect<T extends string>({
 							type="button"
 							onClick={() => onChange(opt)}
 							className={cn(
-								"rounded-[var(--onb-radius)] border px-3 py-1.5 text-sm font-medium transition-colors",
+								"flex min-h-[30px] items-center justify-center rounded-xl border px-2.5 py-1.5 text-center text-xs font-medium tracking-tight transition-colors",
+								"border-black/[0.08] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#0052cc]",
 								selected
-									? "border-(--onb-primary) bg-(--onb-primary) text-white"
-									: "border-(--onb-border) bg-(--onb-form-bg) text-(--onb-text) hover:border-(--onb-muted)",
+									? "border-[#0052cc] bg-[#0052cc] text-white"
+									: "bg-white text-[#111827] hover:border-[#0052cc]/40",
 							)}
 						>
 							{opt}

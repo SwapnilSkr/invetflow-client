@@ -1,5 +1,5 @@
-/* App shell: light gray page + white cards + blue accent — see DESIGN.md. Avoid one-off palette per route. */
-@import url('https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,700&family=Manrope:wght@400;500;600;700;800&display=swap');
+/* Invetflow — Figma dashboard/onboarding: Roboto Slab + #0052cc primary */
+@import url('https://fonts.googleapis.com/css2?family=Roboto+Mono:wght@500;700&family=Roboto+Slab:wght@400;500;600;700&display=swap');
 @import 'tailwindcss';
 @plugin '@tailwindcss/typography';
 
@@ -9,74 +9,73 @@
 
 /* Global light theme: white / cool gray / brand blue (align with onboarding + marketing references) */
 :root {
-  --sea-ink: #0f172a;
-  --sea-ink-soft: #64748b;
-  --lagoon: #2563eb;
-  --lagoon-deep: #1d4ed8;
-  --palm: #1e40af;
+  --sea-ink: #111827;
+  --sea-ink-soft: #6b7280;
+  --lagoon: #0052cc;
+  --lagoon-deep: #0041a3;
+  --palm: #003d99;
   --sand: #f3f4f6;
   --foam: #ffffff;
   --surface: #ffffff;
   --surface-strong: #ffffff;
-  --line: #e5e7eb;
+  --line: rgba(0, 0, 0, 0.08);
   --inset-glint: #ffffff;
-  --kicker: #2563eb;
+  --kicker: #0052cc;
   --bg-base: #f9fafb;
-  --header-bg: rgba(255, 255, 255, 0.88);
+  --header-bg: rgba(255, 255, 255, 0.92);
   --chip-bg: #ffffff;
-  --chip-line: #e5e7eb;
+  --chip-line: rgba(0, 0, 0, 0.08);
   --link-bg-hover: #f1f5f9;
-  --hero-a: rgba(37, 99, 235, 0.06);
-  --hero-b: rgba(15, 23, 42, 0.04);
+  --hero-a: rgba(0, 82, 204, 0.06);
+  --hero-b: rgba(17, 24, 39, 0.04);
 
-  /* shadcn — primary CTA = brand blue, surfaces = neutral */
+  /* shadcn — aligned with Figma */
   --background: #f9fafb;
-  --foreground: #0f172a;
+  --foreground: #111827;
   --card: #ffffff;
-  --card-foreground: #0f172a;
+  --card-foreground: #111827;
   --popover: #ffffff;
-  --popover-foreground: #0f172a;
-  --primary: #2563eb;
+  --popover-foreground: #111827;
+  --primary: #0052cc;
   --primary-foreground: #ffffff;
   --secondary: #f1f5f9;
-  --secondary-foreground: #0f172a;
-  --muted: #f1f5f9;
-  --muted-foreground: #64748b;
+  --secondary-foreground: #111827;
+  --muted: #f3f4f6;
+  --muted-foreground: #6b7280;
   --accent: #f1f5f9;
-  --accent-foreground: #0f172a;
+  --accent-foreground: #111827;
   --destructive: #dc2626;
   --destructive-foreground: #ffffff;
-  --border: #e5e7eb;
-  --input: #e5e7eb;
-  --ring: #93c5fd;
-  --chart-1: #2563eb;
+  --border: rgba(0, 0, 0, 0.08);
+  --input: rgba(0, 0, 0, 0.08);
+  --ring: #0052cc;
+  --chart-1: #0052cc;
   --chart-2: #0ea5e9;
   --chart-3: #6366f1;
   --chart-4: #22c55e;
   --chart-5: #f59e0b;
-  --radius: 0.5rem;
+  --radius: 0.75rem;
   --sidebar: #ffffff;
-  --sidebar-foreground: #0f172a;
-  --sidebar-primary: #2563eb;
+  --sidebar-foreground: #111827;
+  --sidebar-primary: #0052cc;
   --sidebar-primary-foreground: #ffffff;
   --sidebar-accent: #f1f5f9;
-  --sidebar-accent-foreground: #0f172a;
-  --sidebar-border: #e5e7eb;
-  --sidebar-ring: #93c5fd;
+  --sidebar-accent-foreground: #111827;
+  --sidebar-border: rgba(0, 0, 0, 0.08);
+  --sidebar-ring: #0052cc;
 
-  /* Onboarding tokens — same family as :root (single visual system) */
-  --onb-primary: #2563eb;
-  --onb-primary-hover: #1d4ed8;
+  /* Onboarding / auth shared tokens */
+  --onb-primary: #0052cc;
+  --onb-primary-hover: #0041a3;
   --onb-page: #f9fafb;
-  --onb-panel: #f3f4f6;
+  --onb-panel: #f9fafb;
   --onb-form-bg: #ffffff;
-  --onb-border: #e5e7eb;
-  --onb-text: #0f172a;
-  --onb-muted: #64748b;
-  --onb-legal: #94a3b8;
-  --onb-radius: 0.5rem;
-  --onb-radius-lg: 0.75rem;
-  --onb-gold: #d4a20c;
+  --onb-border: rgba(0, 0, 0, 0.08);
+  --onb-text: #111827;
+  --onb-muted: #6b7280;
+  --onb-legal: #9ca3af;
+  --onb-radius: 12px;
+  --onb-radius-lg: 12px;
 }
 
 .dark {
@@ -143,9 +142,9 @@
   --onb-muted: #94a3b8;
   --onb-legal: #64748b;
 }
-
 @theme inline {
-  --font-sans: 'Manrope', ui-sans-serif, system-ui, sans-serif;
+  --font-sans: 'Roboto Slab', ui-serif, Georgia, 'Times New Roman', serif;
+  --font-mono: 'Roboto Mono', ui-monospace, monospace;
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --color-card: var(--card);
@@ -251,7 +250,7 @@ pre code {
 }
 
 .display-title {
-  font-family: 'Fraunces', Georgia, serif;
+  font-family: 'Roboto Slab', ui-serif, Georgia, serif;
 }
 
 .island-shell {
