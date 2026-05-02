@@ -35,7 +35,7 @@ function AppShell({ children }: { children: React.ReactNode }) {
 	const hideHeader = useRouterState({
 		select: (s) =>
 			s.location.pathname.startsWith("/onboarding") ||
-			s.location.pathname.startsWith("/auth"),
+			s.location.pathname.startsWith("/sign-in"),
 	});
 	return (
 		<>

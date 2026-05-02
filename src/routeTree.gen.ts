@@ -9,8 +9,8 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as SignInRouteImport } from './routes/sign-in'
 import { Route as OnboardingRouteImport } from './routes/onboarding'
-import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AboutRouteImport } from './routes/about'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as InterviewsIndexRouteImport } from './routes/interviews/index'
@@ -21,14 +21,14 @@ import { Route as InterviewsIdRouteImport } from './routes/interviews/$id'
 import { Route as InterviewsIdSessionRouteImport } from './routes/interviews/$id.session'
 import { Route as InterviewJoinTokenRouteImport } from './routes/interview/join.$token'
 
+const SignInRoute = SignInRouteImport.update({
+  id: '/sign-in',
+  path: '/sign-in',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const OnboardingRoute = OnboardingRouteImport.update({
   id: '/onboarding',
   path: '/onboarding',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const AuthRoute = AuthRouteImport.update({
-  id: '/auth',
-  path: '/auth',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AboutRoute = AboutRouteImport.update({
@@ -80,8 +80,8 @@ const InterviewJoinTokenRoute = InterviewJoinTokenRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/about': typeof AboutRoute
-  '/auth': typeof AuthRoute
   '/onboarding': typeof OnboardingRoute
+  '/sign-in': typeof SignInRoute
   '/interviews/$id': typeof InterviewsIdRouteWithChildren
   '/interviews/new': typeof InterviewsNewRoute
   '/candidate/': typeof CandidateIndexRoute
@@ -93,8 +93,8 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/about': typeof AboutRoute
-  '/auth': typeof AuthRoute
   '/onboarding': typeof OnboardingRoute
+  '/sign-in': typeof SignInRoute
   '/interviews/$id': typeof InterviewsIdRouteWithChildren
   '/interviews/new': typeof InterviewsNewRoute
   '/candidate': typeof CandidateIndexRoute
@@ -107,8 +107,8 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/about': typeof AboutRoute
-  '/auth': typeof AuthRoute
   '/onboarding': typeof OnboardingRoute
+  '/sign-in': typeof SignInRoute
   '/interviews/$id': typeof InterviewsIdRouteWithChildren
   '/interviews/new': typeof InterviewsNewRoute
   '/candidate/': typeof CandidateIndexRoute
@@ -122,8 +122,8 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/about'
-    | '/auth'
     | '/onboarding'
+    | '/sign-in'
     | '/interviews/$id'
     | '/interviews/new'
     | '/candidate/'
@@ -135,8 +135,8 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/about'
-    | '/auth'
     | '/onboarding'
+    | '/sign-in'
     | '/interviews/$id'
     | '/interviews/new'
     | '/candidate'
@@ -148,8 +148,8 @@ export interface FileRouteTypes {
     | '__root__'
     | '/'
     | '/about'
-    | '/auth'
     | '/onboarding'
+    | '/sign-in'
     | '/interviews/$id'
     | '/interviews/new'
     | '/candidate/'
@@ -162,8 +162,8 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AboutRoute: typeof AboutRoute
-  AuthRoute: typeof AuthRoute
   OnboardingRoute: typeof OnboardingRoute
+  SignInRoute: typeof SignInRoute
   InterviewsIdRoute: typeof InterviewsIdRouteWithChildren
   InterviewsNewRoute: typeof InterviewsNewRoute
   CandidateIndexRoute: typeof CandidateIndexRoute
@@ -174,18 +174,18 @@ export interface RootRouteChildren {
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/sign-in': {
+      id: '/sign-in'
+      path: '/sign-in'
+      fullPath: '/sign-in'
+      preLoaderRoute: typeof SignInRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/onboarding': {
       id: '/onboarding'
       path: '/onboarding'
       fullPath: '/onboarding'
       preLoaderRoute: typeof OnboardingRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/auth': {
-      id: '/auth'
-      path: '/auth'
-      fullPath: '/auth'
-      preLoaderRoute: typeof AuthRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/about': {
@@ -269,8 +269,8 @@ const InterviewsIdRouteWithChildren = InterviewsIdRoute._addFileChildren(
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AboutRoute: AboutRoute,
-  AuthRoute: AuthRoute,
   OnboardingRoute: OnboardingRoute,
+  SignInRoute: SignInRoute,
   InterviewsIdRoute: InterviewsIdRouteWithChildren,
   InterviewsNewRoute: InterviewsNewRoute,
   CandidateIndexRoute: CandidateIndexRoute,

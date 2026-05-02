@@ -1,4 +1,9 @@
-import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import {
+	createFileRoute,
+	Link,
+	redirect,
+	useNavigate,
+} from "@tanstack/react-router";
 import { Check, Eye, EyeOff, Loader2, MailCheck } from "lucide-react";
 import {
 	useEffect,
@@ -16,11 +21,16 @@ import { Button } from "#/components/ui/button";
 import { Input } from "#/components/ui/input";
 import {
 	ApiError,
-	registerWithPassword,
+	checkEmailRegistered,
+	registerRecruiterWithPassword,
 	resendVerificationEmail,
 	updateRecruiterOnboarding,
 } from "#/integrations/api/client";
 import { useAuth } from "#/integrations/api/hooks";
+import {
+	ensureAuthResolved,
+	useAuthStore,
+} from "#/integrations/auth/auth-store";
 import {
 	evaluatePasswordRules,
 	passwordMeetsPolicy,
@@ -58,6 +68,28 @@ export const Route = createFileRoute("/onboarding")({
 	validateSearch: (search: Record<string, unknown>): OnboardingSearch => ({
 		step: parseStep(search.step),
 	}),
+	beforeLoad: async ({ search }) => {
+		if (typeof window === "undefined") return;
+		await ensureAuthResolved();
+		const { status, user } = useAuthStore.getState();
+		if (status !== "authenticated" || !user) return;
+
+		if (user.role === "Candidate") {
+			throw redirect({ to: "/candidate" });
+		}
+
+		const step = parseStep(search.step);
+		if (step === "email" || step === "password") {
+			if (user.onboarding_completed_at) {
+				throw redirect({ to: "/dashboard" });
+			}
+			throw redirect({
+				to: "/onboarding",
+				search: { step: "profile" },
+				replace: true,
+			});
+		}
+	},
 	component: OnboardingPage,
 });
 
@@ -104,6 +136,27 @@ function OnboardingPage() {
 			});
 		}
 	}, [step, isLoading, isAuthenticated, navigate]);
+
+	/** Mirrors route `beforeLoad` so email/password steps never flash after the session hydrates. */
+	useLayoutEffect(() => {
+		if (typeof window === "undefined" || isLoading) return;
+		if (!isAuthenticated || !user) return;
+		if (user.role === "Candidate") return;
+		if (step !== "email" && step !== "password") return;
+		if (user.onboarding_completed_at) {
+			startTransition(() => {
+				void navigate({ to: "/dashboard", replace: true });
+			});
+			return;
+		}
+		startTransition(() => {
+			void navigate({
+				to: "/onboarding",
+				search: { step: "profile" },
+				replace: true,
+			});
+		});
+	}, [isLoading, isAuthenticated, user, step, navigate]);
 
 	useEffect(() => {
 		if (isLoading || !user) return;
@@ -173,6 +226,12 @@ function SplitShell({
 function EmailStep({ navigate }: { navigate: ReturnType<typeof useNavigate> }) {
 	const [, startTransition] = useTransition();
 	const [email, setEmail] = useState(() => readStoredEmail() ?? "");
+	const [emailFeedback, setEmailFeedback] = useState<{
+		message: string;
+		/** Only for “already registered” — do not show after network/API failures. */
+		signInLink?: boolean;
+	} | null>(null);
+	const [checkingEmail, setCheckingEmail] = useState(false);
 
 	return (
 		<SplitShell>
@@ -187,17 +246,44 @@ function EmailStep({ navigate }: { navigate: ReturnType<typeof useNavigate> }) {
 			</div>
 			<form
 				className="flex flex-col gap-6"
-				onSubmit={(e) => {
+				onSubmit={async (e) => {
 					e.preventDefault();
-					const t = email.trim();
+					setEmailFeedback(null);
+					const t = email.trim().toLowerCase();
 					if (!t.includes("@")) return;
-					writeStoredEmail(t);
-					startTransition(() => {
-						void navigate({
-							to: "/onboarding",
-							search: { step: "password" },
+					setCheckingEmail(true);
+					try {
+						const exists = await checkEmailRegistered(t);
+						if (exists) {
+							setEmailFeedback({
+								message: "This email is already registered.",
+								signInLink: true,
+							});
+							return;
+						}
+						writeStoredEmail(t);
+						startTransition(() => {
+							void navigate({
+								to: "/onboarding",
+								search: { step: "password" },
+							});
 						});
-					});
+					} catch (err) {
+						let message: string;
+						if (err instanceof ApiError) {
+							message = err.message;
+						} else if (err instanceof TypeError) {
+							message =
+								"Could not reach the API. Check that invetflow-server is running and VITE_API_URL matches its address (for local dev, often http://localhost:3001).";
+						} else if (err instanceof Error && err.message) {
+							message = err.message;
+						} else {
+							message = "Something went wrong. Please try again.";
+						}
+						setEmailFeedback({ message });
+					} finally {
+						setCheckingEmail(false);
+					}
 				}}
 			>
 				<div className="flex flex-col gap-2">
@@ -213,13 +299,40 @@ function EmailStep({ navigate }: { navigate: ReturnType<typeof useNavigate> }) {
 						autoComplete="email"
 						placeholder="you@company.com"
 						value={email}
-						onChange={(e) => setEmail(e.target.value)}
-						className={cn(fieldInputClass, "shadow-none")}
+						onChange={(e) => {
+							setEmail(e.target.value);
+							setEmailFeedback(null);
+						}}
+						className={cn(
+							fieldInputClass,
+							"shadow-none",
+							emailFeedback && "border-red-300",
+						)}
 						required
 					/>
+					{emailFeedback && (
+						<p className="text-sm text-red-600">
+							{emailFeedback.message}
+							{emailFeedback.signInLink ? (
+								<>
+									{" "}
+									<Link
+										to="/sign-in"
+										className="font-medium text-[#0052cc] no-underline hover:underline"
+									>
+										Sign in
+									</Link>
+								</>
+							) : null}
+						</p>
+					)}
 				</div>
-				<button type="submit" className={primaryBtnClass}>
-					Continue
+				<button
+					type="submit"
+					className={primaryBtnClass}
+					disabled={checkingEmail}
+				>
+					{checkingEmail ? "Checking…" : "Continue"}
 				</button>
 			</form>
 			<div className="flex items-center gap-1">
@@ -244,7 +357,7 @@ function EmailStep({ navigate }: { navigate: ReturnType<typeof useNavigate> }) {
 				<p className="text-[13.33px] text-[#6b7280]">
 					Already have an account?{" "}
 					<Link
-						to="/auth"
+						to="/sign-in"
 						className="font-medium text-[#0052cc] no-underline hover:underline"
 					>
 						Sign in
@@ -320,10 +433,9 @@ function PasswordStep({
 					}
 					setSubmitting(true);
 					try {
-						await registerWithPassword({
+						await registerRecruiterWithPassword({
 							email,
 							password,
-							role: "Recruiter",
 						});
 						startTransition(() => {
 							void navigate({
@@ -456,7 +568,7 @@ function PasswordStep({
 			<p className="text-[13.33px] text-[#6b7280]">
 				Already have an account?{" "}
 				<Link
-					to="/auth"
+					to="/sign-in"
 					className="font-medium text-[#0052cc] no-underline hover:underline"
 				>
 					Sign in

@@ -42,7 +42,7 @@ export function useLogout() {
 		logout();
 		queryClient.clear();
 		if (isSessionGuardedPath(path)) {
-			void navigate({ to: "/auth" });
+			void navigate({ to: "/sign-in" });
 		}
 	};
 }

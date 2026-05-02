@@ -2,6 +2,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import {
 	createFileRoute,
 	Link,
+	redirect,
 	useNavigate,
 	useRouter,
 } from "@tanstack/react-router";
@@ -13,22 +14,48 @@ import { Button } from "#/components/ui/button";
 import { Input } from "#/components/ui/input";
 import { ApiError, loginWithPassword } from "#/integrations/api/client";
 import { useAuth, useLogout } from "#/integrations/api/hooks";
-import { useAuthStore } from "#/integrations/auth/auth-store";
+import {
+	ensureAuthResolved,
+	useAuthStore,
+} from "#/integrations/auth/auth-store";
 import { getSafeInternalRedirect } from "#/lib/safe-redirect";
 
-type AuthSearch = { redirect?: string };
+type SignInSearch = { redirect?: string };
 
-export const Route = createFileRoute("/auth")({
-	validateSearch: (search: Record<string, unknown>): AuthSearch => ({
+export const Route = createFileRoute("/sign-in")({
+	validateSearch: (search: Record<string, unknown>): SignInSearch => ({
 		redirect: typeof search.redirect === "string" ? search.redirect : undefined,
 	}),
-	component: AuthPage,
+	beforeLoad: async ({ search }) => {
+		if (typeof window === "undefined") return;
+		await ensureAuthResolved();
+		const { status, user } = useAuthStore.getState();
+		if (status !== "authenticated" || !user) return;
+		const next = getSafeInternalRedirect(
+			typeof search.redirect === "string" ? search.redirect : undefined,
+		);
+		if (next) {
+			throw redirect({ href: next, replace: true });
+		}
+		if (user.role === "Candidate") {
+			throw redirect({ to: "/candidate", replace: true });
+		}
+		if (!user.onboarding_completed_at) {
+			throw redirect({
+				to: "/onboarding",
+				search: { step: "profile" },
+				replace: true,
+			});
+		}
+		throw redirect({ to: "/dashboard", replace: true });
+	},
+	component: SignInPage,
 });
 
 const fieldInputClass =
 	"h-[50px] rounded-[12px] border border-black/8 bg-white px-4 text-base text-[#111827] placeholder:text-[#111827]/50 focus-visible:border-[#0052cc] focus-visible:ring-[#0052cc]/25";
 
-function AuthPage() {
+function SignInPage() {
 	const { user, isAuthenticated, isLoading } = useAuth();
 	const navigate = useNavigate();
 	const router = useRouter();
@@ -155,13 +182,13 @@ function AuthPage() {
 						<form className="flex flex-col gap-6" onSubmit={handleSubmit}>
 							<div className="flex flex-col gap-2">
 								<label
-									htmlFor="auth-email"
+									htmlFor="signin-email"
 									className="text-[13.33px] font-medium text-[#111827]"
 								>
 									Email address
 								</label>
 								<Input
-									id="auth-email"
+									id="signin-email"
 									type="email"
 									autoComplete="email"
 									placeholder="you@company.com"
@@ -173,13 +200,13 @@ function AuthPage() {
 							</div>
 							<div className="flex flex-col gap-2">
 								<label
-									htmlFor="auth-password"
+									htmlFor="signin-password"
 									className="text-[13.33px] font-medium text-[#111827]"
 								>
 									Password
 								</label>
 								<Input
-									id="auth-password"
+									id="signin-password"
 									type="password"
 									autoComplete="current-password"
 									placeholder="Your password"

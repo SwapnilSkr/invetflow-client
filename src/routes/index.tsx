@@ -22,6 +22,9 @@ function IndexRedirect() {
 		if (user.role === "Candidate") {
 			return <Navigate to="/candidate" replace />;
 		}
+		if (!user.onboarding_completed_at) {
+			return <Navigate to="/onboarding" search={{ step: "profile" }} replace />;
+		}
 		return <Navigate to="/dashboard" replace />;
 	}
 

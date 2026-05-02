@@ -54,7 +54,7 @@ export async function getApiToken(): Promise<string> {
 		cachedToken = st;
 		return st;
 	}
-	throw new ApiError(401, "Not signed in. Go to /auth to log in.", {
+	throw new ApiError(401, "Not signed in. Go to /sign-in to log in.", {
 		kind: inferErrorKind(401),
 	});
 }

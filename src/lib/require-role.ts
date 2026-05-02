@@ -20,7 +20,7 @@ export async function requireSession(): Promise<void> {
 	if (!isBrowser()) return;
 	await ensureAuthResolved();
 	if (useAuthStore.getState().status === "unauthenticated") {
-		throw redirect({ to: "/auth" });
+		throw redirect({ to: "/sign-in" });
 	}
 }
 
@@ -36,7 +36,7 @@ export async function requireSessionWithReturnTo(
 	if (useAuthStore.getState().status === "unauthenticated") {
 		const hash = location.hash ? `#${location.hash}` : "";
 		const next = `${location.pathname}${location.searchStr ?? ""}${hash}`;
-		throw redirect({ to: "/auth", search: { redirect: next } });
+		throw redirect({ to: "/sign-in", search: { redirect: next } });
 	}
 }
 
@@ -48,7 +48,7 @@ export async function requireRecruiter(): Promise<void> {
 	await ensureAuthResolved();
 	const { status, user } = useAuthStore.getState();
 	if (status === "unauthenticated") {
-		throw redirect({ to: "/auth" });
+		throw redirect({ to: "/sign-in" });
 	}
 	if (status === "authenticated" && isCandidateRole(user?.role)) {
 		throw redirect({ to: "/candidate" });
@@ -63,7 +63,7 @@ export async function requireCandidate(): Promise<void> {
 	await ensureAuthResolved();
 	const { status, user } = useAuthStore.getState();
 	if (status === "unauthenticated") {
-		throw redirect({ to: "/auth" });
+		throw redirect({ to: "/sign-in" });
 	}
 	if (status === "authenticated" && !isCandidateRole(user?.role)) {
 		throw redirect({ to: "/dashboard" });

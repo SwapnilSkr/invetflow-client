@@ -180,6 +180,43 @@ export async function loginWithPassword(
 	return data;
 }
 
+export async function checkEmailRegistered(email: string): Promise<boolean> {
+	const q = new URLSearchParams({ email: email.trim().toLowerCase() });
+	const response = await fetch(`${API_BASE}/api/auth/email-exists?${q}`, {
+		method: "GET",
+		headers: { Accept: "application/json" },
+	});
+	if (!response.ok) {
+		throw await parseHttpError(response, "Could not check email");
+	}
+	const data = (await response.json()) as { exists: boolean };
+	return Boolean(data.exists);
+}
+
+export interface RegisterRecruiterRequestBody {
+	email: string;
+	password: string;
+	name?: string;
+	auth_provider?: "Password" | "Google";
+}
+
+/** Hiring onboarding: always creates a Recruiter (server-enforced). */
+export async function registerRecruiterWithPassword(
+	body: RegisterRecruiterRequestBody,
+): Promise<AuthResponse> {
+	const response = await fetch(`${API_BASE}/api/auth/register/recruiter`, {
+		method: "POST",
+		headers: { "Content-Type": "application/json" },
+		body: JSON.stringify(body),
+	});
+	if (!response.ok) {
+		throw await parseHttpError(response, "Registration failed");
+	}
+	const data: AuthResponse = await response.json();
+	applyAuthResponse(data);
+	return data;
+}
+
 export async function registerWithPassword(
 	body: RegisterRequestBody,
 ): Promise<AuthResponse> {

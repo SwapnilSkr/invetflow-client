@@ -27,7 +27,7 @@ export default function AuthHeaderUser() {
 
 	return (
 		<Button variant="outline" size="sm" asChild>
-			<Link to="/auth">Sign in</Link>
+			<Link to="/sign-in">Sign in</Link>
 		</Button>
 	);
 }
