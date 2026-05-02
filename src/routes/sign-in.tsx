@@ -216,11 +216,14 @@ function SignInPage() {
 									required
 								/>
 							</div>
-							{error && (
-								<div className="rounded-xl border border-red-200 bg-red-50 p-3 text-sm text-red-800">
+							{error !== "" ? (
+								<p
+									className="text-[13.33px] leading-snug text-[#6B1D1D]"
+									role="alert"
+								>
 									{error}
-								</div>
-							)}
+								</p>
+							) : null}
 							<button
 								type="submit"
 								disabled={submitting}
