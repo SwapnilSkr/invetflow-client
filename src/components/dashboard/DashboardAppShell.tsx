@@ -11,12 +11,12 @@ export function DashboardAppShell({ children }: { children: React.ReactNode }) {
 	const [sidebarOpen, setSidebarOpen] = useState(true);
 
 	return (
-		<div className="flex min-h-svh w-full bg-[#f9fafb] text-[#111827]">
+		<div className="flex h-svh min-h-0 w-full overflow-hidden bg-[#f9fafb] text-[#111827]">
 			<DashboardSidebar
 				open={sidebarOpen}
 				onToggle={() => setSidebarOpen((v) => !v)}
 			/>
-			<div className="relative flex min-h-svh min-w-0 flex-1 flex-col overflow-hidden p-5">
+			<div className="relative flex h-full min-h-0 min-w-0 flex-1 flex-col overflow-hidden p-5">
 				{!sidebarOpen ? (
 					<Button
 						type="button"

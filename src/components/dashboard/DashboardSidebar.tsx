@@ -76,7 +76,7 @@ export function DashboardSidebar({
 	return (
 		<aside
 			className={cn(
-				"shrink-0 overflow-hidden bg-[#f9fafb] transition-[width] duration-300 ease-in-out motion-reduce:transition-none",
+				"shrink-0 self-stretch overflow-hidden bg-[#f9fafb] transition-[width] duration-300 ease-in-out motion-reduce:transition-none",
 				open ? SIDEBAR_WIDTH_CLASS : "w-0",
 			)}
 			aria-hidden={!open}
@@ -84,7 +84,7 @@ export function DashboardSidebar({
 			<div
 				inert={!open}
 				className={cn(
-					"flex h-full min-h-svh flex-col px-3 py-5",
+					"flex h-full min-h-0 flex-col overflow-x-hidden overflow-y-auto overscroll-y-contain px-3 py-5",
 					SIDEBAR_INNER_WIDTH,
 				)}
 			>
