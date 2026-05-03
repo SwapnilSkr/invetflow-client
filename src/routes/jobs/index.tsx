@@ -3,6 +3,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import {
 	Calendar,
 	Clock,
+	Cpu,
 	ExternalLink,
 	Plus,
 	Trash2,
@@ -81,23 +82,34 @@ function InterviewsPage() {
 
 			<div className="space-y-3">
 				{data?.jobs?.length === 0 ? (
-					<Card>
-						<CardContent className="flex flex-col items-center justify-center py-16">
-							<div className="mb-4 rounded-full bg-muted p-4">
-								<Calendar className="h-8 w-8 text-muted-foreground" />
+					<div className="relative overflow-hidden rounded-xl border border-black/5 bg-gradient-to-b from-white to-[#f9fafb] px-8 py-20 text-center shadow-sm">
+						<div className="absolute inset-0 bg-[radial-gradient(#e5e7eb_1px,transparent_1px)] bg-[size:24px_24px] [mask-image:radial-gradient(ellipse_60%_50%_at_50%_50%,#000_10%,transparent_100%)]" />
+
+						<div className="relative mx-auto mb-6 flex h-16 w-16 items-center justify-center">
+							<div className="absolute inset-0 animate-pulse rounded-full bg-[#0052cc]/10 blur-xl" />
+							<div className="absolute -inset-1 rounded-full border border-black/5" />
+							<div className="relative flex h-12 w-12 items-center justify-center rounded-xl border border-black/10 bg-white shadow-sm ring-1 ring-black/5">
+								<Cpu className="size-5 text-[#0052cc]" />
 							</div>
-							<p className="text-lg font-medium">No jobs yet</p>
-							<p className="mt-1 text-sm text-muted-foreground">
-								Create your first job to get started
-							</p>
-							<Button className="mt-4" asChild>
+							<div className="absolute -left-1 top-1/2 h-2 w-2 -translate-y-1/2 rounded-full border border-[#0052cc] bg-white" />
+							<div className="absolute -right-1 top-1/2 h-2 w-2 -translate-y-1/2 rounded-full border border-[#0052cc] bg-white" />
+						</div>
+
+						<h3 className="relative text-base font-semibold tracking-tight text-[#111827]">
+							No active job configurations
+						</h3>
+						<p className="relative mx-auto mt-1.5 max-w-sm text-sm text-[#6b7280]">
+							Your workspace is empty. Create a new job requisition to start processing candidate interviews.
+						</p>
+						<div className="relative mt-6">
+							<Button asChild className="h-10 rounded-lg bg-[#0052cc] font-medium text-white shadow-sm transition-all hover:bg-[#0041a3] hover:shadow">
 								<Link to="/jobs/new">
 									<Plus className="mr-2 h-4 w-4" />
 									Create job
 								</Link>
 							</Button>
-						</CardContent>
-					</Card>
+						</div>
+					</div>
 				) : (
 					data?.jobs?.map((row: Job) => (
 						<JobRowCard
@@ -142,7 +154,7 @@ function JobRowCard({
 								</p>
 							</div>
 							<Badge
-								className={cn("flex-shrink-0", getStatusColor(job.status))}
+								className={cn("shrink-0", getStatusColor(job.status))}
 							>
 								{job.status}
 							</Badge>

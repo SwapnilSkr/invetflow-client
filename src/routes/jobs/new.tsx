@@ -1,4 +1,8 @@
-import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import {
+	createFileRoute,
+	useNavigate,
+	useRouter,
+} from "@tanstack/react-router";
 import { ArrowLeft, Loader2, Plus, Trash2 } from "lucide-react";
 import { useId, useState } from "react";
 import { Alert, AlertDescription } from "#/components/ui/alert";
@@ -62,6 +66,15 @@ const selectClassName = cn(
 
 function CreateJobPage() {
 	const navigate = useNavigate();
+	const router = useRouter();
+
+	const goBackOrJobs = () => {
+		if (router.history.canGoBack()) {
+			router.history.back();
+			return;
+		}
+		void navigate({ to: "/jobs" });
+	};
 	const baseId = useId();
 	const createJob = useCreateJob();
 
@@ -123,12 +136,15 @@ function CreateJobPage() {
 	};
 
 	return (
-		<div className="container mx-auto max-w-3xl">
-			<Button variant="ghost" className="mb-6 -ml-2 gap-1" asChild>
-				<Link to="/jobs">
-					<ArrowLeft className="h-4 w-4" />
-					All jobs
-				</Link>
+		<div className="container">
+			<Button
+				type="button"
+				variant="ghost"
+				className="mb-2 -ml-2 gap-1 cursor-pointer"
+				onClick={goBackOrJobs}
+			>
+				<ArrowLeft className="h-4 w-4" />
+				Back
 			</Button>
 
 			<div className="mb-8">
@@ -329,8 +345,8 @@ function CreateJobPage() {
 				) : null}
 
 				<div className="flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
-					<Button type="button" variant="outline" asChild>
-						<Link to="/jobs">Cancel</Link>
+					<Button type="button" variant="outline" onClick={goBackOrJobs}>
+						Cancel
 					</Button>
 					<Button type="submit" disabled={createJob.isPending}>
 						{createJob.isPending ? (

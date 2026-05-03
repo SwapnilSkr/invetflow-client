@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { Calendar, Clock, Plus, Trash2, Users } from "lucide-react";
+import { Calendar, Clock, Cpu, Plus, Trash2, Users } from "lucide-react";
 import { Badge } from "#/components/ui/badge";
 import { Button } from "#/components/ui/button";
 import { Card, CardContent } from "#/components/ui/card";
@@ -80,26 +80,34 @@ function DashboardJobsPage() {
 				</div>
 
 				{jobs.length === 0 ? (
-					<Card className="border-black/8 py-16 text-center">
-						<CardContent>
-							<div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-[#f3f4f6]">
-								<Calendar className="h-7 w-7 text-[#6b7280]" />
+					<div className="relative overflow-hidden rounded-xl border border-black/8 bg-gradient-to-b from-white to-[#f9fafb] px-8 py-20 text-center shadow-sm">
+						<div className="absolute inset-0 bg-[radial-gradient(#e5e7eb_1px,transparent_1px)] bg-[size:24px_24px] [mask-image:radial-gradient(ellipse_60%_50%_at_50%_50%,#000_10%,transparent_100%)]" />
+
+						<div className="relative mx-auto mb-6 flex h-16 w-16 items-center justify-center">
+							<div className="absolute inset-0 animate-pulse rounded-full bg-[#0052cc]/10 blur-xl" />
+							<div className="absolute -inset-1 rounded-full border border-black/5" />
+							<div className="relative flex h-12 w-12 items-center justify-center rounded-xl border border-black/8 bg-white shadow-sm ring-1 ring-black/5">
+								<Cpu className="size-5 text-[#0052cc]" />
 							</div>
-							<p className="font-medium text-[#111827]">No jobs yet</p>
-							<p className="mt-1 text-sm text-[#6b7280]">
-								Create an interview flow to start hiring.
-							</p>
-							<Button
-								className="mt-4 h-11 rounded-xl bg-[#0052cc] font-medium hover:bg-[#0041a3]"
-								asChild
-							>
+							<div className="absolute -left-1 top-1/2 h-2 w-2 -translate-y-1/2 rounded-full border border-[#0052cc] bg-white" />
+							<div className="absolute -right-1 top-1/2 h-2 w-2 -translate-y-1/2 rounded-full border border-[#0052cc] bg-white" />
+						</div>
+
+						<h3 className="relative text-base font-semibold tracking-tight text-[#111827]">
+							No active job configurations
+						</h3>
+						<p className="relative mx-auto mt-1.5 max-w-sm text-[13.33px] text-[#6b7280]">
+							Your workspace is empty. Create a new job requisition to start processing candidate interviews.
+						</p>
+						<div className="relative mt-6">
+							<Button asChild className="h-11 rounded-xl bg-[#0052cc] font-medium text-white shadow-sm transition-all hover:bg-[#0041a3] hover:shadow">
 								<Link to="/jobs/new">
 									<Plus className="size-4" />
 									<p className="text-sm">Create job</p>
 								</Link>
 							</Button>
-						</CardContent>
-					</Card>
+						</div>
+					</div>
 				) : (
 					<ul className="space-y-3">
 						{jobs.map((row: Job) => (
