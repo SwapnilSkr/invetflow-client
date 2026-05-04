@@ -1,6 +1,11 @@
 import { useQuery } from "@tanstack/react-query";
-import { createFileRoute, Link } from "@tanstack/react-router";
-import { Calendar, Clock, Cpu, Plus, Trash2, Users } from "lucide-react";
+import {
+	createFileRoute,
+	Link,
+	Outlet,
+	useRouterState,
+} from "@tanstack/react-router";
+import { Clock, Cpu, Plus, Trash2, Users } from "lucide-react";
 import { Badge } from "#/components/ui/badge";
 import { Button } from "#/components/ui/button";
 import { Card, CardContent } from "#/components/ui/card";
@@ -10,8 +15,18 @@ import { jobQueries, useDeleteJob } from "#/integrations/api/queries";
 import { cn, getStatusColor } from "#/lib/utils";
 
 export const Route = createFileRoute("/dashboard/jobs")({
-	component: DashboardJobsPage,
+	component: DashboardJobsRoute,
 });
+
+function DashboardJobsRoute() {
+	const pathname = useRouterState({ select: (s) => s.location.pathname });
+	const isCreateJobChild =
+		pathname === "/dashboard/jobs/new" || pathname === "/dashboard/jobs/new/";
+	if (isCreateJobChild) {
+		return <Outlet />;
+	}
+	return <DashboardJobsPage />;
+}
 
 function DashboardJobsPage() {
 	const { data, isLoading, error } = useQuery(jobQueries.list());
@@ -72,7 +87,7 @@ function DashboardJobsPage() {
 						asChild
 						className="h-11 rounded-xl bg-[#0052cc] font-medium text-white hover:bg-[#0041a3]"
 					>
-						<Link to="/jobs/new">
+						<Link to="/dashboard/jobs/new">
 							<Plus className="size-4" />
 							<p className="text-sm">New job</p>
 						</Link>
@@ -97,11 +112,15 @@ function DashboardJobsPage() {
 							No active job configurations
 						</h3>
 						<p className="relative mx-auto mt-1.5 max-w-sm text-[13.33px] text-[#6b7280]">
-							Your workspace is empty. Create a new job requisition to start processing candidate interviews.
+							Your workspace is empty. Create a new job requisition to start
+							processing candidate interviews.
 						</p>
 						<div className="relative mt-6">
-							<Button asChild className="h-11 rounded-xl bg-[#0052cc] font-medium text-white shadow-sm transition-all hover:bg-[#0041a3] hover:shadow">
-								<Link to="/jobs/new">
+							<Button
+								asChild
+								className="h-11 rounded-xl bg-[#0052cc] font-medium text-white shadow-sm transition-all hover:bg-[#0041a3] hover:shadow"
+							>
+								<Link to="/dashboard/jobs/new">
 									<Plus className="size-4" />
 									<p className="text-sm">Create job</p>
 								</Link>

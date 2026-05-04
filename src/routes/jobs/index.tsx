@@ -73,7 +73,7 @@ function InterviewsPage() {
 					</p>
 				</div>
 				<Button asChild>
-					<Link to="/jobs/new">
+					<Link to="/dashboard/jobs/new">
 						<Plus className="mr-2 h-4 w-4" />
 						Create job
 					</Link>
@@ -103,7 +103,7 @@ function InterviewsPage() {
 						</p>
 						<div className="relative mt-6">
 							<Button asChild className="h-10 rounded-lg bg-[#0052cc] font-medium text-white shadow-sm transition-all hover:bg-[#0041a3] hover:shadow">
-								<Link to="/jobs/new">
+								<Link to="/dashboard/jobs/new">
 									<Plus className="mr-2 h-4 w-4" />
 									Create job
 								</Link>

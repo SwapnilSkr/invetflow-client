@@ -17,13 +17,13 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as JobsIndexRouteImport } from './routes/jobs/index'
 import { Route as DashboardIndexRouteImport } from './routes/dashboard/index'
 import { Route as CandidateIndexRouteImport } from './routes/candidate/index'
-import { Route as JobsNewRouteImport } from './routes/jobs/new'
 import { Route as JobsIdRouteImport } from './routes/jobs/$id'
 import { Route as DashboardSettingsRouteImport } from './routes/dashboard/settings'
 import { Route as DashboardJobsRouteImport } from './routes/dashboard/jobs'
 import { Route as DashboardCandidatesRouteImport } from './routes/dashboard/candidates'
 import { Route as JobsIdSessionRouteImport } from './routes/jobs/$id.session'
 import { Route as InterviewJoinTokenRouteImport } from './routes/interview/join.$token'
+import { Route as DashboardJobsNewRouteImport } from './routes/dashboard/jobs.new'
 
 const SignInRoute = SignInRouteImport.update({
   id: '/sign-in',
@@ -65,11 +65,6 @@ const CandidateIndexRoute = CandidateIndexRouteImport.update({
   path: '/candidate/',
   getParentRoute: () => rootRouteImport,
 } as any)
-const JobsNewRoute = JobsNewRouteImport.update({
-  id: '/jobs/new',
-  path: '/jobs/new',
-  getParentRoute: () => rootRouteImport,
-} as any)
 const JobsIdRoute = JobsIdRouteImport.update({
   id: '/jobs/$id',
   path: '/jobs/$id',
@@ -100,6 +95,11 @@ const InterviewJoinTokenRoute = InterviewJoinTokenRouteImport.update({
   path: '/interview/join/$token',
   getParentRoute: () => rootRouteImport,
 } as any)
+const DashboardJobsNewRoute = DashboardJobsNewRouteImport.update({
+  id: '/new',
+  path: '/new',
+  getParentRoute: () => DashboardJobsRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -108,13 +108,13 @@ export interface FileRoutesByFullPath {
   '/onboarding': typeof OnboardingRoute
   '/sign-in': typeof SignInRoute
   '/dashboard/candidates': typeof DashboardCandidatesRoute
-  '/dashboard/jobs': typeof DashboardJobsRoute
+  '/dashboard/jobs': typeof DashboardJobsRouteWithChildren
   '/dashboard/settings': typeof DashboardSettingsRoute
   '/jobs/$id': typeof JobsIdRouteWithChildren
-  '/jobs/new': typeof JobsNewRoute
   '/candidate/': typeof CandidateIndexRoute
   '/dashboard/': typeof DashboardIndexRoute
   '/jobs/': typeof JobsIndexRoute
+  '/dashboard/jobs/new': typeof DashboardJobsNewRoute
   '/interview/join/$token': typeof InterviewJoinTokenRoute
   '/jobs/$id/session': typeof JobsIdSessionRoute
 }
@@ -124,13 +124,13 @@ export interface FileRoutesByTo {
   '/onboarding': typeof OnboardingRoute
   '/sign-in': typeof SignInRoute
   '/dashboard/candidates': typeof DashboardCandidatesRoute
-  '/dashboard/jobs': typeof DashboardJobsRoute
+  '/dashboard/jobs': typeof DashboardJobsRouteWithChildren
   '/dashboard/settings': typeof DashboardSettingsRoute
   '/jobs/$id': typeof JobsIdRouteWithChildren
-  '/jobs/new': typeof JobsNewRoute
   '/candidate': typeof CandidateIndexRoute
   '/dashboard': typeof DashboardIndexRoute
   '/jobs': typeof JobsIndexRoute
+  '/dashboard/jobs/new': typeof DashboardJobsNewRoute
   '/interview/join/$token': typeof InterviewJoinTokenRoute
   '/jobs/$id/session': typeof JobsIdSessionRoute
 }
@@ -142,13 +142,13 @@ export interface FileRoutesById {
   '/onboarding': typeof OnboardingRoute
   '/sign-in': typeof SignInRoute
   '/dashboard/candidates': typeof DashboardCandidatesRoute
-  '/dashboard/jobs': typeof DashboardJobsRoute
+  '/dashboard/jobs': typeof DashboardJobsRouteWithChildren
   '/dashboard/settings': typeof DashboardSettingsRoute
   '/jobs/$id': typeof JobsIdRouteWithChildren
-  '/jobs/new': typeof JobsNewRoute
   '/candidate/': typeof CandidateIndexRoute
   '/dashboard/': typeof DashboardIndexRoute
   '/jobs/': typeof JobsIndexRoute
+  '/dashboard/jobs/new': typeof DashboardJobsNewRoute
   '/interview/join/$token': typeof InterviewJoinTokenRoute
   '/jobs/$id/session': typeof JobsIdSessionRoute
 }
@@ -164,10 +164,10 @@ export interface FileRouteTypes {
     | '/dashboard/jobs'
     | '/dashboard/settings'
     | '/jobs/$id'
-    | '/jobs/new'
     | '/candidate/'
     | '/dashboard/'
     | '/jobs/'
+    | '/dashboard/jobs/new'
     | '/interview/join/$token'
     | '/jobs/$id/session'
   fileRoutesByTo: FileRoutesByTo
@@ -180,10 +180,10 @@ export interface FileRouteTypes {
     | '/dashboard/jobs'
     | '/dashboard/settings'
     | '/jobs/$id'
-    | '/jobs/new'
     | '/candidate'
     | '/dashboard'
     | '/jobs'
+    | '/dashboard/jobs/new'
     | '/interview/join/$token'
     | '/jobs/$id/session'
   id:
@@ -197,10 +197,10 @@ export interface FileRouteTypes {
     | '/dashboard/jobs'
     | '/dashboard/settings'
     | '/jobs/$id'
-    | '/jobs/new'
     | '/candidate/'
     | '/dashboard/'
     | '/jobs/'
+    | '/dashboard/jobs/new'
     | '/interview/join/$token'
     | '/jobs/$id/session'
   fileRoutesById: FileRoutesById
@@ -212,7 +212,6 @@ export interface RootRouteChildren {
   OnboardingRoute: typeof OnboardingRoute
   SignInRoute: typeof SignInRoute
   JobsIdRoute: typeof JobsIdRouteWithChildren
-  JobsNewRoute: typeof JobsNewRoute
   CandidateIndexRoute: typeof CandidateIndexRoute
   JobsIndexRoute: typeof JobsIndexRoute
   InterviewJoinTokenRoute: typeof InterviewJoinTokenRoute
@@ -276,13 +275,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof CandidateIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/jobs/new': {
-      id: '/jobs/new'
-      path: '/jobs/new'
-      fullPath: '/jobs/new'
-      preLoaderRoute: typeof JobsNewRouteImport
-      parentRoute: typeof rootRouteImport
-    }
     '/jobs/$id': {
       id: '/jobs/$id'
       path: '/jobs/$id'
@@ -325,19 +317,38 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof InterviewJoinTokenRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/dashboard/jobs/new': {
+      id: '/dashboard/jobs/new'
+      path: '/new'
+      fullPath: '/dashboard/jobs/new'
+      preLoaderRoute: typeof DashboardJobsNewRouteImport
+      parentRoute: typeof DashboardJobsRoute
+    }
   }
 }
 
+interface DashboardJobsRouteChildren {
+  DashboardJobsNewRoute: typeof DashboardJobsNewRoute
+}
+
+const DashboardJobsRouteChildren: DashboardJobsRouteChildren = {
+  DashboardJobsNewRoute: DashboardJobsNewRoute,
+}
+
+const DashboardJobsRouteWithChildren = DashboardJobsRoute._addFileChildren(
+  DashboardJobsRouteChildren,
+)
+
 interface DashboardRouteRouteChildren {
   DashboardCandidatesRoute: typeof DashboardCandidatesRoute
-  DashboardJobsRoute: typeof DashboardJobsRoute
+  DashboardJobsRoute: typeof DashboardJobsRouteWithChildren
   DashboardSettingsRoute: typeof DashboardSettingsRoute
   DashboardIndexRoute: typeof DashboardIndexRoute
 }
 
 const DashboardRouteRouteChildren: DashboardRouteRouteChildren = {
   DashboardCandidatesRoute: DashboardCandidatesRoute,
-  DashboardJobsRoute: DashboardJobsRoute,
+  DashboardJobsRoute: DashboardJobsRouteWithChildren,
   DashboardSettingsRoute: DashboardSettingsRoute,
   DashboardIndexRoute: DashboardIndexRoute,
 }
@@ -364,7 +375,6 @@ const rootRouteChildren: RootRouteChildren = {
   OnboardingRoute: OnboardingRoute,
   SignInRoute: SignInRoute,
   JobsIdRoute: JobsIdRouteWithChildren,
-  JobsNewRoute: JobsNewRoute,
   CandidateIndexRoute: CandidateIndexRoute,
   JobsIndexRoute: JobsIndexRoute,
   InterviewJoinTokenRoute: InterviewJoinTokenRoute,

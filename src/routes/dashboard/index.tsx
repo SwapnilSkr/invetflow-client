@@ -230,7 +230,7 @@ function RecruiterDashboard() {
             asChild
             className="h-11 rounded-xl bg-[#0052cc] font-medium text-white hover:bg-[#0041a3]"
           >
-            <Link to="/jobs/new">
+            <Link to="/dashboard/jobs/new">
               <Plus className="size-4" />
               <p className="text-sm">New job</p>
             </Link>

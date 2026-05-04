@@ -21,11 +21,9 @@ import type {
 } from "#/integrations/api/client";
 import { isApiError } from "#/integrations/api/errors";
 import { useCreateJob } from "#/integrations/api/queries";
-import { requireRecruiter } from "#/lib/require-role";
 import { cn } from "#/lib/utils";
 
-export const Route = createFileRoute("/jobs/new")({
-	beforeLoad: requireRecruiter,
+export const Route = createFileRoute("/dashboard/jobs/new")({
 	component: CreateJobPage,
 });
 
@@ -73,7 +71,7 @@ function CreateJobPage() {
 			router.history.back();
 			return;
 		}
-		void navigate({ to: "/jobs" });
+		void navigate({ to: "/dashboard/jobs" });
 	};
 	const baseId = useId();
 	const createJob = useCreateJob();
