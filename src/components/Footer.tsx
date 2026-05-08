@@ -19,7 +19,7 @@ export default function Footer() {
 					<Link to="/dashboard" className="nav-link">
 						Dashboard
 					</Link>
-					<Link to="/jobs" className="nav-link">
+					<Link to="/dashboard/jobs" className="nav-link">
 						Jobs
 					</Link>
 					<Link to="/about" className="nav-link">

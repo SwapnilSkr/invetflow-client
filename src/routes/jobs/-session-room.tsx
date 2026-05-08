@@ -349,7 +349,7 @@ export function InterviewSessionPage() {
 							</p>
 						) : null}
 						<Button asChild className="mt-2">
-							<Link to={isCandidate ? "/candidate" : "/jobs"}>
+							<Link to={isCandidate ? "/candidate" : "/dashboard/jobs"}>
 								{isCandidate ? "Back to My jobs" : "Back to Jobs"}
 							</Link>
 						</Button>

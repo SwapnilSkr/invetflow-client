@@ -157,7 +157,7 @@ function InterviewDetailPage() {
 		<div className="container mx-auto max-w-5xl">
 			<div className="mb-6">
 				<Button variant="ghost" size="sm" asChild>
-					<Link to={isRecruiter ? "/jobs" : "/candidate"}>
+					<Link to={isRecruiter ? "/dashboard/jobs" : "/candidate"}>
 						<ArrowLeft className="mr-2 h-4 w-4" />
 						{isRecruiter ? "All jobs" : "My jobs"}
 					</Link>
