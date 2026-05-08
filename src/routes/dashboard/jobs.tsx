@@ -88,7 +88,7 @@ function DashboardJobsPage() {
 						asChild
 						className="h-11 rounded-xl bg-[#0052cc] font-medium text-white hover:bg-[#0041a3]"
 					>
-						<Link to="/dashboard/jobs/new">
+						<Link to="/dashboard/jobs/new" search={{ id: undefined }}>
 							<Plus className="size-4" />
 							<p className="text-sm">New job</p>
 						</Link>
@@ -121,7 +121,7 @@ function DashboardJobsPage() {
 								asChild
 								className="h-11 rounded-xl bg-[#0052cc] font-medium text-white shadow-sm transition-all hover:bg-[#0041a3] hover:shadow"
 							>
-								<Link to="/dashboard/jobs/new">
+								<Link to="/dashboard/jobs/new" search={{ id: undefined }}>
 									<Plus className="size-4" />
 									<p className="text-sm">Create job</p>
 								</Link>

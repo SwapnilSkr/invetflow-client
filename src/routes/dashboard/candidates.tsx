@@ -17,8 +17,8 @@ function DashboardCandidatesPage() {
 					</div>
 				</div>
 
-				<div className="relative overflow-hidden rounded-xl border border-black/8 bg-gradient-to-b from-white to-[#f9fafb] px-8 py-20 text-center shadow-sm">
-					<div className="absolute inset-0 bg-[linear-gradient(to_right,#e5e7eb_1px,transparent_1px),linear-gradient(to_bottom,#e5e7eb_1px,transparent_1px)] bg-[size:1.5rem_1.5rem] [mask-image:radial-gradient(ellipse_60%_50%_at_50%_50%,#000_10%,transparent_100%)]" />
+				<div className="relative overflow-hidden rounded-xl border border-black/8 bg-linear-to-b from-white to-[#f9fafb] px-8 py-20 text-center shadow-sm">
+					<div className="absolute inset-0 bg-[linear-gradient(to_right,#e5e7eb_1px,transparent_1px),linear-gradient(to_bottom,#e5e7eb_1px,transparent_1px)] bg-size-[1.5rem_1.5rem] mask-[radial-gradient(ellipse_60%_50%_at_50%_50%,#000_10%,transparent_100%)]" />
 
 					<div className="relative mx-auto mb-6 flex h-16 w-16 items-center justify-center">
 						<div className="absolute inset-0 animate-pulse rounded-full bg-[#16a34a]/10 blur-xl" />
