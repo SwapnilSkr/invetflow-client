@@ -28,11 +28,23 @@ const API_BASE = import.meta.env.VITE_API_URL || "http://localhost:3001";
 
 export interface Job {
 	id: string;
+	organization_id: string | null;
+	created_by_user_id: string;
+	assigned_recruiter_ids: string[];
 	title: string;
 	job_title: string;
 	job_description: string | null;
+	slug: string | null;
 	questions: Question[];
-	status: "Draft" | "Scheduled" | "Active" | "Completed" | "Cancelled";
+	status:
+		| "Draft"
+		| "Scheduled"
+		| "Active"
+		| "Paused"
+		| "Completed"
+		| "Cancelled"
+		| "Closed"
+		| "Archived";
 	recruiter_id: string;
 	candidate_id: string | null;
 	candidate_name: string | null;
@@ -45,6 +57,142 @@ export interface Job {
 	invite_link: string | null;
 	/** Any signed-in user (except admins) may join when scheduled, not only the assignee. */
 	is_public: boolean;
+	department: string | null;
+	seniority: string | null;
+	employment_type: string | null;
+	workplace_type: string | null;
+	locations: JobLocation[];
+	salary: SalaryRange | null;
+	skills: string[];
+	tools: string[];
+	tags: string[];
+	experience: ExperienceRange | null;
+	pipeline: JobPipeline;
+	screening_questions: ScreeningQuestion[];
+	rubric: RubricItem[];
+	interview_settings: InterviewSettings;
+	application_settings: ApplicationSettings;
+	visibility: JobVisibility;
+}
+
+export interface Organization {
+	id: string;
+	name: string;
+	slug: string;
+	size: string | null;
+	website: string | null;
+	created_by_user_id: string;
+	current_user_role: "Owner" | "Admin" | "Recruiter" | "Member" | null;
+}
+
+export interface JobLocation {
+	city?: string | null;
+	region?: string | null;
+	country?: string | null;
+	label: string;
+}
+
+export interface SalaryRange {
+	min?: number | null;
+	max?: number | null;
+	currency: string;
+	period: string;
+}
+
+export interface ExperienceRange {
+	min_years?: number | null;
+	max_years?: number | null;
+}
+
+export interface JobPipeline {
+	stages: JobStage[];
+}
+
+export type StageType =
+	| "Applied"
+	| "Prescreening"
+	| "VoiceInterview"
+	| "CodingAssessment"
+	| "GenericAssessment"
+	| "PsychometricAssessment"
+	| "ManualReview"
+	| "Consent"
+	| "HumanInterview"
+	| "Offer"
+	| "Hired"
+	| "Rejected";
+
+export type StageAutomation =
+	| "None"
+	| "SendInvitation"
+	| "ScheduleMeeting"
+	| "SendRejection"
+	| "SendHiredNotification";
+
+export interface JobStage {
+	id: string;
+	title: string;
+	stage_type: StageType;
+	required: boolean;
+	candidate_facing: boolean;
+	pass_threshold?: number | null;
+	contributes_to_score: boolean;
+	automation: StageAutomation;
+	order: number;
+}
+
+export type ScreeningQuestionType =
+	| "Text"
+	| "Number"
+	| "Boolean"
+	| "Select"
+	| "MultiSelect"
+	| "Date";
+
+export interface ScreeningQuestion {
+	id: string;
+	label: string;
+	question_type: ScreeningQuestionType;
+	required: boolean;
+	options: string[];
+	knockout?: { operator: string; value: unknown } | null;
+	order: number;
+}
+
+export interface RubricItem {
+	id: string;
+	skill: string;
+	weight: number;
+	scoring_guide: string;
+	question: string;
+	follow_up_prompts: string[];
+	order: number;
+}
+
+export interface InterviewSettings {
+	duration_minutes: number;
+	max_score: number;
+	pass_threshold: number;
+	allowed_languages: string[];
+	voice_provider: string;
+	voice_gender: string;
+	greeting?: string | null;
+	parting_words?: string | null;
+}
+
+export interface ApplicationSettings {
+	require_resume: boolean;
+	require_phone: boolean;
+	require_linkedin: boolean;
+	require_consent: boolean;
+	allow_multiple_applications: boolean;
+	cooldown_days: number;
+}
+
+export interface JobVisibility {
+	public_link_enabled: boolean;
+	careers_page: boolean;
+	external_boards: string[];
 }
 
 export interface Question {
@@ -66,8 +214,26 @@ export interface CreateJobRequest {
 	title: string;
 	job_title: string;
 	job_description?: string;
+	slug?: string;
 	questions: CreateQuestionRequest[];
 	duration_minutes?: number;
+	publish_on_create?: boolean;
+	department?: string;
+	seniority?: string;
+	employment_type?: string;
+	workplace_type?: string;
+	locations?: JobLocation[];
+	salary?: SalaryRange;
+	skills?: string[];
+	tools?: string[];
+	tags?: string[];
+	experience?: ExperienceRange;
+	pipeline?: JobPipeline;
+	screening_questions?: ScreeningQuestion[];
+	rubric?: RubricItem[];
+	interview_settings?: InterviewSettings;
+	application_settings?: ApplicationSettings;
+	visibility?: JobVisibility;
 }
 
 export interface CreateQuestionRequest {
@@ -84,7 +250,23 @@ export interface UpdateJobRequest {
 	duration_minutes?: number;
 	is_public?: boolean;
 	/** Close the role in the app when you are done hiring. Ending a call only ends that answer session, not the job. */
-	status?: "Completed" | "Cancelled";
+	status?:
+		| "Active"
+		| "Paused"
+		| "Closed"
+		| "Archived"
+		| "Completed"
+		| "Cancelled";
+}
+
+export interface GenerateJobContentRequest {
+	kind: "job_description" | "rubric_questions" | "pipeline";
+	context: unknown;
+}
+
+export interface GenerateJobContentResponse {
+	kind: GenerateJobContentRequest["kind"];
+	content: unknown;
 }
 
 export interface JobInterviewsListResponse {
@@ -239,6 +421,11 @@ export async function updateRecruiterOnboarding(
 		body: JSON.stringify(body),
 	});
 	getAuthStoreState().applyUser(data);
+	try {
+		getAuthStoreState().applyOrganization(await fetchCurrentOrganization());
+	} catch {
+		getAuthStoreState().applyOrganization(null);
+	}
 	return data;
 }
 
@@ -255,6 +442,10 @@ export async function resendVerificationEmail(): Promise<ResendVerificationRespo
 			body: "{}",
 		},
 	);
+}
+
+export async function fetchCurrentOrganization(): Promise<Organization | null> {
+	return apiClient<Organization | null>("/api/organizations/current");
 }
 
 export async function apiClientPublic<T>(

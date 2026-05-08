@@ -21,6 +21,7 @@ export function useAuth() {
 			const { status, user } = state;
 			return {
 				user: status === "authenticated" ? user : null,
+				organization: status === "authenticated" ? state.organization : null,
 				isAuthenticated: status === "authenticated",
 				/** True only while validating a stored JWT (GET /api/auth/me) on load. */
 				isLoading: status === "initializing",

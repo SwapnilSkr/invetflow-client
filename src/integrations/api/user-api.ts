@@ -1,3 +1,4 @@
+import type { Organization } from "./client";
 import { parseHttpError } from "./errors";
 import { getApiToken } from "./token-storage";
 import type { User } from "./types";
@@ -27,4 +28,21 @@ export async function fetchCurrentUserFromApi(): Promise<User> {
 	}
 
 	return response.json() as Promise<User>;
+}
+
+export async function fetchCurrentOrganizationFromApi(): Promise<Organization | null> {
+	const token = await getApiToken();
+
+	const response = await fetch(`${API_BASE}/api/organizations/current`, {
+		headers: {
+			Authorization: `Bearer ${token}`,
+			"Content-Type": "application/json",
+		},
+	});
+
+	if (!response.ok) {
+		throw await parseHttpError(response, "Could not load organization");
+	}
+
+	return response.json() as Promise<Organization | null>;
 }

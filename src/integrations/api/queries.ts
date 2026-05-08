@@ -9,10 +9,13 @@ import {
 	apiClientPublic,
 	type CandidateInterview,
 	type CreateJobRequest,
+	type GenerateJobContentRequest,
+	type GenerateJobContentResponse,
 	type InterviewScores,
 	type Job,
 	type JobInterviewsListResponse,
 	type JoinJobResponse,
+	type Organization,
 	type TranscriptEntry,
 	type UpdateJobRequest,
 } from "./client";
@@ -27,6 +30,11 @@ export const jobKeys = {
 	byToken: (token: string) => [...jobKeys.all, "token", token] as const,
 	jobInterviews: (jobId: string) =>
 		[...jobKeys.all, "jobInterviews", jobId] as const,
+};
+
+export const organizationKeys = {
+	all: ["organizations"] as const,
+	current: () => [...organizationKeys.all, "current"] as const,
 };
 
 export const candidateInterviewKeys = {
@@ -75,6 +83,15 @@ export const jobQueries = {
 		}),
 };
 
+export const organizationQueries = {
+	current: () =>
+		queryOptions({
+			queryKey: organizationKeys.current(),
+			queryFn: () =>
+				apiClient<Organization | null>("/api/organizations/current"),
+		}),
+};
+
 export const candidateInterviewQueries = {
 	detail: (id: string) =>
 		queryOptions({
@@ -111,6 +128,16 @@ export function useCreateJob() {
 		onSuccess: () => {
 			queryClient.invalidateQueries({ queryKey: jobKeys.lists() });
 		},
+	});
+}
+
+export function useGenerateJobContent() {
+	return useMutation({
+		mutationFn: (data: GenerateJobContentRequest) =>
+			apiClient<GenerateJobContentResponse>("/api/jobs/generate", {
+				method: "POST",
+				body: JSON.stringify(data),
+			}),
 	});
 }
 
