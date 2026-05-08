@@ -1,4 +1,5 @@
 import { create } from "zustand";
+import type { Organization } from "#/integrations/api/client";
 import {
 	clearSessionCredentials,
 	hasValidAccessToken,
@@ -6,7 +7,10 @@ import {
 	setStoredToken,
 } from "#/integrations/api/token-storage";
 import type { AppUserRole, User } from "#/integrations/api/types";
-import { fetchCurrentUserFromApi } from "#/integrations/api/user-api";
+import {
+	fetchCurrentOrganizationFromApi,
+	fetchCurrentUserFromApi,
+} from "#/integrations/api/user-api";
 
 function normalizeUser(u: User): User {
 	const role: AppUserRole =
@@ -35,6 +39,7 @@ let initializeInFlight: Promise<void> | null = null;
 type AuthState = {
 	status: AuthStatus;
 	user: User | null;
+	organization: Organization | null;
 	/** One-shot bootstrap: validate persisted JWT with GET /api/auth/me. */
 	initialize: () => Promise<void>;
 	/**
@@ -50,11 +55,13 @@ type AuthState = {
 	signOut: () => void;
 	/** After PATCH profile / me refresh — keeps JWT, updates `user` in zustand. */
 	applyUser: (user: User) => void;
+	applyOrganization: (organization: Organization | null) => void;
 };
 
 export const useAuthStore = create<AuthState>((set, get) => ({
 	status: getInitialAuthStatus(),
 	user: null,
+	organization: null,
 
 	initialize: async () => {
 		if (initializeInFlight) return initializeInFlight;
@@ -74,7 +81,11 @@ export const useAuthStore = create<AuthState>((set, get) => ({
 
 			try {
 				const user = normalizeUser(await fetchCurrentUserFromApi());
-				set({ user, status: "authenticated" });
+				const organization =
+					user.role === "Recruiter"
+						? await fetchCurrentOrganizationFromApi()
+						: null;
+				set({ user, organization, status: "authenticated" });
 			} catch {
 				get().signOut();
 			}
@@ -88,16 +99,24 @@ export const useAuthStore = create<AuthState>((set, get) => ({
 	applyTokenResponse: (accessToken, expiresIn, user) => {
 		setStoredToken(accessToken, expiresIn);
 		rememberAccessToken(accessToken);
-		set({ user: normalizeUser(user), status: "authenticated" });
+		set({
+			user: normalizeUser(user),
+			organization: null,
+			status: "authenticated",
+		});
 	},
 
 	applyUser: (user) => {
 		set({ user: normalizeUser(user), status: "authenticated" });
 	},
 
+	applyOrganization: (organization) => {
+		set({ organization });
+	},
+
 	signOut: () => {
 		clearSessionCredentials();
-		set({ user: null, status: "unauthenticated" });
+		set({ user: null, organization: null, status: "unauthenticated" });
 	},
 }));
 
