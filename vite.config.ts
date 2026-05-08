@@ -15,6 +15,11 @@ export default defineConfig(({ mode }) => {
 	}
 
 	return {
+		test: {
+			passWithNoTests: true,
+			environment: "jsdom",
+			include: ["**/*.{test,spec}.{js,mjs,cjs,ts,mts,cts,jsx,tsx}"],
+		},
 		plugins: [
 			devtools(),
 			tsconfigPaths({ projects: ["./tsconfig.json"] }),

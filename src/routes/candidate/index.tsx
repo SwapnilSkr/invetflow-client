@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { Calendar, Clock, ExternalLink, Inbox, Network } from "lucide-react";
+import { Calendar, Clock, ExternalLink, Network } from "lucide-react";
 import { Badge } from "#/components/ui/badge";
 import { Button } from "#/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "#/components/ui/card";
@@ -69,7 +69,9 @@ function CandidateHome() {
 						Awaiting System Assignment
 					</h3>
 					<p className="relative mx-auto mt-1.5 max-w-sm text-sm text-[#6b7280]">
-						You have no pending interview sessions. Roles will automatically appear here once the recruitment team links your profile to an active job.
+						You have no pending interview sessions. Roles will automatically
+						appear here once the recruitment team links your profile to an
+						active job.
 					</p>
 				</div>
 			) : (

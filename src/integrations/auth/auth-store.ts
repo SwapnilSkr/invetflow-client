@@ -11,6 +11,7 @@ import {
 	fetchCurrentOrganizationFromApi,
 	fetchCurrentUserFromApi,
 } from "#/integrations/api/user-api";
+import { registerApiUnauthorizedHandler } from "#/integrations/auth/auth-session-events";
 
 function normalizeUser(u: User): User {
 	const role: AppUserRole =
@@ -119,6 +120,10 @@ export const useAuthStore = create<AuthState>((set, get) => ({
 		set({ user: null, organization: null, status: "unauthenticated" });
 	},
 }));
+
+registerApiUnauthorizedHandler(() => {
+	useAuthStore.getState().signOut();
+});
 
 /** Non-hook access (api client, interceptors) — use sparingly. */
 export function getAuthStoreState() {

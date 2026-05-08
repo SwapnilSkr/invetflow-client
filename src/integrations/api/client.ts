@@ -3,8 +3,8 @@ import { parseHttpError } from "./errors";
 import { getApiToken } from "./token-storage";
 import type {
 	AuthResponse,
+	RecruiterOnboardingResponse,
 	UpdateRecruiterOnboardingBody,
-	User,
 } from "./types";
 
 export {
@@ -17,6 +17,7 @@ export {
 export { hasValidAccessToken } from "./token-storage";
 export type {
 	AuthResponse,
+	RecruiterOnboardingResponse,
 	UpdateRecruiterOnboardingBody,
 	User,
 } from "./types";
@@ -415,23 +416,23 @@ export async function registerWithPassword(
 
 export async function updateRecruiterOnboarding(
 	body: UpdateRecruiterOnboardingBody,
-): Promise<User> {
-	const data = await apiClient<User>("/api/auth/onboarding", {
-		method: "PATCH",
-		body: JSON.stringify(body),
-	});
-	getAuthStoreState().applyUser(data);
-	try {
-		getAuthStoreState().applyOrganization(await fetchCurrentOrganization());
-	} catch {
-		getAuthStoreState().applyOrganization(null);
-	}
+): Promise<RecruiterOnboardingResponse> {
+	const data = await apiClient<RecruiterOnboardingResponse>(
+		"/api/auth/onboarding",
+		{
+			method: "PATCH",
+			body: JSON.stringify(body),
+		},
+	);
+	getAuthStoreState().applyUser(data.user);
+	getAuthStoreState().applyOrganization(data.organization);
 	return data;
 }
 
 export interface ResendVerificationResponse {
 	sent: boolean;
 	message: string;
+	organization_name: string | null;
 }
 
 export async function resendVerificationEmail(): Promise<ResendVerificationResponse> {

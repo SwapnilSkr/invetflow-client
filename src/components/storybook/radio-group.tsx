@@ -23,10 +23,10 @@ export const RadioGroup: React.FC<RadioGroupProps> = ({
 	className = "",
 }) => {
 	return (
-		<div className={`flex flex-col gap-3 ${className}`}>
-			<label className="text-sm font-medium text-gray-700 dark:text-gray-200">
+		<fieldset className={`m-0 flex flex-col gap-3 border-0 p-0 ${className}`}>
+			<legend className="text-sm font-medium text-gray-700 dark:text-gray-200">
 				{label}
-			</label>
+			</legend>
 			<div className="flex gap-4">
 				{options.map((option) => (
 					<label
@@ -47,6 +47,6 @@ export const RadioGroup: React.FC<RadioGroupProps> = ({
 					</label>
 				))}
 			</div>
-		</div>
+		</fieldset>
 	);
 };

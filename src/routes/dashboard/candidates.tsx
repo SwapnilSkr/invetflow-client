@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { Network, Users } from "lucide-react";
+import { Network } from "lucide-react";
 
 export const Route = createFileRoute("/dashboard/candidates")({
 	component: DashboardCandidatesPage,
@@ -32,7 +32,10 @@ function DashboardCandidatesPage() {
 						Awaiting Candidate Pipeline
 					</h3>
 					<p className="relative mx-auto mt-1.5 max-w-sm text-[13.33px] text-[#6b7280]">
-						A dedicated candidate pipeline module is being initialized. For now, assign candidates seamlessly when you schedule or open an interview from the <span className="font-medium text-[#111827]">Jobs</span> panel.
+						A dedicated candidate pipeline module is being initialized. For now,
+						assign candidates seamlessly when you schedule or open an interview
+						from the <span className="font-medium text-[#111827]">Jobs</span>{" "}
+						panel.
 					</p>
 				</div>
 			</div>

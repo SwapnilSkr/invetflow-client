@@ -1,3 +1,4 @@
+import { notifyApiUnauthorized } from "#/integrations/auth/auth-session-events";
 import type { Organization } from "./client";
 import { parseHttpError } from "./errors";
 import { getApiToken } from "./token-storage";
@@ -18,8 +19,7 @@ export async function fetchCurrentUserFromApi(): Promise<User> {
 
 	if (!response.ok) {
 		if (response.status === 401) {
-			const { useAuthStore } = await import("#/integrations/auth/auth-store");
-			useAuthStore.getState().signOut();
+			notifyApiUnauthorized();
 		}
 		throw await parseHttpError(
 			response,
