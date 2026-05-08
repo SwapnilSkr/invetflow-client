@@ -227,27 +227,25 @@ function InterviewDetailPage() {
 
 					<Card>
 						<CardHeader>
-							<CardTitle className="text-base">
-								Question plan ({job.questions?.length ?? 0})
-							</CardTitle>
+							<CardTitle className="text-base">Hiring stages</CardTitle>
 						</CardHeader>
 						<CardContent>
-							{job.questions && job.questions.length > 0 ? (
+							{job.pipeline?.stages && job.pipeline.stages.length > 0 ? (
 								<ol className="space-y-3">
-									{job.questions.map((q, idx) => (
-										<li key={q.id || idx} className="flex gap-3">
+									{job.pipeline.stages.map((stage, idx) => (
+										<li key={stage.id || idx} className="flex gap-3">
 											<span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-muted text-xs font-medium">
 												{idx + 1}
 											</span>
 											<div className="min-w-0 flex-1">
-												<p className="text-sm font-medium">{q.question}</p>
+												<p className="text-sm font-medium">{stage.title}</p>
 												<div className="mt-1 flex flex-wrap items-center gap-2">
 													<Badge variant="secondary" className="text-xs">
-														{q.category}
+														{stage.stage_type}
 													</Badge>
-													{q.time_limit_seconds ? (
+													{stage.pass_threshold ? (
 														<span className="text-xs text-muted-foreground">
-															{q.time_limit_seconds}s cap
+															Pass {stage.pass_threshold}
 														</span>
 													) : null}
 												</div>
@@ -257,8 +255,50 @@ function InterviewDetailPage() {
 								</ol>
 							) : (
 								<p className="text-sm text-muted-foreground">
-									Add questions from the list view when that editor is
-									available, or the session may use a generated plan.
+									No stages configured yet.
+								</p>
+							)}
+						</CardContent>
+					</Card>
+
+					<Card>
+						<CardHeader>
+							<CardTitle className="text-base">
+								Voice rubric ({job.rubric?.length ?? job.questions?.length ?? 0}
+								)
+							</CardTitle>
+						</CardHeader>
+						<CardContent>
+							{job.rubric && job.rubric.length > 0 ? (
+								<ol className="space-y-3">
+									{job.rubric.map((row, idx) => (
+										<li key={row.id || idx} className="flex gap-3">
+											<span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-muted text-xs font-medium">
+												{idx + 1}
+											</span>
+											<div className="min-w-0 flex-1">
+												<p className="text-sm font-medium">{row.skill}</p>
+												<p className="mt-1 text-sm text-muted-foreground">
+													{row.question}
+												</p>
+											</div>
+										</li>
+									))}
+								</ol>
+							) : job.questions && job.questions.length > 0 ? (
+								<ol className="space-y-3">
+									{job.questions.map((q, idx) => (
+										<li key={q.id || idx} className="flex gap-3">
+											<span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-muted text-xs font-medium">
+												{idx + 1}
+											</span>
+											<p className="text-sm font-medium">{q.question}</p>
+										</li>
+									))}
+								</ol>
+							) : (
+								<p className="text-sm text-muted-foreground">
+									No voice rubric configured yet.
 								</p>
 							)}
 						</CardContent>
