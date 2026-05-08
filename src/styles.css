@@ -1,5 +1,5 @@
-/* Invetflow — Figma dashboard/onboarding: Roboto Slab + #0052cc primary */
-@import url('https://fonts.googleapis.com/css2?family=Roboto+Mono:wght@500;700&family=Roboto+Slab:wght@400;500;600;700&display=swap');
+/* Invetflow — Figma dashboard/onboarding: Google Sans + #0052cc primary */
+@import url('https://fonts.googleapis.com/css2?family=Roboto+Mono:wght@500;700&display=swap');
 @import 'tailwindcss';
 @plugin '@tailwindcss/typography';
 
@@ -143,7 +143,7 @@
   --onb-legal: #64748b;
 }
 @theme inline {
-  --font-sans: 'Roboto Slab', ui-serif, Georgia, 'Times New Roman', serif;
+  --font-sans: 'Google Sans', ui-sans-serif, system-ui, sans-serif;
   --font-mono: 'Roboto Mono', ui-monospace, monospace;
   --color-background: var(--background);
   --color-foreground: var(--foreground);
@@ -239,7 +239,8 @@ pre code {
 }
 
 .display-title {
-  font-family: 'Roboto Slab', ui-serif, Georgia, serif;
+  font-family: 'Google Sans', ui-sans-serif, system-ui, sans-serif;
+  font-optical-sizing: auto;
 }
 
 .island-shell {
