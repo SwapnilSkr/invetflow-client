@@ -1,3 +1,5 @@
+import type { Organization } from "./client";
+
 /** Stored sign-up / auth role: hiring vs job seeker (matches server `UserResponse.role`). */
 export type AppUserRole = "Recruiter" | "Candidate";
 
@@ -22,6 +24,13 @@ export interface UpdateRecruiterOnboardingBody {
 	company_name?: string;
 	company_size?: string;
 	job_title?: string;
+}
+
+export interface RecruiterOnboardingResponse {
+	user: User;
+	organization: Organization;
+	email_sent: boolean;
+	email_message: string;
 }
 
 /** invetflow-server: `AuthResponse` (flattened `TokenResponse` + `user`) from `api/dto/auth_dto.rs`. */
