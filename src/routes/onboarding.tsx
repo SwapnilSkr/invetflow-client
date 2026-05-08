@@ -29,6 +29,7 @@ import { getPasswordChecklistItems } from "#/lib/password-policy";
 import { cn } from "#/lib/utils";
 
 const EMAIL_KEY = "invetflow.onboarding_email";
+const ONBOARDING_EMAIL_MESSAGE_KEY = "invetflow.onboarding_email_message";
 
 type Step = "email" | "password" | "profile" | "verify";
 
@@ -51,6 +52,15 @@ function readStoredEmail(): string | null {
 
 function writeStoredEmail(email: string) {
 	sessionStorage.setItem(EMAIL_KEY, email.trim().toLowerCase());
+}
+
+function writeStoredEmailMessage(message: string) {
+	sessionStorage.setItem(ONBOARDING_EMAIL_MESSAGE_KEY, message);
+}
+
+function readStoredEmailMessage(): string {
+	if (typeof sessionStorage === "undefined") return "";
+	return sessionStorage.getItem(ONBOARDING_EMAIL_MESSAGE_KEY) ?? "";
 }
 
 type OnboardingSearch = { step?: Step };
@@ -593,6 +603,7 @@ function ProfileStep({
 		coerceChip(user?.job_title, JOB_TITLES),
 	);
 	const [error, setError] = useState("");
+	const canSubmit = name.trim() !== "" && company.trim() !== "";
 
 	return (
 		<SplitShell>
@@ -613,12 +624,13 @@ function ProfileStep({
 					setError("");
 					startTransition(async () => {
 						try {
-							await updateRecruiterOnboarding({
+							const response = await updateRecruiterOnboarding({
 								name: name.trim() || undefined,
 								company_name: company.trim() || undefined,
 								company_size: size,
 								job_title: title,
 							});
+							writeStoredEmailMessage(response.email_message);
 							void navigate({
 								to: "/onboarding",
 								search: { step: "verify" },
@@ -653,7 +665,7 @@ function ProfileStep({
 						htmlFor="ob-company"
 						className="text-[13.33px] font-medium text-[#111827]"
 					>
-						Your Company Name
+						Organization name
 					</label>
 					<Input
 						id="ob-company"
@@ -664,7 +676,7 @@ function ProfileStep({
 					/>
 				</div>
 				<ChipSelect
-					label="Your Company Size"
+					label="Organization size"
 					options={COMPANY_SIZES}
 					value={size}
 					onChange={setSize}
@@ -680,7 +692,7 @@ function ProfileStep({
 				{error ? <FormErrorBanner>{error}</FormErrorBanner> : null}
 				<button
 					type="submit"
-					disabled={isPending}
+					disabled={isPending || !canSubmit}
 					className={cn(primaryBtnClass, "disabled:opacity-50")}
 				>
 					{isPending ? "…" : "Continue"}
@@ -697,8 +709,10 @@ function VerifyStep({
 }) {
 	const [isResendPending, startResendTransition] = useTransition();
 	const [isNavPending, startNavTransition] = useTransition();
-	const { user } = useAuth();
-	const [resendMessage, setResendMessage] = useState("");
+	const { user, organization } = useAuth();
+	const [resendMessage, setResendMessage] = useState(() =>
+		readStoredEmailMessage(),
+	);
 
 	if (!user) return null;
 
@@ -719,10 +733,15 @@ function VerifyStep({
 						<span className="font-medium text-black">{user.email}</span>. Verify
 						the email and start using Invetflow!
 					</p>
-					<p className="text-[11px] leading-relaxed text-[#9ca3af]">
-						(Verification mail is a stub until SMTP is connected — your account
-						is active.)
-					</p>
+					{organization ? (
+						<p className="text-[11px] leading-relaxed text-[#6b7280]">
+							Workspace:{" "}
+							<span className="font-medium text-[#111827]">
+								{organization.name}
+							</span>{" "}
+							({organization.current_user_role ?? "Owner"})
+						</p>
+					) : null}
 					<div className="flex flex-col gap-2.5 sm:flex-row">
 						<button
 							type="button"
@@ -759,6 +778,7 @@ function VerifyStep({
 								try {
 									const r = await resendVerificationEmail();
 									setResendMessage(r.message);
+									writeStoredEmailMessage(r.message);
 								} catch {
 									/* keep UX quiet; API errors surface via console in dev */
 								}
