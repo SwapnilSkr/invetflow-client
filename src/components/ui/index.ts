@@ -12,6 +12,7 @@ export {
 	CardHeader,
 	CardTitle,
 } from "./card";
+export { Checkbox } from "./checkbox";
 export {
 	Dialog,
 	DialogContent,
@@ -28,10 +29,20 @@ export {
 	DropdownMenuTrigger,
 } from "./dropdown-menu";
 export { Input } from "./input";
+export { Label } from "./label";
+export {
+	Popover,
+	PopoverAnchor,
+	PopoverContent,
+	PopoverTrigger,
+} from "./popover";
 export { Progress } from "./progress";
+export { Select } from "./select";
 export { Separator } from "./separator";
 export { Skeleton } from "./skeleton";
+export { Switch } from "./switch";
 export { Tabs, TabsContent, TabsList, TabsTrigger } from "./tabs";
+export { Textarea } from "./textarea";
 export {
 	Tooltip,
 	TooltipContent,
