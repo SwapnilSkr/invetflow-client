@@ -258,10 +258,27 @@ export interface UpdateJobRequest {
 		| "Archived"
 		| "Completed"
 		| "Cancelled";
+	// Extended fields for incremental save (aligned with CreateJobRequest superset)
+	department?: string;
+	seniority?: string;
+	employment_type?: string;
+	workplace_type?: string;
+	locations?: JobLocation[];
+	salary?: SalaryRange;
+	skills?: string[];
+	tools?: string[];
+	tags?: string[];
+	experience?: ExperienceRange;
+	pipeline?: JobPipeline;
+	screening_questions?: ScreeningQuestion[];
+	rubric?: RubricItem[];
+	interview_settings?: InterviewSettings;
+	application_settings?: ApplicationSettings;
+	visibility?: JobVisibility;
 }
 
 export interface GenerateJobContentRequest {
-	kind: "job_description" | "rubric_questions" | "pipeline";
+	kind: "job_description" | "rubric_questions" | "pipeline" | "blueprint";
 	context: unknown;
 }
 
