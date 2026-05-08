@@ -35,7 +35,7 @@ This document is the **source of truth** for visual direction across `invetflow-
 | Icons | `lucide-react` (simple stroke icons for feature rows) |
 | App shell | `src/routes/__root.tsx` (Header / Footer; onboarding may opt out or use a minimal header—decision when building the page) |
 
-The product today uses a **teal / sea** custom palette (`--lagoon`, `--sea-ink`, etc.) and **Manrope** (`--font-sans`). The minimal onboarding reference uses a **saturated blue** for the main button. For InvetFlow we should keep **one** clear brand accent: either keep **lagoon / lagoon-deep** as the primary CTA for brand continuity, or introduce a single `--onboarding-primary` (or adjust shadcn `--primary`) in one place—**do not** mix multiple bright accents on the same form.
+The product today uses a **teal / sea** custom palette (`--lagoon`, `--sea-ink`, etc.) and **Google Sans** (`--font-sans`). The minimal onboarding reference uses a **saturated blue** for the main button. For InvetFlow we should keep **one** clear brand accent: either keep **lagoon / lagoon-deep** as the primary CTA for brand continuity, or introduce a single `--onboarding-primary` (or adjust shadcn `--primary`) in one place—**do not** mix multiple bright accents on the same form.
 
 ---
 
@@ -56,8 +56,8 @@ Dark mode: preserve the same hierarchy (solid form column vs slightly lifted pan
 
 ## Typography
 
-- **UI & forms:** `font-sans` (Manrope) — already global.
-- **Display / marketing headline (optional):** If we need a more editorial title on the marketing side only, `display-title` (Fraunces) in `src/styles.css` is available—**do not** mix Fraunces inside dense forms; keep forms sans-serif.
+- **UI & forms:** `font-sans` (Google Sans) — already global. Loaded via `<link>` in `__root.tsx` using the optical-size axis (`opsz 17..18`) for UI-optimized rendering.
+- **Display / marketing headline (optional):** `display-title` class in `src/styles.css` also uses Google Sans with `font-optical-sizing: auto`; no separate display typeface is needed since Google Sans covers both UI and marketing weights cleanly.
 - **Scale (onboarding form column):** Title ≈ `text-2xl`–`text-3xl` `font-semibold` or `font-bold`, subtitle `text-sm`–`text-base` `text-muted-foreground`.
 
 ---
