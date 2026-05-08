@@ -1,10 +1,13 @@
+import { z } from "zod";
 import type {
 	CreateJobRequest,
+	Job,
 	JobPipeline,
 	StageAutomation,
 	StageType,
+	UpdateJobRequest,
 } from "#/integrations/api/client";
-import type { DraftState, GenerateKind } from "./types";
+import type { DraftState, Phase } from "./types";
 
 export function newClientId(prefix: string) {
 	return `${prefix}-${crypto.randomUUID()}`;
@@ -32,7 +35,10 @@ export function defaultPipeline(): JobPipeline {
 				candidate_facing: candidateFacing,
 				pass_threshold: stageType === "VoiceInterview" ? 6 : null,
 				contributes_to_score: stageType === "VoiceInterview",
-				automation: stageType === "VoiceInterview" ? "SendInvitation" : "None",
+				automation:
+					stageType === "VoiceInterview"
+						? ("SendInvitation" as StageAutomation)
+						: ("None" as StageAutomation),
 				order: index,
 			}),
 		),
@@ -47,26 +53,18 @@ export function defaultDraft(): DraftState {
 		seniority: "Mid",
 		employmentType: "Full-time",
 		workplaceType: "Hybrid",
-		location: "",
-		salaryMin: "",
-		salaryMax: "",
+		locations: [],
+		salary: null,
+		skills: [],
+		tools: [],
+		tags: [],
+		experience: null,
 		jobDescription: "",
-		skills: "",
-		tools: "",
-		tags: "",
-		experienceMin: "",
-		experienceMax: "",
-		requireResume: true,
-		requirePhone: true,
-		requireLinkedin: false,
-		requireConsent: true,
-		allowMultipleApplications: false,
-		cooldownDays: "365",
 		pipeline: defaultPipeline(),
 		durationMinutes: 30,
 		maxScore: 10,
 		passThreshold: 6,
-		allowedLanguages: "English",
+		allowedLanguages: ["English"],
 		voiceGender: "Neutral",
 		greeting: "",
 		partingWords: "",
@@ -74,30 +72,62 @@ export function defaultDraft(): DraftState {
 		screeningQuestions: [],
 		publicLinkEnabled: true,
 		careersPage: false,
-		externalBoards: "",
-		publishOnCreate: false,
+		externalBoards: [],
+		requireResume: true,
+		requirePhone: true,
+		requireLinkedin: false,
+		requireConsent: true,
+		allowMultipleApplications: false,
+		cooldownDays: 365,
 	};
 }
 
-export function splitList(value: string): string[] {
-	return value
-		.split(",")
-		.map((item) => item.trim())
-		.filter(Boolean);
+export function draftFromJob(job: Job): DraftState {
+	return {
+		title: job.title,
+		jobTitle: job.job_title,
+		department: job.department ?? "",
+		seniority: (job.seniority as DraftState["seniority"]) ?? "Mid",
+		employmentType:
+			(job.employment_type as DraftState["employmentType"]) ?? "Full-time",
+		workplaceType:
+			(job.workplace_type as DraftState["workplaceType"]) ?? "Hybrid",
+		locations: job.locations ?? [],
+		salary: job.salary ?? null,
+		skills: job.skills ?? [],
+		tools: job.tools ?? [],
+		tags: job.tags ?? [],
+		experience: job.experience ?? null,
+		jobDescription: job.job_description ?? "",
+		pipeline: job.pipeline ?? defaultPipeline(),
+		durationMinutes: job.interview_settings?.duration_minutes ?? 30,
+		maxScore: job.interview_settings?.max_score ?? 10,
+		passThreshold: job.interview_settings?.pass_threshold ?? 6,
+		allowedLanguages: job.interview_settings?.allowed_languages ?? ["English"],
+		voiceGender:
+			(job.interview_settings?.voice_gender as DraftState["voiceGender"]) ??
+			"Neutral",
+		greeting: job.interview_settings?.greeting ?? "",
+		partingWords: job.interview_settings?.parting_words ?? "",
+		rubric: job.rubric ?? [],
+		screeningQuestions: job.screening_questions ?? [],
+		publicLinkEnabled: job.visibility?.public_link_enabled ?? true,
+		careersPage: job.visibility?.careers_page ?? false,
+		externalBoards: job.visibility?.external_boards ?? [],
+		requireResume: job.application_settings?.require_resume ?? true,
+		requirePhone: job.application_settings?.require_phone ?? true,
+		requireLinkedin: job.application_settings?.require_linkedin ?? false,
+		requireConsent: job.application_settings?.require_consent ?? true,
+		allowMultipleApplications:
+			job.application_settings?.allow_multiple_applications ?? false,
+		cooldownDays: job.application_settings?.cooldown_days ?? 365,
+	};
 }
 
-export function canContinueCreateJobStep(step: number, draft: DraftState) {
-	if (step === 0) {
-		return draft.title.trim().length > 0 && draft.jobTitle.trim().length > 0;
-	}
-	if (step === 2) return draft.pipeline.stages.length > 0;
-	if (step === 3) {
-		return draft.durationMinutes >= 5 && draft.passThreshold <= draft.maxScore;
-	}
-	return true;
-}
-
-export function buildCreateJobPayload(draft: DraftState): CreateJobRequest {
+export function buildCreatePayload(
+	draft: DraftState,
+	opts: { publishOnCreate: boolean },
+): CreateJobRequest {
 	const rubric = draft.rubric.map((row, index) => ({ ...row, order: index }));
 
 	return {
@@ -112,31 +142,17 @@ export function buildCreateJobPayload(draft: DraftState): CreateJobRequest {
 				follow_up_prompts: row.follow_up_prompts,
 			})),
 		duration_minutes: draft.durationMinutes,
-		publish_on_create: draft.publishOnCreate,
+		publish_on_create: opts.publishOnCreate,
 		department: draft.department.trim() || undefined,
-		seniority: draft.seniority,
-		employment_type: draft.employmentType,
-		workplace_type: draft.workplaceType,
-		locations: draft.location.trim() ? [{ label: draft.location.trim() }] : [],
-		salary:
-			draft.salaryMin || draft.salaryMax
-				? {
-						min: draft.salaryMin ? Number(draft.salaryMin) : null,
-						max: draft.salaryMax ? Number(draft.salaryMax) : null,
-						currency: "INR",
-						period: "Yearly",
-					}
-				: undefined,
-		skills: splitList(draft.skills),
-		tools: splitList(draft.tools),
-		tags: splitList(draft.tags),
-		experience:
-			draft.experienceMin || draft.experienceMax
-				? {
-						min_years: draft.experienceMin ? Number(draft.experienceMin) : null,
-						max_years: draft.experienceMax ? Number(draft.experienceMax) : null,
-					}
-				: undefined,
+		seniority: draft.seniority || undefined,
+		employment_type: draft.employmentType || undefined,
+		workplace_type: draft.workplaceType || undefined,
+		locations: draft.locations,
+		salary: draft.salary ?? undefined,
+		skills: draft.skills,
+		tools: draft.tools,
+		tags: draft.tags,
+		experience: draft.experience ?? undefined,
 		pipeline: {
 			stages: draft.pipeline.stages.map((stage, index) => ({
 				...stage,
@@ -152,7 +168,7 @@ export function buildCreateJobPayload(draft: DraftState): CreateJobRequest {
 			duration_minutes: draft.durationMinutes,
 			max_score: draft.maxScore,
 			pass_threshold: draft.passThreshold,
-			allowed_languages: splitList(draft.allowedLanguages),
+			allowed_languages: draft.allowedLanguages,
 			voice_provider: "LiveKit",
 			voice_gender: draft.voiceGender,
 			greeting: draft.greeting.trim() || null,
@@ -164,61 +180,161 @@ export function buildCreateJobPayload(draft: DraftState): CreateJobRequest {
 			require_linkedin: draft.requireLinkedin,
 			require_consent: draft.requireConsent,
 			allow_multiple_applications: draft.allowMultipleApplications,
-			cooldown_days: Number(draft.cooldownDays) || 365,
+			cooldown_days: draft.cooldownDays,
 		},
 		visibility: {
 			public_link_enabled: draft.publicLinkEnabled,
 			careers_page: draft.careersPage,
-			external_boards: splitList(draft.externalBoards),
+			external_boards: draft.externalBoards,
 		},
 	};
 }
 
-export function normalizeGeneratedContent(
-	kind: GenerateKind,
-	content: Record<string, unknown>,
-): Partial<DraftState> {
-	if (kind === "job_description") {
-		const jobDescription = content.job_description;
-		return typeof jobDescription === "string" ? { jobDescription } : {};
+export function buildUpdatePayload(draft: DraftState): UpdateJobRequest {
+	return {
+		title: draft.title.trim(),
+		job_title: draft.jobTitle.trim(),
+		job_description: draft.jobDescription.trim() || undefined,
+		department: draft.department.trim() || undefined,
+		seniority: draft.seniority || undefined,
+		employment_type: draft.employmentType || undefined,
+		workplace_type: draft.workplaceType || undefined,
+		locations: draft.locations,
+		salary: draft.salary ?? undefined,
+		skills: draft.skills,
+		tools: draft.tools,
+		tags: draft.tags,
+		experience: draft.experience ?? undefined,
+		pipeline: {
+			stages: draft.pipeline.stages.map((stage, index) => ({
+				...stage,
+				order: index,
+			})),
+		},
+		screening_questions: draft.screeningQuestions.map((row, index) => ({
+			...row,
+			order: index,
+		})),
+		rubric: draft.rubric.map((row, index) => ({ ...row, order: index })),
+		interview_settings: {
+			duration_minutes: draft.durationMinutes,
+			max_score: draft.maxScore,
+			pass_threshold: draft.passThreshold,
+			allowed_languages: draft.allowedLanguages,
+			voice_provider: "LiveKit",
+			voice_gender: draft.voiceGender,
+			greeting: draft.greeting.trim() || null,
+			parting_words: draft.partingWords.trim() || null,
+		},
+		application_settings: {
+			require_resume: draft.requireResume,
+			require_phone: draft.requirePhone,
+			require_linkedin: draft.requireLinkedin,
+			require_consent: draft.requireConsent,
+			allow_multiple_applications: draft.allowMultipleApplications,
+			cooldown_days: draft.cooldownDays,
+		},
+		visibility: {
+			public_link_enabled: draft.publicLinkEnabled,
+			careers_page: draft.careersPage,
+			external_boards: draft.externalBoards,
+		},
+	};
+}
+
+// Zod schemas for per-phase validation
+
+const detailsSchema = z.object({
+	title: z.string().min(1, "Job title is required"),
+	jobTitle: z.string().min(1, "Internal title is required"),
+});
+
+const processSchema = z
+	.object({
+		pipeline: z.object({
+			stages: z
+				.array(z.unknown())
+				.min(1, "At least one pipeline stage is required"),
+		}),
+		durationMinutes: z.number().min(5, "Duration must be at least 5 minutes"),
+		passThreshold: z.number(),
+		maxScore: z.number(),
+	})
+	.refine((d) => d.passThreshold <= d.maxScore, {
+		path: ["passThreshold"],
+		message: "Pass threshold cannot exceed max score",
+	});
+
+const publishSchema = z.object({
+	publicLinkEnabled: z.boolean(),
+});
+
+export function validatePhase(
+	phase: Phase,
+	draft: DraftState,
+): { ok: boolean; errors: Record<string, string> } {
+	const schema =
+		phase === "Details"
+			? detailsSchema
+			: phase === "Hiring process"
+				? processSchema
+				: publishSchema;
+
+	const result = schema.safeParse(draft);
+	if (result.success) return { ok: true, errors: {} };
+
+	const errors: Record<string, string> = {};
+	for (const issue of result.error.issues) {
+		const key = issue.path.join(".");
+		errors[key] = issue.message;
+	}
+	return { ok: false, errors };
+}
+
+type BlueprintContent = {
+	job_description?: string;
+	skills?: string[];
+	tools?: string[];
+	pipeline?: { stages: unknown[] };
+};
+
+export function mergeBlueprint(
+	draft: DraftState,
+	blueprint: BlueprintContent,
+): DraftState {
+	const next = { ...draft };
+
+	if (blueprint.job_description) {
+		next.jobDescription = blueprint.job_description;
 	}
 
-	if (kind === "rubric_questions" && Array.isArray(content.rubric)) {
-		const rows = content.rubric as Array<Record<string, unknown>>;
-		return {
-			rubric: rows.map((row, index) => ({
-				id: newClientId("rubric"),
-				skill: String(row.skill ?? ""),
-				weight: Number(row.weight ?? 1),
-				scoring_guide: String(row.scoring_guide ?? ""),
-				question: String(row.question ?? ""),
-				follow_up_prompts: Array.isArray(row.follow_up_prompts)
-					? row.follow_up_prompts.map(String)
-					: [],
+	if (Array.isArray(blueprint.skills) && blueprint.skills.length > 0) {
+		const merged = [...new Set([...draft.skills, ...blueprint.skills])];
+		next.skills = merged;
+	}
+
+	if (Array.isArray(blueprint.tools) && blueprint.tools.length > 0) {
+		const merged = [...new Set([...draft.tools, ...blueprint.tools])];
+		next.tools = merged;
+	}
+
+	if (blueprint.pipeline?.stages && blueprint.pipeline.stages.length > 0) {
+		const rows = blueprint.pipeline.stages as Array<Record<string, unknown>>;
+		next.pipeline = {
+			stages: rows.map((row, index) => ({
+				id: newClientId("stage"),
+				title: String(row.title ?? `Stage ${index + 1}`),
+				stage_type: (row.stage_type as StageType) || "ManualReview",
+				required: Boolean(row.required),
+				candidate_facing: Boolean(row.candidate_facing),
+				pass_threshold:
+					typeof row.pass_threshold === "number" ? row.pass_threshold : null,
+				contributes_to_score: Boolean(row.contributes_to_score),
+				automation: (row.automation as StageAutomation) || "None",
 				order: index,
 			})),
 		};
 	}
 
-	if (kind === "pipeline" && Array.isArray(content.stages)) {
-		const rows = content.stages as Array<Record<string, unknown>>;
-		return {
-			pipeline: {
-				stages: rows.map((row, index) => ({
-					id: newClientId("stage"),
-					title: String(row.title ?? `Stage ${index + 1}`),
-					stage_type: (row.stage_type as StageType) || "ManualReview",
-					required: Boolean(row.required),
-					candidate_facing: Boolean(row.candidate_facing),
-					pass_threshold:
-						typeof row.pass_threshold === "number" ? row.pass_threshold : null,
-					contributes_to_score: Boolean(row.contributes_to_score),
-					automation: (row.automation as StageAutomation) || "None",
-					order: index,
-				})),
-			},
-		};
-	}
-
-	return {};
+	return next;
 }
