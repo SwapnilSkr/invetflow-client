@@ -53,7 +53,7 @@ export function DashboardSidebar({
 	open: boolean;
 	onToggle: () => void;
 }) {
-	const { user } = useAuth();
+	const { user, organization } = useAuth();
 	const doLogout = useLogout();
 	const pathname = useRouterState({ select: (s) => s.location.pathname });
 
@@ -62,14 +62,18 @@ export function DashboardSidebar({
 
 	const companyName = isCandidate
 		? user?.name?.trim() || "Candidate"
-		: user?.company_name?.trim() || "Your company";
+		: organization?.name?.trim() ||
+			user?.company_name?.trim() ||
+			"Your company";
 	const workspaceSubtitle = isCandidate
 		? "Assigned roles and sessions"
-		: user?.company_size
-			? `Company size: ${user.company_size}`
-			: user?.job_title
-				? user.job_title
-				: "Recruiter workspace";
+		: organization?.current_user_role
+			? `${organization.current_user_role} workspace`
+			: user?.company_size
+				? `Company size: ${user.company_size}`
+				: user?.job_title
+					? user.job_title
+					: "Recruiter workspace";
 
 	const brandLink = isCandidate ? "/candidate" : "/dashboard";
 

@@ -80,7 +80,8 @@ function DashboardJobsPage() {
 							Jobs
 						</h1>
 						<p className="mt-1 text-[13.33px] text-[#6b7280]">
-							Interview flows and openings ({data?.total ?? jobs.length} total)
+							Organization openings and hiring workflows (
+							{data?.total ?? jobs.length} total)
 						</p>
 					</div>
 					<Button
@@ -112,8 +113,8 @@ function DashboardJobsPage() {
 							No active job configurations
 						</h3>
 						<p className="relative mx-auto mt-1.5 max-w-sm text-[13.33px] text-[#6b7280]">
-							Your workspace is empty. Create a new job requisition to start
-							processing candidate interviews.
+							Your workspace is empty. Create a job workflow to publish an
+							invite link and start collecting applications.
 						</p>
 						<div className="relative mt-6">
 							<Button
@@ -154,19 +155,20 @@ function DashboardJobsPage() {
 												</div>
 												<p className="mt-1 text-sm text-[#6b7280]">
 													{row.job_title}
-													{row.candidate_name
-														? ` · ${row.candidate_name}`
-														: " · No candidate yet"}
+													{row.department ? ` · ${row.department}` : ""}
 												</p>
 												<div className="mt-2 flex items-center gap-4 text-xs text-[#6b7280]">
 													<span className="inline-flex items-center gap-1">
 														<Clock className="h-3.5 w-3.5" />
 														{row.duration_minutes} min
 													</span>
-													{row.candidate_email ? (
+													<span className="inline-flex items-center gap-1">
+														<Users className="h-3.5 w-3.5" />
+														{row.pipeline?.stages?.length ?? 0} stages
+													</span>
+													{row.is_public ? (
 														<span className="inline-flex items-center gap-1">
-															<Users className="h-3.5 w-3.5" />
-															Invited
+															Public link
 														</span>
 													) : null}
 												</div>
