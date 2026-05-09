@@ -3,6 +3,7 @@ import {
 	Briefcase,
 	ChevronsUpDown,
 	Code2,
+	Layers,
 	LayoutDashboard,
 	LayoutGrid,
 	ListVideo,
@@ -26,7 +27,16 @@ const recruiterNav = [
 		label: "Dashboard",
 		Icon: LayoutDashboard,
 	},
-	{ to: "/dashboard/jobs" as const, label: "Jobs", Icon: Briefcase },
+	{
+		to: "/dashboard/jobs" as const,
+		label: "Jobs",
+		Icon: Briefcase,
+	},
+	{
+		to: "/dashboard/assessments" as const,
+		label: "Assessments",
+		Icon: Layers,
+	},
 	{
 		to: "/dashboard/candidates" as const,
 		label: "Candidates",
@@ -143,7 +153,10 @@ export function DashboardSidebar({
 											pathname.startsWith("/dashboard/jobs/") ||
 											pathname === "/jobs" ||
 											pathname.startsWith("/jobs/")
-										: pathname === to || pathname.startsWith(`${to}/`);
+										: to === "/dashboard/assessments"
+											? pathname === "/dashboard/assessments" ||
+												pathname.startsWith("/dashboard/assessments/")
+											: pathname === to || pathname.startsWith(`${to}/`);
 						return (
 							<Link
 								key={to}
