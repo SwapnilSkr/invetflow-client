@@ -3,6 +3,7 @@ import type {
 	CreateJobRequest,
 	Job,
 	JobPipeline,
+	JobStage,
 	StageAutomation,
 	StageType,
 	UpdateJobRequest,
@@ -13,34 +14,176 @@ export function newClientId(prefix: string) {
 	return `${prefix}-${crypto.randomUUID()}`;
 }
 
+/** Accept old draft/API rows that used `required` / `pass_threshold`. */
+export function normalizeJobStage(
+	row: Partial<JobStage> & {
+		required?: boolean;
+		title?: string | null;
+		pass_threshold?: number | null;
+	},
+	order: number,
+): JobStage {
+	const base = row as Partial<JobStage>;
+	return {
+		id: typeof base.id === "string" ? base.id : newClientId("stage"),
+		title:
+			base.title !== undefined
+				? base.title
+				: row.title !== undefined
+					? row.title
+					: null,
+		order: typeof base.order === "number" ? base.order : order,
+		stage_type: base.stage_type ?? "ManualReview",
+		is_mandatory: Boolean(
+			base.is_mandatory ??
+				row.required ??
+				stageRequiresDefaultMandatory(base.stage_type ?? "ManualReview"),
+		),
+		candidate_facing: Boolean(base.candidate_facing ?? false),
+		contributes_to_score: Boolean(
+			base.contributes_to_score ?? base.stage_type === "VoiceInterview",
+		),
+		automation: (base.automation ?? "None") as StageAutomation,
+		pass_score:
+			base.pass_score !== undefined && base.pass_score !== null
+				? base.pass_score
+				: (row.pass_threshold ?? null),
+		is_system_stage: Boolean(
+			base.is_system_stage ??
+				isCanonicalSystemStage(base.stage_type ?? undefined),
+		),
+		voice_assessment_id: base.voice_assessment_id ?? null,
+		generic_assessment_id: base.generic_assessment_id ?? null,
+		coding_assessment_id: base.coding_assessment_id ?? null,
+		psychometric_assessment_id: base.psychometric_assessment_id ?? null,
+		prescreening_form_id: base.prescreening_form_id ?? null,
+	};
+}
+
+function isCanonicalSystemStage(t: StageType | undefined): boolean {
+	if (!t) return false;
+	return t === "Applied" || t === "Hired" || t === "Rejected";
+}
+
+function stageRequiresDefaultMandatory(t: StageType): boolean {
+	return (
+		t === "Applied" ||
+		t === "VoiceInterview" ||
+		t === "ManualReview" ||
+		t === "Hired" ||
+		t === "Rejected"
+	);
+}
+
 export function defaultPipeline(): JobPipeline {
-	const rows: Array<[string, StageType, boolean, boolean]> = [
-		["Applied", "Applied", true, false],
-		["Prescreening", "Prescreening", false, true],
-		["Voice Interview", "VoiceInterview", true, true],
-		["Manual Review", "ManualReview", true, false],
-		["Human Interview", "HumanInterview", false, true],
-		["Offer", "Offer", false, true],
-		["Hired", "Hired", true, true],
-		["Rejected", "Rejected", true, true],
+	const rows: Array<{
+		id: string;
+		title: string;
+		type: StageType;
+		is_mandatory: boolean;
+		candidate_facing: boolean;
+		system: boolean;
+		contributes: boolean;
+	}> = [
+		{
+			id: "applied",
+			title: "Applied",
+			type: "Applied",
+			is_mandatory: true,
+			candidate_facing: false,
+			system: true,
+			contributes: false,
+		},
+		{
+			id: "prescreening",
+			title: "Prescreening",
+			type: "Prescreening",
+			is_mandatory: false,
+			candidate_facing: true,
+			system: false,
+			contributes: false,
+		},
+		{
+			id: "voice-interview",
+			title: "Voice Interview",
+			type: "VoiceInterview",
+			is_mandatory: true,
+			candidate_facing: true,
+			system: false,
+			contributes: true,
+		},
+		{
+			id: "manual-review",
+			title: "Manual Review",
+			type: "ManualReview",
+			is_mandatory: true,
+			candidate_facing: false,
+			system: false,
+			contributes: false,
+		},
+		{
+			id: "human-interview",
+			title: "Human Interview",
+			type: "HumanInterview",
+			is_mandatory: false,
+			candidate_facing: true,
+			system: false,
+			contributes: false,
+		},
+		{
+			id: "offer",
+			title: "Offer",
+			type: "Offer",
+			is_mandatory: false,
+			candidate_facing: true,
+			system: false,
+			contributes: false,
+		},
+		{
+			id: "hired",
+			title: "Hired",
+			type: "Hired",
+			is_mandatory: true,
+			candidate_facing: true,
+			system: true,
+			contributes: false,
+		},
+		{
+			id: "rejected",
+			title: "Rejected",
+			type: "Rejected",
+			is_mandatory: true,
+			candidate_facing: true,
+			system: true,
+			contributes: false,
+		},
 	];
 
 	return {
-		stages: rows.map(
-			([title, stageType, required, candidateFacing], index) => ({
-				id: title.toLowerCase().replaceAll(" ", "-"),
-				title,
-				stage_type: stageType,
-				required,
-				candidate_facing: candidateFacing,
-				pass_threshold: stageType === "VoiceInterview" ? 6 : null,
-				contributes_to_score: stageType === "VoiceInterview",
-				automation:
-					stageType === "VoiceInterview"
-						? ("SendInvitation" as StageAutomation)
-						: ("None" as StageAutomation),
-				order: index,
-			}),
+		stages: rows.map((r, idx) =>
+			normalizeJobStage(
+				{
+					id: r.id,
+					title: r.title,
+					order: idx,
+					stage_type: r.type,
+					is_mandatory: r.is_mandatory,
+					candidate_facing: r.candidate_facing,
+					contributes_to_score: r.contributes,
+					automation:
+						r.type === "VoiceInterview"
+							? ("SendInvitation" as StageAutomation)
+							: ("None" as StageAutomation),
+					pass_score: null,
+					is_system_stage: r.system,
+					voice_assessment_id: null,
+					generic_assessment_id: null,
+					coding_assessment_id: null,
+					psychometric_assessment_id: null,
+					prescreening_form_id: null,
+				},
+				idx,
+			),
 		),
 	};
 }
@@ -61,15 +204,6 @@ export function defaultDraft(): DraftState {
 		experience: null,
 		jobDescription: "",
 		pipeline: defaultPipeline(),
-		durationMinutes: 30,
-		maxScore: 10,
-		passThreshold: 6,
-		allowedLanguages: ["English"],
-		voiceGender: "Neutral",
-		greeting: "",
-		partingWords: "",
-		rubric: [],
-		screeningQuestions: [],
 		publicLinkEnabled: true,
 		careersPage: false,
 		externalBoards: [],
@@ -83,6 +217,11 @@ export function defaultDraft(): DraftState {
 }
 
 export function draftFromJob(job: Job): DraftState {
+	const rawStages = job.pipeline?.stages ?? [];
+	const stages = rawStages.map((stage, idx) =>
+		normalizeJobStage(stage as ImportJobStageLike, idx),
+	);
+
 	return {
 		title: job.title,
 		jobTitle: job.job_title,
@@ -99,18 +238,7 @@ export function draftFromJob(job: Job): DraftState {
 		tags: job.tags ?? [],
 		experience: job.experience ?? null,
 		jobDescription: job.job_description ?? "",
-		pipeline: job.pipeline ?? defaultPipeline(),
-		durationMinutes: job.interview_settings?.duration_minutes ?? 30,
-		maxScore: job.interview_settings?.max_score ?? 10,
-		passThreshold: job.interview_settings?.pass_threshold ?? 6,
-		allowedLanguages: job.interview_settings?.allowed_languages ?? ["English"],
-		voiceGender:
-			(job.interview_settings?.voice_gender as DraftState["voiceGender"]) ??
-			"Neutral",
-		greeting: job.interview_settings?.greeting ?? "",
-		partingWords: job.interview_settings?.parting_words ?? "",
-		rubric: job.rubric ?? [],
-		screeningQuestions: job.screening_questions ?? [],
+		pipeline: { stages },
 		publicLinkEnabled: job.visibility?.public_link_enabled ?? true,
 		careersPage: job.visibility?.careers_page ?? false,
 		externalBoards: job.visibility?.external_boards ?? [],
@@ -124,24 +252,28 @@ export function draftFromJob(job: Job): DraftState {
 	};
 }
 
+/** Narrow type for hydrated jobs that might still omit new fields server-side. */
+type ImportJobStageLike = Partial<JobStage> & {
+	required?: boolean;
+	pass_threshold?: number | null;
+};
+
 export function buildCreatePayload(
 	draft: DraftState,
 	opts: { publishOnCreate: boolean },
 ): CreateJobRequest {
-	const rubric = draft.rubric.map((row, index) => ({ ...row, order: index }));
-
+	const pipeline: JobPipeline = {
+		stages: draft.pipeline.stages.map((stage, index) => ({
+			...stage,
+			order: index,
+		})),
+	};
 	return {
 		title: draft.title.trim(),
 		job_title: draft.jobTitle.trim(),
 		job_description: draft.jobDescription.trim() || undefined,
-		questions: rubric
-			.filter((row) => row.question.trim())
-			.map((row) => ({
-				question: row.question.trim(),
-				category: "Technical",
-				follow_up_prompts: row.follow_up_prompts,
-			})),
-		duration_minutes: draft.durationMinutes,
+		questions: [],
+		duration_minutes: 30,
 		publish_on_create: opts.publishOnCreate,
 		department: draft.department.trim() || undefined,
 		seniority: draft.seniority || undefined,
@@ -153,27 +285,7 @@ export function buildCreatePayload(
 		tools: draft.tools,
 		tags: draft.tags,
 		experience: draft.experience ?? undefined,
-		pipeline: {
-			stages: draft.pipeline.stages.map((stage, index) => ({
-				...stage,
-				order: index,
-			})),
-		},
-		screening_questions: draft.screeningQuestions.map((row, index) => ({
-			...row,
-			order: index,
-		})),
-		rubric,
-		interview_settings: {
-			duration_minutes: draft.durationMinutes,
-			max_score: draft.maxScore,
-			pass_threshold: draft.passThreshold,
-			allowed_languages: draft.allowedLanguages,
-			voice_provider: "LiveKit",
-			voice_gender: draft.voiceGender,
-			greeting: draft.greeting.trim() || null,
-			parting_words: draft.partingWords.trim() || null,
-		},
+		pipeline,
 		application_settings: {
 			require_resume: draft.requireResume,
 			require_phone: draft.requirePhone,
@@ -191,10 +303,17 @@ export function buildCreatePayload(
 }
 
 export function buildUpdatePayload(draft: DraftState): UpdateJobRequest {
+	const pipeline: JobPipeline = {
+		stages: draft.pipeline.stages.map((stage, index) => ({
+			...stage,
+			order: index,
+		})),
+	};
 	return {
 		title: draft.title.trim(),
 		job_title: draft.jobTitle.trim(),
 		job_description: draft.jobDescription.trim() || undefined,
+		duration_minutes: 30,
 		department: draft.department.trim() || undefined,
 		seniority: draft.seniority || undefined,
 		employment_type: draft.employmentType || undefined,
@@ -205,27 +324,7 @@ export function buildUpdatePayload(draft: DraftState): UpdateJobRequest {
 		tools: draft.tools,
 		tags: draft.tags,
 		experience: draft.experience ?? undefined,
-		pipeline: {
-			stages: draft.pipeline.stages.map((stage, index) => ({
-				...stage,
-				order: index,
-			})),
-		},
-		screening_questions: draft.screeningQuestions.map((row, index) => ({
-			...row,
-			order: index,
-		})),
-		rubric: draft.rubric.map((row, index) => ({ ...row, order: index })),
-		interview_settings: {
-			duration_minutes: draft.durationMinutes,
-			max_score: draft.maxScore,
-			pass_threshold: draft.passThreshold,
-			allowed_languages: draft.allowedLanguages,
-			voice_provider: "LiveKit",
-			voice_gender: draft.voiceGender,
-			greeting: draft.greeting.trim() || null,
-			parting_words: draft.partingWords.trim() || null,
-		},
+		pipeline,
 		application_settings: {
 			require_resume: draft.requireResume,
 			require_phone: draft.requirePhone,
@@ -242,53 +341,104 @@ export function buildUpdatePayload(draft: DraftState): UpdateJobRequest {
 	};
 }
 
-// Zod schemas for per-phase validation
+function entityStagesLinked(pipeline: JobPipeline): boolean {
+	for (const s of pipeline.stages) {
+		const needs =
+			s.stage_type === "Prescreening" ||
+			s.stage_type === "VoiceInterview" ||
+			s.stage_type === "CodingAssessment" ||
+			s.stage_type === "GenericAssessment" ||
+			s.stage_type === "PsychometricAssessment";
+		if (!needs) continue;
+		const linked =
+			s.voice_assessment_id ||
+			s.generic_assessment_id ||
+			s.coding_assessment_id ||
+			s.psychometric_assessment_id ||
+			s.prescreening_form_id;
+		if (!linked) return false;
+	}
+	return true;
+}
 
 const detailsSchema = z.object({
 	title: z.string().min(1, "Job title is required"),
 	jobTitle: z.string().min(1, "Internal title is required"),
 });
 
-const processSchema = z
-	.object({
-		pipeline: z.object({
-			stages: z
-				.array(z.unknown())
-				.min(1, "At least one pipeline stage is required"),
-		}),
-		durationMinutes: z.number().min(5, "Duration must be at least 5 minutes"),
-		passThreshold: z.number(),
-		maxScore: z.number(),
-	})
-	.refine((d) => d.passThreshold <= d.maxScore, {
-		path: ["passThreshold"],
-		message: "Pass threshold cannot exceed max score",
-	});
+const processSchema = z.object({
+	pipeline: z.object({
+		stages: z
+			.array(z.object({ stage_type: z.string() }))
+			.min(1, "At least one pipeline stage is required"),
+	}),
+});
 
 const publishSchema = z.object({
 	publicLinkEnabled: z.boolean(),
+	pipeline: z.object({
+		stages: z.array(z.record(z.string(), z.unknown())),
+	}),
 });
 
 export function validatePhase(
 	phase: Phase,
 	draft: DraftState,
 ): { ok: boolean; errors: Record<string, string> } {
-	const schema =
-		phase === "Details"
-			? detailsSchema
-			: phase === "Hiring process"
-				? processSchema
-				: publishSchema;
-
-	const result = schema.safeParse(draft);
-	if (result.success) return { ok: true, errors: {} };
-
-	const errors: Record<string, string> = {};
-	for (const issue of result.error.issues) {
-		const key = issue.path.join(".");
-		errors[key] = issue.message;
+	if (phase === "Details") {
+		const result = detailsSchema.safeParse({
+			title: draft.title,
+			jobTitle: draft.jobTitle,
+		});
+		if (!result.success) {
+			const errors: Record<string, string> = {};
+			for (const issue of result.error.issues) {
+				errors[issue.path.join(".")] = issue.message;
+			}
+			return { ok: false, errors };
+		}
+		return { ok: true, errors: {} };
 	}
-	return { ok: false, errors };
+
+	if (phase === "Hiring process") {
+		const result = processSchema.safeParse(draft);
+		if (!result.success) {
+			const errors: Record<string, string> = {};
+			for (const issue of result.error.issues) {
+				errors[issue.path.join(".")] = issue.message;
+			}
+			return { ok: false, errors };
+		}
+		if (!entityStagesLinked(draft.pipeline)) {
+			return {
+				ok: false,
+				errors: {
+					"pipeline.stages":
+						"Link an assessment to every Prescreening, Voice, Generic, Coding, and Psychometric stage.",
+				},
+			};
+		}
+		return { ok: true, errors: {} };
+	}
+
+	const pub = publishSchema.safeParse(draft);
+	if (!pub.success) {
+		const errors: Record<string, string> = {};
+		for (const issue of pub.error.issues) {
+			errors[issue.path.join(".")] = issue.message;
+		}
+		return { ok: false, errors };
+	}
+	if (!entityStagesLinked(draft.pipeline)) {
+		return {
+			ok: false,
+			errors: {
+				"pipeline.stages":
+					"Every assessment stage must be linked before you publish.",
+			},
+		};
+	}
+	return { ok: true, errors: {} };
 }
 
 type BlueprintContent = {
@@ -321,18 +471,47 @@ export function mergeBlueprint(
 	if (blueprint.pipeline?.stages && blueprint.pipeline.stages.length > 0) {
 		const rows = blueprint.pipeline.stages as Array<Record<string, unknown>>;
 		next.pipeline = {
-			stages: rows.map((row, index) => ({
-				id: newClientId("stage"),
-				title: String(row.title ?? `Stage ${index + 1}`),
-				stage_type: (row.stage_type as StageType) || "ManualReview",
-				required: Boolean(row.required),
-				candidate_facing: Boolean(row.candidate_facing),
-				pass_threshold:
-					typeof row.pass_threshold === "number" ? row.pass_threshold : null,
-				contributes_to_score: Boolean(row.contributes_to_score),
-				automation: (row.automation as StageAutomation) || "None",
-				order: index,
-			})),
+			stages: rows.map((row, index) =>
+				normalizeJobStage(
+					{
+						id: newClientId("stage"),
+						title: String(row.title ?? `Stage ${index + 1}`),
+						stage_type: (row.stage_type as StageType) || "ManualReview",
+						required: Boolean(row.required),
+						candidate_facing: Boolean(row.candidate_facing),
+						pass_threshold:
+							typeof row.pass_threshold === "number"
+								? row.pass_threshold
+								: null,
+						pass_score:
+							typeof row.pass_score === "number" ? row.pass_score : undefined,
+						contributes_to_score: Boolean(row.contributes_to_score),
+						automation: (row.automation as StageAutomation) || "None",
+						is_system_stage: Boolean(row.is_system_stage),
+						voice_assessment_id:
+							typeof row.voice_assessment_id === "string"
+								? row.voice_assessment_id
+								: null,
+						generic_assessment_id:
+							typeof row.generic_assessment_id === "string"
+								? row.generic_assessment_id
+								: null,
+						coding_assessment_id:
+							typeof row.coding_assessment_id === "string"
+								? row.coding_assessment_id
+								: null,
+						psychometric_assessment_id:
+							typeof row.psychometric_assessment_id === "string"
+								? row.psychometric_assessment_id
+								: null,
+						prescreening_form_id:
+							typeof row.prescreening_form_id === "string"
+								? row.prescreening_form_id
+								: null,
+					},
+					index,
+				),
+			),
 		};
 	}
 

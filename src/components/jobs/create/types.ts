@@ -2,27 +2,19 @@ import type {
 	ExperienceRange,
 	JobLocation,
 	JobPipeline,
-	RubricItem,
 	SalaryRange,
-	ScreeningQuestion,
 	StageAutomation,
 	StageType,
 } from "#/integrations/api/client";
 
-export type {
-	ExperienceRange,
-	JobLocation,
-	JobPipeline,
-	RubricItem,
-	SalaryRange,
-	ScreeningQuestion,
-};
+export type { ExperienceRange, JobLocation, JobPipeline, SalaryRange };
 
+/** Stage types selectable from the legacy inline dropdown (excluding system staples). */
 export const STAGE_TYPES: StageType[] = [
 	"Prescreening",
 	"VoiceInterview",
-	"CodingAssessment",
 	"GenericAssessment",
+	"CodingAssessment",
 	"PsychometricAssessment",
 	"ManualReview",
 	"Consent",
@@ -31,6 +23,9 @@ export const STAGE_TYPES: StageType[] = [
 	"Hired",
 	"Rejected",
 ];
+
+/** Full palette for «Add stage». */
+export const ALL_STAGE_TYPES: StageType[] = ["Applied", ...STAGE_TYPES];
 
 export const STAGE_AUTOMATIONS: StageAutomation[] = [
 	"None",
@@ -41,7 +36,6 @@ export const STAGE_AUTOMATIONS: StageAutomation[] = [
 ];
 
 export type DraftState = {
-	// Phase 1: Details
 	title: string;
 	jobTitle: string;
 	department: string;
@@ -54,19 +48,8 @@ export type DraftState = {
 	tools: string[];
 	tags: string[];
 	experience: ExperienceRange | null;
-	jobDescription: string; // HTML from Tiptap
-	// Phase 2: Hiring process
+	jobDescription: string;
 	pipeline: JobPipeline;
-	durationMinutes: number;
-	maxScore: number;
-	passThreshold: number;
-	allowedLanguages: string[];
-	voiceGender: "Neutral" | "Female" | "Male";
-	greeting: string;
-	partingWords: string;
-	rubric: RubricItem[];
-	screeningQuestions: ScreeningQuestion[];
-	// Phase 3: Publish
 	publicLinkEnabled: boolean;
 	careersPage: boolean;
 	externalBoards: string[];
