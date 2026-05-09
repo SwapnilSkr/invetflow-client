@@ -20,9 +20,20 @@ import { Route as JobsIdRouteImport } from './routes/jobs/$id'
 import { Route as DashboardSettingsRouteImport } from './routes/dashboard/settings'
 import { Route as DashboardJobsRouteImport } from './routes/dashboard/jobs'
 import { Route as DashboardCandidatesRouteImport } from './routes/dashboard/candidates'
+import { Route as DashboardAssessmentsRouteImport } from './routes/dashboard/assessments'
 import { Route as JobsIdSessionRouteImport } from './routes/jobs/$id.session'
 import { Route as InterviewJoinTokenRouteImport } from './routes/interview/join.$token'
 import { Route as DashboardJobsNewRouteImport } from './routes/dashboard/jobs.new'
+import { Route as DashboardAssessmentsVoiceNewRouteImport } from './routes/dashboard/assessments.voice.new'
+import { Route as DashboardAssessmentsVoiceIdRouteImport } from './routes/dashboard/assessments.voice.$id'
+import { Route as DashboardAssessmentsPsychometricNewRouteImport } from './routes/dashboard/assessments.psychometric.new'
+import { Route as DashboardAssessmentsPsychometricIdRouteImport } from './routes/dashboard/assessments.psychometric.$id'
+import { Route as DashboardAssessmentsPrescreeningNewRouteImport } from './routes/dashboard/assessments.prescreening.new'
+import { Route as DashboardAssessmentsPrescreeningIdRouteImport } from './routes/dashboard/assessments.prescreening.$id'
+import { Route as DashboardAssessmentsGenericNewRouteImport } from './routes/dashboard/assessments.generic.new'
+import { Route as DashboardAssessmentsGenericIdRouteImport } from './routes/dashboard/assessments.generic.$id'
+import { Route as DashboardAssessmentsCodingNewRouteImport } from './routes/dashboard/assessments.coding.new'
+import { Route as DashboardAssessmentsCodingIdRouteImport } from './routes/dashboard/assessments.coding.$id'
 
 const SignInRoute = SignInRouteImport.update({
   id: '/sign-in',
@@ -79,6 +90,11 @@ const DashboardCandidatesRoute = DashboardCandidatesRouteImport.update({
   path: '/candidates',
   getParentRoute: () => DashboardRouteRoute,
 } as any)
+const DashboardAssessmentsRoute = DashboardAssessmentsRouteImport.update({
+  id: '/assessments',
+  path: '/assessments',
+  getParentRoute: () => DashboardRouteRoute,
+} as any)
 const JobsIdSessionRoute = JobsIdSessionRouteImport.update({
   id: '/session',
   path: '/session',
@@ -94,6 +110,66 @@ const DashboardJobsNewRoute = DashboardJobsNewRouteImport.update({
   path: '/new',
   getParentRoute: () => DashboardJobsRoute,
 } as any)
+const DashboardAssessmentsVoiceNewRoute =
+  DashboardAssessmentsVoiceNewRouteImport.update({
+    id: '/voice/new',
+    path: '/voice/new',
+    getParentRoute: () => DashboardAssessmentsRoute,
+  } as any)
+const DashboardAssessmentsVoiceIdRoute =
+  DashboardAssessmentsVoiceIdRouteImport.update({
+    id: '/voice/$id',
+    path: '/voice/$id',
+    getParentRoute: () => DashboardAssessmentsRoute,
+  } as any)
+const DashboardAssessmentsPsychometricNewRoute =
+  DashboardAssessmentsPsychometricNewRouteImport.update({
+    id: '/psychometric/new',
+    path: '/psychometric/new',
+    getParentRoute: () => DashboardAssessmentsRoute,
+  } as any)
+const DashboardAssessmentsPsychometricIdRoute =
+  DashboardAssessmentsPsychometricIdRouteImport.update({
+    id: '/psychometric/$id',
+    path: '/psychometric/$id',
+    getParentRoute: () => DashboardAssessmentsRoute,
+  } as any)
+const DashboardAssessmentsPrescreeningNewRoute =
+  DashboardAssessmentsPrescreeningNewRouteImport.update({
+    id: '/prescreening/new',
+    path: '/prescreening/new',
+    getParentRoute: () => DashboardAssessmentsRoute,
+  } as any)
+const DashboardAssessmentsPrescreeningIdRoute =
+  DashboardAssessmentsPrescreeningIdRouteImport.update({
+    id: '/prescreening/$id',
+    path: '/prescreening/$id',
+    getParentRoute: () => DashboardAssessmentsRoute,
+  } as any)
+const DashboardAssessmentsGenericNewRoute =
+  DashboardAssessmentsGenericNewRouteImport.update({
+    id: '/generic/new',
+    path: '/generic/new',
+    getParentRoute: () => DashboardAssessmentsRoute,
+  } as any)
+const DashboardAssessmentsGenericIdRoute =
+  DashboardAssessmentsGenericIdRouteImport.update({
+    id: '/generic/$id',
+    path: '/generic/$id',
+    getParentRoute: () => DashboardAssessmentsRoute,
+  } as any)
+const DashboardAssessmentsCodingNewRoute =
+  DashboardAssessmentsCodingNewRouteImport.update({
+    id: '/coding/new',
+    path: '/coding/new',
+    getParentRoute: () => DashboardAssessmentsRoute,
+  } as any)
+const DashboardAssessmentsCodingIdRoute =
+  DashboardAssessmentsCodingIdRouteImport.update({
+    id: '/coding/$id',
+    path: '/coding/$id',
+    getParentRoute: () => DashboardAssessmentsRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -101,6 +177,7 @@ export interface FileRoutesByFullPath {
   '/about': typeof AboutRoute
   '/onboarding': typeof OnboardingRoute
   '/sign-in': typeof SignInRoute
+  '/dashboard/assessments': typeof DashboardAssessmentsRouteWithChildren
   '/dashboard/candidates': typeof DashboardCandidatesRoute
   '/dashboard/jobs': typeof DashboardJobsRouteWithChildren
   '/dashboard/settings': typeof DashboardSettingsRoute
@@ -110,12 +187,23 @@ export interface FileRoutesByFullPath {
   '/dashboard/jobs/new': typeof DashboardJobsNewRoute
   '/interview/join/$token': typeof InterviewJoinTokenRoute
   '/jobs/$id/session': typeof JobsIdSessionRoute
+  '/dashboard/assessments/coding/$id': typeof DashboardAssessmentsCodingIdRoute
+  '/dashboard/assessments/coding/new': typeof DashboardAssessmentsCodingNewRoute
+  '/dashboard/assessments/generic/$id': typeof DashboardAssessmentsGenericIdRoute
+  '/dashboard/assessments/generic/new': typeof DashboardAssessmentsGenericNewRoute
+  '/dashboard/assessments/prescreening/$id': typeof DashboardAssessmentsPrescreeningIdRoute
+  '/dashboard/assessments/prescreening/new': typeof DashboardAssessmentsPrescreeningNewRoute
+  '/dashboard/assessments/psychometric/$id': typeof DashboardAssessmentsPsychometricIdRoute
+  '/dashboard/assessments/psychometric/new': typeof DashboardAssessmentsPsychometricNewRoute
+  '/dashboard/assessments/voice/$id': typeof DashboardAssessmentsVoiceIdRoute
+  '/dashboard/assessments/voice/new': typeof DashboardAssessmentsVoiceNewRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/about': typeof AboutRoute
   '/onboarding': typeof OnboardingRoute
   '/sign-in': typeof SignInRoute
+  '/dashboard/assessments': typeof DashboardAssessmentsRouteWithChildren
   '/dashboard/candidates': typeof DashboardCandidatesRoute
   '/dashboard/jobs': typeof DashboardJobsRouteWithChildren
   '/dashboard/settings': typeof DashboardSettingsRoute
@@ -125,6 +213,16 @@ export interface FileRoutesByTo {
   '/dashboard/jobs/new': typeof DashboardJobsNewRoute
   '/interview/join/$token': typeof InterviewJoinTokenRoute
   '/jobs/$id/session': typeof JobsIdSessionRoute
+  '/dashboard/assessments/coding/$id': typeof DashboardAssessmentsCodingIdRoute
+  '/dashboard/assessments/coding/new': typeof DashboardAssessmentsCodingNewRoute
+  '/dashboard/assessments/generic/$id': typeof DashboardAssessmentsGenericIdRoute
+  '/dashboard/assessments/generic/new': typeof DashboardAssessmentsGenericNewRoute
+  '/dashboard/assessments/prescreening/$id': typeof DashboardAssessmentsPrescreeningIdRoute
+  '/dashboard/assessments/prescreening/new': typeof DashboardAssessmentsPrescreeningNewRoute
+  '/dashboard/assessments/psychometric/$id': typeof DashboardAssessmentsPsychometricIdRoute
+  '/dashboard/assessments/psychometric/new': typeof DashboardAssessmentsPsychometricNewRoute
+  '/dashboard/assessments/voice/$id': typeof DashboardAssessmentsVoiceIdRoute
+  '/dashboard/assessments/voice/new': typeof DashboardAssessmentsVoiceNewRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -133,6 +231,7 @@ export interface FileRoutesById {
   '/about': typeof AboutRoute
   '/onboarding': typeof OnboardingRoute
   '/sign-in': typeof SignInRoute
+  '/dashboard/assessments': typeof DashboardAssessmentsRouteWithChildren
   '/dashboard/candidates': typeof DashboardCandidatesRoute
   '/dashboard/jobs': typeof DashboardJobsRouteWithChildren
   '/dashboard/settings': typeof DashboardSettingsRoute
@@ -142,6 +241,16 @@ export interface FileRoutesById {
   '/dashboard/jobs/new': typeof DashboardJobsNewRoute
   '/interview/join/$token': typeof InterviewJoinTokenRoute
   '/jobs/$id/session': typeof JobsIdSessionRoute
+  '/dashboard/assessments/coding/$id': typeof DashboardAssessmentsCodingIdRoute
+  '/dashboard/assessments/coding/new': typeof DashboardAssessmentsCodingNewRoute
+  '/dashboard/assessments/generic/$id': typeof DashboardAssessmentsGenericIdRoute
+  '/dashboard/assessments/generic/new': typeof DashboardAssessmentsGenericNewRoute
+  '/dashboard/assessments/prescreening/$id': typeof DashboardAssessmentsPrescreeningIdRoute
+  '/dashboard/assessments/prescreening/new': typeof DashboardAssessmentsPrescreeningNewRoute
+  '/dashboard/assessments/psychometric/$id': typeof DashboardAssessmentsPsychometricIdRoute
+  '/dashboard/assessments/psychometric/new': typeof DashboardAssessmentsPsychometricNewRoute
+  '/dashboard/assessments/voice/$id': typeof DashboardAssessmentsVoiceIdRoute
+  '/dashboard/assessments/voice/new': typeof DashboardAssessmentsVoiceNewRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -151,6 +260,7 @@ export interface FileRouteTypes {
     | '/about'
     | '/onboarding'
     | '/sign-in'
+    | '/dashboard/assessments'
     | '/dashboard/candidates'
     | '/dashboard/jobs'
     | '/dashboard/settings'
@@ -160,12 +270,23 @@ export interface FileRouteTypes {
     | '/dashboard/jobs/new'
     | '/interview/join/$token'
     | '/jobs/$id/session'
+    | '/dashboard/assessments/coding/$id'
+    | '/dashboard/assessments/coding/new'
+    | '/dashboard/assessments/generic/$id'
+    | '/dashboard/assessments/generic/new'
+    | '/dashboard/assessments/prescreening/$id'
+    | '/dashboard/assessments/prescreening/new'
+    | '/dashboard/assessments/psychometric/$id'
+    | '/dashboard/assessments/psychometric/new'
+    | '/dashboard/assessments/voice/$id'
+    | '/dashboard/assessments/voice/new'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
     | '/about'
     | '/onboarding'
     | '/sign-in'
+    | '/dashboard/assessments'
     | '/dashboard/candidates'
     | '/dashboard/jobs'
     | '/dashboard/settings'
@@ -175,6 +296,16 @@ export interface FileRouteTypes {
     | '/dashboard/jobs/new'
     | '/interview/join/$token'
     | '/jobs/$id/session'
+    | '/dashboard/assessments/coding/$id'
+    | '/dashboard/assessments/coding/new'
+    | '/dashboard/assessments/generic/$id'
+    | '/dashboard/assessments/generic/new'
+    | '/dashboard/assessments/prescreening/$id'
+    | '/dashboard/assessments/prescreening/new'
+    | '/dashboard/assessments/psychometric/$id'
+    | '/dashboard/assessments/psychometric/new'
+    | '/dashboard/assessments/voice/$id'
+    | '/dashboard/assessments/voice/new'
   id:
     | '__root__'
     | '/'
@@ -182,6 +313,7 @@ export interface FileRouteTypes {
     | '/about'
     | '/onboarding'
     | '/sign-in'
+    | '/dashboard/assessments'
     | '/dashboard/candidates'
     | '/dashboard/jobs'
     | '/dashboard/settings'
@@ -191,6 +323,16 @@ export interface FileRouteTypes {
     | '/dashboard/jobs/new'
     | '/interview/join/$token'
     | '/jobs/$id/session'
+    | '/dashboard/assessments/coding/$id'
+    | '/dashboard/assessments/coding/new'
+    | '/dashboard/assessments/generic/$id'
+    | '/dashboard/assessments/generic/new'
+    | '/dashboard/assessments/prescreening/$id'
+    | '/dashboard/assessments/prescreening/new'
+    | '/dashboard/assessments/psychometric/$id'
+    | '/dashboard/assessments/psychometric/new'
+    | '/dashboard/assessments/voice/$id'
+    | '/dashboard/assessments/voice/new'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -283,6 +425,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DashboardCandidatesRouteImport
       parentRoute: typeof DashboardRouteRoute
     }
+    '/dashboard/assessments': {
+      id: '/dashboard/assessments'
+      path: '/assessments'
+      fullPath: '/dashboard/assessments'
+      preLoaderRoute: typeof DashboardAssessmentsRouteImport
+      parentRoute: typeof DashboardRouteRoute
+    }
     '/jobs/$id/session': {
       id: '/jobs/$id/session'
       path: '/session'
@@ -304,8 +453,111 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DashboardJobsNewRouteImport
       parentRoute: typeof DashboardJobsRoute
     }
+    '/dashboard/assessments/voice/new': {
+      id: '/dashboard/assessments/voice/new'
+      path: '/voice/new'
+      fullPath: '/dashboard/assessments/voice/new'
+      preLoaderRoute: typeof DashboardAssessmentsVoiceNewRouteImport
+      parentRoute: typeof DashboardAssessmentsRoute
+    }
+    '/dashboard/assessments/voice/$id': {
+      id: '/dashboard/assessments/voice/$id'
+      path: '/voice/$id'
+      fullPath: '/dashboard/assessments/voice/$id'
+      preLoaderRoute: typeof DashboardAssessmentsVoiceIdRouteImport
+      parentRoute: typeof DashboardAssessmentsRoute
+    }
+    '/dashboard/assessments/psychometric/new': {
+      id: '/dashboard/assessments/psychometric/new'
+      path: '/psychometric/new'
+      fullPath: '/dashboard/assessments/psychometric/new'
+      preLoaderRoute: typeof DashboardAssessmentsPsychometricNewRouteImport
+      parentRoute: typeof DashboardAssessmentsRoute
+    }
+    '/dashboard/assessments/psychometric/$id': {
+      id: '/dashboard/assessments/psychometric/$id'
+      path: '/psychometric/$id'
+      fullPath: '/dashboard/assessments/psychometric/$id'
+      preLoaderRoute: typeof DashboardAssessmentsPsychometricIdRouteImport
+      parentRoute: typeof DashboardAssessmentsRoute
+    }
+    '/dashboard/assessments/prescreening/new': {
+      id: '/dashboard/assessments/prescreening/new'
+      path: '/prescreening/new'
+      fullPath: '/dashboard/assessments/prescreening/new'
+      preLoaderRoute: typeof DashboardAssessmentsPrescreeningNewRouteImport
+      parentRoute: typeof DashboardAssessmentsRoute
+    }
+    '/dashboard/assessments/prescreening/$id': {
+      id: '/dashboard/assessments/prescreening/$id'
+      path: '/prescreening/$id'
+      fullPath: '/dashboard/assessments/prescreening/$id'
+      preLoaderRoute: typeof DashboardAssessmentsPrescreeningIdRouteImport
+      parentRoute: typeof DashboardAssessmentsRoute
+    }
+    '/dashboard/assessments/generic/new': {
+      id: '/dashboard/assessments/generic/new'
+      path: '/generic/new'
+      fullPath: '/dashboard/assessments/generic/new'
+      preLoaderRoute: typeof DashboardAssessmentsGenericNewRouteImport
+      parentRoute: typeof DashboardAssessmentsRoute
+    }
+    '/dashboard/assessments/generic/$id': {
+      id: '/dashboard/assessments/generic/$id'
+      path: '/generic/$id'
+      fullPath: '/dashboard/assessments/generic/$id'
+      preLoaderRoute: typeof DashboardAssessmentsGenericIdRouteImport
+      parentRoute: typeof DashboardAssessmentsRoute
+    }
+    '/dashboard/assessments/coding/new': {
+      id: '/dashboard/assessments/coding/new'
+      path: '/coding/new'
+      fullPath: '/dashboard/assessments/coding/new'
+      preLoaderRoute: typeof DashboardAssessmentsCodingNewRouteImport
+      parentRoute: typeof DashboardAssessmentsRoute
+    }
+    '/dashboard/assessments/coding/$id': {
+      id: '/dashboard/assessments/coding/$id'
+      path: '/coding/$id'
+      fullPath: '/dashboard/assessments/coding/$id'
+      preLoaderRoute: typeof DashboardAssessmentsCodingIdRouteImport
+      parentRoute: typeof DashboardAssessmentsRoute
+    }
   }
 }
+
+interface DashboardAssessmentsRouteChildren {
+  DashboardAssessmentsCodingIdRoute: typeof DashboardAssessmentsCodingIdRoute
+  DashboardAssessmentsCodingNewRoute: typeof DashboardAssessmentsCodingNewRoute
+  DashboardAssessmentsGenericIdRoute: typeof DashboardAssessmentsGenericIdRoute
+  DashboardAssessmentsGenericNewRoute: typeof DashboardAssessmentsGenericNewRoute
+  DashboardAssessmentsPrescreeningIdRoute: typeof DashboardAssessmentsPrescreeningIdRoute
+  DashboardAssessmentsPrescreeningNewRoute: typeof DashboardAssessmentsPrescreeningNewRoute
+  DashboardAssessmentsPsychometricIdRoute: typeof DashboardAssessmentsPsychometricIdRoute
+  DashboardAssessmentsPsychometricNewRoute: typeof DashboardAssessmentsPsychometricNewRoute
+  DashboardAssessmentsVoiceIdRoute: typeof DashboardAssessmentsVoiceIdRoute
+  DashboardAssessmentsVoiceNewRoute: typeof DashboardAssessmentsVoiceNewRoute
+}
+
+const DashboardAssessmentsRouteChildren: DashboardAssessmentsRouteChildren = {
+  DashboardAssessmentsCodingIdRoute: DashboardAssessmentsCodingIdRoute,
+  DashboardAssessmentsCodingNewRoute: DashboardAssessmentsCodingNewRoute,
+  DashboardAssessmentsGenericIdRoute: DashboardAssessmentsGenericIdRoute,
+  DashboardAssessmentsGenericNewRoute: DashboardAssessmentsGenericNewRoute,
+  DashboardAssessmentsPrescreeningIdRoute:
+    DashboardAssessmentsPrescreeningIdRoute,
+  DashboardAssessmentsPrescreeningNewRoute:
+    DashboardAssessmentsPrescreeningNewRoute,
+  DashboardAssessmentsPsychometricIdRoute:
+    DashboardAssessmentsPsychometricIdRoute,
+  DashboardAssessmentsPsychometricNewRoute:
+    DashboardAssessmentsPsychometricNewRoute,
+  DashboardAssessmentsVoiceIdRoute: DashboardAssessmentsVoiceIdRoute,
+  DashboardAssessmentsVoiceNewRoute: DashboardAssessmentsVoiceNewRoute,
+}
+
+const DashboardAssessmentsRouteWithChildren =
+  DashboardAssessmentsRoute._addFileChildren(DashboardAssessmentsRouteChildren)
 
 interface DashboardJobsRouteChildren {
   DashboardJobsNewRoute: typeof DashboardJobsNewRoute
@@ -320,6 +572,7 @@ const DashboardJobsRouteWithChildren = DashboardJobsRoute._addFileChildren(
 )
 
 interface DashboardRouteRouteChildren {
+  DashboardAssessmentsRoute: typeof DashboardAssessmentsRouteWithChildren
   DashboardCandidatesRoute: typeof DashboardCandidatesRoute
   DashboardJobsRoute: typeof DashboardJobsRouteWithChildren
   DashboardSettingsRoute: typeof DashboardSettingsRoute
@@ -327,6 +580,7 @@ interface DashboardRouteRouteChildren {
 }
 
 const DashboardRouteRouteChildren: DashboardRouteRouteChildren = {
+  DashboardAssessmentsRoute: DashboardAssessmentsRouteWithChildren,
   DashboardCandidatesRoute: DashboardCandidatesRoute,
   DashboardJobsRoute: DashboardJobsRouteWithChildren,
   DashboardSettingsRoute: DashboardSettingsRoute,
