@@ -4,20 +4,51 @@ import {
 	useQueryClient,
 } from "@tanstack/react-query";
 import {
+	type AssessmentListParams,
 	type AssignCandidateRequest,
 	apiClient,
 	apiClientPublic,
 	type CandidateInterview,
+	type CreateCodingAssessmentPayload,
+	type CreateGenericAssessmentPayload,
 	type CreateJobRequest,
+	type CreatePrescreeningFormPayload,
+	type CreatePsychometricAssessmentPayload,
+	type CreateVoiceAssessmentPayload,
+	createCodingAssessment,
+	createGenericAssessment,
+	createPrescreeningForm,
+	createPsychometricAssessment,
+	createVoiceAssessment,
+	deleteCodingAssessment,
+	deleteGenericAssessment,
+	deletePrescreeningForm,
+	deletePsychometricAssessment,
+	deleteVoiceAssessment,
 	type GenerateJobContentRequest,
 	type GenerateJobContentResponse,
+	getCodingAssessment,
+	getGenericAssessment,
+	getPrescreeningForm,
+	getPsychometricAssessment,
+	getVoiceAssessment,
 	type InterviewScores,
 	type Job,
 	type JobInterviewsListResponse,
 	type JoinJobResponse,
+	listCodingAssessments,
+	listGenericAssessments,
+	listPrescreeningForms,
+	listPsychometricAssessments,
+	listVoiceAssessments,
 	type Organization,
 	type TranscriptEntry,
 	type UpdateJobRequest,
+	updateCodingAssessment,
+	updateGenericAssessment,
+	updatePrescreeningForm,
+	updatePsychometricAssessment,
+	updateVoiceAssessment,
 } from "./client";
 
 export const jobKeys = {
@@ -46,6 +77,286 @@ export const candidateInterviewKeys = {
 	scores: (id: string) =>
 		[...candidateInterviewKeys.all, "scores", id] as const,
 };
+
+export const assessmentKeys = {
+	all: ["assessments"] as const,
+	voice: () => [...assessmentKeys.all, "voice"] as const,
+	voiceList: (params?: AssessmentListParams) =>
+		[...assessmentKeys.voice(), "list", params ?? {}] as const,
+	voiceDetail: (id: string) => [...assessmentKeys.voice(), id] as const,
+	generic: () => [...assessmentKeys.all, "generic"] as const,
+	genericList: (params?: AssessmentListParams) =>
+		[...assessmentKeys.generic(), "list", params ?? {}] as const,
+	genericDetail: (id: string) => [...assessmentKeys.generic(), id] as const,
+	coding: () => [...assessmentKeys.all, "coding"] as const,
+	codingList: (params?: AssessmentListParams) =>
+		[...assessmentKeys.coding(), "list", params ?? {}] as const,
+	codingDetail: (id: string) => [...assessmentKeys.coding(), id] as const,
+	psychometric: () => [...assessmentKeys.all, "psychometric"] as const,
+	psychometricList: (params?: AssessmentListParams) =>
+		[...assessmentKeys.psychometric(), "list", params ?? {}] as const,
+	psychometricDetail: (id: string) =>
+		[...assessmentKeys.psychometric(), id] as const,
+	prescreening: () => [...assessmentKeys.all, "prescreening"] as const,
+	prescreeningList: (params?: AssessmentListParams) =>
+		[...assessmentKeys.prescreening(), "list", params ?? {}] as const,
+	prescreeningDetail: (id: string) =>
+		[...assessmentKeys.prescreening(), id] as const,
+};
+
+export const assessmentQueries = {
+	voice: {
+		list: (params: AssessmentListParams = {}) =>
+			queryOptions({
+				queryKey: assessmentKeys.voiceList(params),
+				queryFn: () => listVoiceAssessments(params),
+			}),
+		detail: (id: string) =>
+			queryOptions({
+				queryKey: assessmentKeys.voiceDetail(id),
+				queryFn: () => getVoiceAssessment(id),
+				enabled: id.length > 0,
+			}),
+	},
+	generic: {
+		list: (params: AssessmentListParams = {}) =>
+			queryOptions({
+				queryKey: assessmentKeys.genericList(params),
+				queryFn: () => listGenericAssessments(params),
+			}),
+		detail: (id: string) =>
+			queryOptions({
+				queryKey: assessmentKeys.genericDetail(id),
+				queryFn: () => getGenericAssessment(id),
+				enabled: id.length > 0,
+			}),
+	},
+	coding: {
+		list: (params: AssessmentListParams = {}) =>
+			queryOptions({
+				queryKey: assessmentKeys.codingList(params),
+				queryFn: () => listCodingAssessments(params),
+			}),
+		detail: (id: string) =>
+			queryOptions({
+				queryKey: assessmentKeys.codingDetail(id),
+				queryFn: () => getCodingAssessment(id),
+				enabled: id.length > 0,
+			}),
+	},
+	psychometric: {
+		list: (params: AssessmentListParams = {}) =>
+			queryOptions({
+				queryKey: assessmentKeys.psychometricList(params),
+				queryFn: () => listPsychometricAssessments(params),
+			}),
+		detail: (id: string) =>
+			queryOptions({
+				queryKey: assessmentKeys.psychometricDetail(id),
+				queryFn: () => getPsychometricAssessment(id),
+				enabled: id.length > 0,
+			}),
+	},
+	prescreening: {
+		list: (params: AssessmentListParams = {}) =>
+			queryOptions({
+				queryKey: assessmentKeys.prescreeningList(params),
+				queryFn: () => listPrescreeningForms(params),
+			}),
+		detail: (id: string) =>
+			queryOptions({
+				queryKey: assessmentKeys.prescreeningDetail(id),
+				queryFn: () => getPrescreeningForm(id),
+				enabled: id.length > 0,
+			}),
+	},
+};
+
+function invalidateAllAssessmentLists(qc: ReturnType<typeof useQueryClient>) {
+	void qc.invalidateQueries({ queryKey: assessmentKeys.voice() });
+	void qc.invalidateQueries({ queryKey: assessmentKeys.generic() });
+	void qc.invalidateQueries({ queryKey: assessmentKeys.coding() });
+	void qc.invalidateQueries({ queryKey: assessmentKeys.psychometric() });
+	void qc.invalidateQueries({ queryKey: assessmentKeys.prescreening() });
+}
+
+export function useCreateVoiceAssessment() {
+	const qc = useQueryClient();
+	return useMutation({
+		mutationFn: (body: CreateVoiceAssessmentPayload) =>
+			createVoiceAssessment(body),
+		onSuccess: () => invalidateAllAssessmentLists(qc),
+	});
+}
+
+export function useUpdateVoiceAssessment() {
+	const qc = useQueryClient();
+	return useMutation({
+		mutationFn: ({
+			id,
+			body,
+		}: {
+			id: string;
+			body: Partial<CreateVoiceAssessmentPayload>;
+		}) => updateVoiceAssessment(id, body),
+		onSuccess: (_row, { id }) => {
+			invalidateAllAssessmentLists(qc);
+			void qc.invalidateQueries({ queryKey: assessmentKeys.voiceDetail(id) });
+		},
+	});
+}
+
+export function useDeleteVoiceAssessment() {
+	const qc = useQueryClient();
+	return useMutation({
+		mutationFn: deleteVoiceAssessment,
+		onSuccess: () => invalidateAllAssessmentLists(qc),
+	});
+}
+
+export function useCreateGenericAssessment() {
+	const qc = useQueryClient();
+	return useMutation({
+		mutationFn: (body: CreateGenericAssessmentPayload) =>
+			createGenericAssessment(body),
+		onSuccess: () => invalidateAllAssessmentLists(qc),
+	});
+}
+
+export function useUpdateGenericAssessment() {
+	const qc = useQueryClient();
+	return useMutation({
+		mutationFn: ({
+			id,
+			body,
+		}: {
+			id: string;
+			body: Partial<CreateGenericAssessmentPayload>;
+		}) => updateGenericAssessment(id, body),
+		onSuccess: (_row, { id }) => {
+			invalidateAllAssessmentLists(qc);
+			void qc.invalidateQueries({
+				queryKey: assessmentKeys.genericDetail(id),
+			});
+		},
+	});
+}
+
+export function useDeleteGenericAssessment() {
+	const qc = useQueryClient();
+	return useMutation({
+		mutationFn: deleteGenericAssessment,
+		onSuccess: () => invalidateAllAssessmentLists(qc),
+	});
+}
+
+export function useCreateCodingAssessment() {
+	const qc = useQueryClient();
+	return useMutation({
+		mutationFn: (body: CreateCodingAssessmentPayload) =>
+			createCodingAssessment(body),
+		onSuccess: () => invalidateAllAssessmentLists(qc),
+	});
+}
+
+export function useUpdateCodingAssessment() {
+	const qc = useQueryClient();
+	return useMutation({
+		mutationFn: ({
+			id,
+			body,
+		}: {
+			id: string;
+			body: Partial<CreateCodingAssessmentPayload>;
+		}) => updateCodingAssessment(id, body),
+		onSuccess: (_row, { id }) => {
+			invalidateAllAssessmentLists(qc);
+			void qc.invalidateQueries({
+				queryKey: assessmentKeys.codingDetail(id),
+			});
+		},
+	});
+}
+
+export function useDeleteCodingAssessment() {
+	const qc = useQueryClient();
+	return useMutation({
+		mutationFn: deleteCodingAssessment,
+		onSuccess: () => invalidateAllAssessmentLists(qc),
+	});
+}
+
+export function useCreatePsychometricAssessment() {
+	const qc = useQueryClient();
+	return useMutation({
+		mutationFn: (body: CreatePsychometricAssessmentPayload) =>
+			createPsychometricAssessment(body),
+		onSuccess: () => invalidateAllAssessmentLists(qc),
+	});
+}
+
+export function useUpdatePsychometricAssessment() {
+	const qc = useQueryClient();
+	return useMutation({
+		mutationFn: ({
+			id,
+			body,
+		}: {
+			id: string;
+			body: Partial<CreatePsychometricAssessmentPayload>;
+		}) => updatePsychometricAssessment(id, body),
+		onSuccess: (_row, { id }) => {
+			invalidateAllAssessmentLists(qc);
+			void qc.invalidateQueries({
+				queryKey: assessmentKeys.psychometricDetail(id),
+			});
+		},
+	});
+}
+
+export function useDeletePsychometricAssessment() {
+	const qc = useQueryClient();
+	return useMutation({
+		mutationFn: deletePsychometricAssessment,
+		onSuccess: () => invalidateAllAssessmentLists(qc),
+	});
+}
+
+export function useCreatePrescreeningForm() {
+	const qc = useQueryClient();
+	return useMutation({
+		mutationFn: (body: CreatePrescreeningFormPayload) =>
+			createPrescreeningForm(body),
+		onSuccess: () => invalidateAllAssessmentLists(qc),
+	});
+}
+
+export function useUpdatePrescreeningForm() {
+	const qc = useQueryClient();
+	return useMutation({
+		mutationFn: ({
+			id,
+			body,
+		}: {
+			id: string;
+			body: Partial<CreatePrescreeningFormPayload>;
+		}) => updatePrescreeningForm(id, body),
+		onSuccess: (_row, { id }) => {
+			invalidateAllAssessmentLists(qc);
+			void qc.invalidateQueries({
+				queryKey: assessmentKeys.prescreeningDetail(id),
+			});
+		},
+	});
+}
+
+export function useDeletePrescreeningForm() {
+	const qc = useQueryClient();
+	return useMutation({
+		mutationFn: deletePrescreeningForm,
+		onSuccess: () => invalidateAllAssessmentLists(qc),
+	});
+}
 
 export const jobQueries = {
 	list: (limit = 20, offset = 0) =>

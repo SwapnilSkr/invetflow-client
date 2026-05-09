@@ -1,3 +1,11 @@
+import type {
+	AssessmentEntity,
+	CodingAssessment,
+	GenericAssessment,
+	PrescreeningForm,
+	PsychometricAssessment,
+	VoiceAssessment,
+} from "#/integrations/api/assessment-types";
 import { getAuthStoreState } from "#/integrations/auth/auth-store";
 import { parseHttpError } from "./errors";
 import { getApiToken } from "./token-storage";
@@ -69,9 +77,6 @@ export interface Job {
 	tags: string[];
 	experience: ExperienceRange | null;
 	pipeline: JobPipeline;
-	screening_questions: ScreeningQuestion[];
-	rubric: RubricItem[];
-	interview_settings: InterviewSettings;
 	application_settings: ApplicationSettings;
 	visibility: JobVisibility;
 }
@@ -132,53 +137,20 @@ export type StageAutomation =
 
 export interface JobStage {
 	id: string;
-	title: string;
+	title: string | null;
+	order: number;
 	stage_type: StageType;
-	required: boolean;
+	is_mandatory: boolean;
 	candidate_facing: boolean;
-	pass_threshold?: number | null;
 	contributes_to_score: boolean;
 	automation: StageAutomation;
-	order: number;
-}
-
-export type ScreeningQuestionType =
-	| "Text"
-	| "Number"
-	| "Boolean"
-	| "Select"
-	| "MultiSelect"
-	| "Date";
-
-export interface ScreeningQuestion {
-	id: string;
-	label: string;
-	question_type: ScreeningQuestionType;
-	required: boolean;
-	options: string[];
-	knockout?: { operator: string; value: unknown } | null;
-	order: number;
-}
-
-export interface RubricItem {
-	id: string;
-	skill: string;
-	weight: number;
-	scoring_guide: string;
-	question: string;
-	follow_up_prompts: string[];
-	order: number;
-}
-
-export interface InterviewSettings {
-	duration_minutes: number;
-	max_score: number;
-	pass_threshold: number;
-	allowed_languages: string[];
-	voice_provider: string;
-	voice_gender: string;
-	greeting?: string | null;
-	parting_words?: string | null;
+	pass_score: number | null;
+	is_system_stage: boolean;
+	voice_assessment_id: string | null;
+	generic_assessment_id: string | null;
+	coding_assessment_id: string | null;
+	psychometric_assessment_id: string | null;
+	prescreening_form_id: string | null;
 }
 
 export interface ApplicationSettings {
@@ -211,6 +183,12 @@ export interface Question {
 	order: number;
 }
 
+/** Hiring pipeline stage merged with linked assessment payload (candidate runner / dashboards). */
+export type ResolvedStage = {
+	stage: JobStage;
+	assessment: AssessmentEntity | null;
+};
+
 export interface CreateJobRequest {
 	title: string;
 	job_title: string;
@@ -230,9 +208,6 @@ export interface CreateJobRequest {
 	tags?: string[];
 	experience?: ExperienceRange;
 	pipeline?: JobPipeline;
-	screening_questions?: ScreeningQuestion[];
-	rubric?: RubricItem[];
-	interview_settings?: InterviewSettings;
 	application_settings?: ApplicationSettings;
 	visibility?: JobVisibility;
 }
@@ -270,9 +245,6 @@ export interface UpdateJobRequest {
 	tags?: string[];
 	experience?: ExperienceRange;
 	pipeline?: JobPipeline;
-	screening_questions?: ScreeningQuestion[];
-	rubric?: RubricItem[];
-	interview_settings?: InterviewSettings;
 	application_settings?: ApplicationSettings;
 	visibility?: JobVisibility;
 }
@@ -514,6 +486,319 @@ export async function apiClient<T>(
 	}
 
 	return response.json();
+}
+
+export type {
+	AssessmentEntity,
+	AssessmentTimingMode,
+	CodingAssessment,
+	CodingProblem,
+	Difficulty,
+	GenericAssessment,
+	GenericQuestion,
+	GenericQuestionOption,
+	GenericQuestionType,
+	IntakeQuestionType,
+	PrescreeningForm,
+	PrescreeningKnockoutRule,
+	PrescreeningQuestion,
+	PrescreeningQuestionType,
+	PsychometricAssessment,
+	PsychometricFramework,
+	TestCase,
+	VoiceAssessment,
+	VoiceDeliveryMethod,
+	VoiceIntakeQuestion,
+	VoicePhoneSettings,
+	VoiceQuestion,
+	VoiceRubric,
+	VoiceSkill,
+} from "./assessment-types";
+
+export type AssessmentListParams = {
+	limit?: number;
+	offset?: number;
+	/** Search substring (server-defined; optional). */
+	q?: string;
+};
+
+export type AssessmentListResult<T> = {
+	assessments: T[];
+	total: number;
+	limit: number;
+	offset: number;
+};
+
+function assessmentListQuery(params: AssessmentListParams) {
+	const sp = new URLSearchParams();
+	if (params.limit != null) sp.set("limit", String(params.limit));
+	if (params.offset != null) sp.set("offset", String(params.offset));
+	if (params.q?.trim()) sp.set("q", params.q.trim());
+	const q = sp.toString();
+	return q ? `?${q}` : "";
+}
+
+function normalizeAssessmentList<T>(raw: unknown): AssessmentListResult<T> {
+	if (Array.isArray(raw)) {
+		return {
+			assessments: raw as T[],
+			total: raw.length,
+			limit: raw.length,
+			offset: 0,
+		};
+	}
+	if (raw && typeof raw === "object") {
+		const o = raw as Record<string, unknown>;
+		const nested = o.result;
+		const base =
+			nested && typeof nested === "object"
+				? (nested as Record<string, unknown>)
+				: o;
+		const arr = [
+			base.assessments,
+			base.items,
+			base.data,
+			o.assessments,
+			o.items,
+			o.data,
+		].find(Array.isArray) as unknown[] | undefined;
+		const list = (arr ?? []) as T[];
+		const total =
+			typeof base.total === "number"
+				? base.total
+				: typeof o.total === "number"
+					? o.total
+					: list.length;
+		const limit =
+			typeof base.limit === "number"
+				? base.limit
+				: typeof o.limit === "number"
+					? o.limit
+					: list.length;
+		const offset =
+			typeof base.offset === "number"
+				? base.offset
+				: typeof o.offset === "number"
+					? o.offset
+					: 0;
+		return { assessments: list, total, limit, offset };
+	}
+	return { assessments: [], total: 0, limit: 0, offset: 0 };
+}
+
+export type CreateVoiceAssessmentPayload = Omit<
+	VoiceAssessment,
+	| "id"
+	| "organization_id"
+	| "creator_id"
+	| "created_at"
+	| "updated_at"
+	| "is_deleted"
+>;
+
+export async function listVoiceAssessments(params: AssessmentListParams = {}) {
+	const raw = await apiClient<unknown>(
+		`/api/assessments/voice${assessmentListQuery(params)}`,
+	);
+	return normalizeAssessmentList<VoiceAssessment>(raw);
+}
+
+export async function getVoiceAssessment(id: string) {
+	return apiClient<VoiceAssessment>(`/api/assessments/voice/${id}`);
+}
+
+export async function createVoiceAssessment(
+	body: CreateVoiceAssessmentPayload,
+) {
+	return apiClient<VoiceAssessment>("/api/assessments/voice", {
+		method: "POST",
+		body: JSON.stringify(body),
+	});
+}
+
+export async function updateVoiceAssessment(
+	id: string,
+	body: Partial<CreateVoiceAssessmentPayload>,
+) {
+	return apiClient<VoiceAssessment>(`/api/assessments/voice/${id}`, {
+		method: "PUT",
+		body: JSON.stringify(body),
+	});
+}
+
+export async function deleteVoiceAssessment(id: string) {
+	return apiClient<void>(`/api/assessments/voice/${id}`, { method: "DELETE" });
+}
+
+export type CreateGenericAssessmentPayload = Omit<
+	GenericAssessment,
+	"id" | "organization_id" | "created_at" | "updated_at" | "is_deleted"
+>;
+
+export async function listGenericAssessments(
+	params: AssessmentListParams = {},
+) {
+	const raw = await apiClient<unknown>(
+		`/api/assessments/generic${assessmentListQuery(params)}`,
+	);
+	return normalizeAssessmentList<GenericAssessment>(raw);
+}
+
+export async function getGenericAssessment(id: string) {
+	return apiClient<GenericAssessment>(`/api/assessments/generic/${id}`);
+}
+
+export async function createGenericAssessment(
+	body: CreateGenericAssessmentPayload,
+) {
+	return apiClient<GenericAssessment>("/api/assessments/generic", {
+		method: "POST",
+		body: JSON.stringify(body),
+	});
+}
+
+export async function updateGenericAssessment(
+	id: string,
+	body: Partial<CreateGenericAssessmentPayload>,
+) {
+	return apiClient<GenericAssessment>(`/api/assessments/generic/${id}`, {
+		method: "PUT",
+		body: JSON.stringify(body),
+	});
+}
+
+export async function deleteGenericAssessment(id: string) {
+	return apiClient<void>(`/api/assessments/generic/${id}`, {
+		method: "DELETE",
+	});
+}
+
+export type CreateCodingAssessmentPayload = Omit<
+	CodingAssessment,
+	"id" | "organization_id" | "created_at" | "updated_at" | "is_deleted"
+>;
+
+export async function listCodingAssessments(params: AssessmentListParams = {}) {
+	const raw = await apiClient<unknown>(
+		`/api/assessments/coding${assessmentListQuery(params)}`,
+	);
+	return normalizeAssessmentList<CodingAssessment>(raw);
+}
+
+export async function getCodingAssessment(id: string) {
+	return apiClient<CodingAssessment>(`/api/assessments/coding/${id}`);
+}
+
+export async function createCodingAssessment(
+	body: CreateCodingAssessmentPayload,
+) {
+	return apiClient<CodingAssessment>("/api/assessments/coding", {
+		method: "POST",
+		body: JSON.stringify(body),
+	});
+}
+
+export async function updateCodingAssessment(
+	id: string,
+	body: Partial<CreateCodingAssessmentPayload>,
+) {
+	return apiClient<CodingAssessment>(`/api/assessments/coding/${id}`, {
+		method: "PUT",
+		body: JSON.stringify(body),
+	});
+}
+
+export async function deleteCodingAssessment(id: string) {
+	return apiClient<void>(`/api/assessments/coding/${id}`, { method: "DELETE" });
+}
+
+export type CreatePsychometricAssessmentPayload = Omit<
+	PsychometricAssessment,
+	"id" | "organization_id" | "created_at" | "updated_at" | "is_deleted"
+>;
+
+export async function listPsychometricAssessments(
+	params: AssessmentListParams = {},
+) {
+	const raw = await apiClient<unknown>(
+		`/api/assessments/psychometric${assessmentListQuery(params)}`,
+	);
+	return normalizeAssessmentList<PsychometricAssessment>(raw);
+}
+
+export async function getPsychometricAssessment(id: string) {
+	return apiClient<PsychometricAssessment>(
+		`/api/assessments/psychometric/${id}`,
+	);
+}
+
+export async function createPsychometricAssessment(
+	body: CreatePsychometricAssessmentPayload,
+) {
+	return apiClient<PsychometricAssessment>("/api/assessments/psychometric", {
+		method: "POST",
+		body: JSON.stringify(body),
+	});
+}
+
+export async function updatePsychometricAssessment(
+	id: string,
+	body: Partial<CreatePsychometricAssessmentPayload>,
+) {
+	return apiClient<PsychometricAssessment>(
+		`/api/assessments/psychometric/${id}`,
+		{
+			method: "PUT",
+			body: JSON.stringify(body),
+		},
+	);
+}
+
+export async function deletePsychometricAssessment(id: string) {
+	return apiClient<void>(`/api/assessments/psychometric/${id}`, {
+		method: "DELETE",
+	});
+}
+
+export type CreatePrescreeningFormPayload = Omit<
+	PrescreeningForm,
+	"id" | "organization_id" | "created_at" | "updated_at" | "is_deleted"
+>;
+
+export async function listPrescreeningForms(params: AssessmentListParams = {}) {
+	const raw = await apiClient<unknown>(
+		`/api/assessments/prescreening${assessmentListQuery(params)}`,
+	);
+	return normalizeAssessmentList<PrescreeningForm>(raw);
+}
+
+export async function getPrescreeningForm(id: string) {
+	return apiClient<PrescreeningForm>(`/api/assessments/prescreening/${id}`);
+}
+
+export async function createPrescreeningForm(
+	body: CreatePrescreeningFormPayload,
+) {
+	return apiClient<PrescreeningForm>("/api/assessments/prescreening", {
+		method: "POST",
+		body: JSON.stringify(body),
+	});
+}
+
+export async function updatePrescreeningForm(
+	id: string,
+	body: Partial<CreatePrescreeningFormPayload>,
+) {
+	return apiClient<PrescreeningForm>(`/api/assessments/prescreening/${id}`, {
+		method: "PUT",
+		body: JSON.stringify(body),
+	});
+}
+
+export async function deletePrescreeningForm(id: string) {
+	return apiClient<void>(`/api/assessments/prescreening/${id}`, {
+		method: "DELETE",
+	});
 }
 
 /** Clears local session and zustand (JWT has no server revoke on invetflow-server). */
