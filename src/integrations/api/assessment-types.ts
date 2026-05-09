@@ -1,6 +1,5 @@
 /**
- * Assessment + pipeline entity types aligned with invetflow-server ts-rs bindings.
- * Keep in sync with `invetflow-server/bindings/*.ts` when models change.
+ * Assessment + pipeline entity types aligned with invetflow-server JSON responses.
  */
 
 export type VoiceDeliveryMethod = "Web" | "Phone";
