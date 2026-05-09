@@ -1,13 +1,15 @@
 import { useQuery } from "@tanstack/react-query";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { ArrowLeft, ArrowRight, Check, Loader2, Lock } from "lucide-react";
+import { ArrowLeft } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
+import { HorizontalStepper } from "#/components/jobs/create/horizontal-stepper";
 import {
 	buildCreatePayload,
 	buildUpdatePayload,
 	defaultDraft,
 	draftFromJob,
 	newClientId,
+	normalizeJobStage,
 	validatePhase,
 } from "#/components/jobs/create/job-create-state";
 import { PhaseDetails } from "#/components/jobs/create/phase-details";
@@ -20,14 +22,17 @@ import {
 } from "#/components/jobs/create/types";
 import { Alert, AlertDescription } from "#/components/ui/alert";
 import { Button } from "#/components/ui/button";
-import { isApiError } from "#/integrations/api/errors";
+import {
+	isApiError,
+	type StageAutomation,
+	type StageType,
+} from "#/integrations/api/client";
 import {
 	jobQueries,
 	useCreateJob,
 	useGenerateJobContent,
 	useUpdateJob,
 } from "#/integrations/api/queries";
-import { cn } from "#/lib/utils";
 
 export const Route = createFileRoute("/dashboard/jobs/new")({
 	validateSearch: (s: Record<string, unknown>) => ({
@@ -57,7 +62,6 @@ function CreateJobPage() {
 	);
 	const seededRef = useRef<string | undefined>(undefined);
 
-	// Seed draft once when job data arrives (resume from URL id)
 	useEffect(() => {
 		if (existingJob && seededRef.current !== existingJob.id) {
 			seededRef.current = existingJob.id;
@@ -66,7 +70,6 @@ function CreateJobPage() {
 	}, [existingJob]);
 
 	const isSaving = createJob.isPending || updateJob.isPending;
-	const isLastPhase = phase === "Publish";
 
 	function update<K extends keyof DraftState>(key: K, value: DraftState[K]) {
 		setDraft((prev) => ({ ...prev, [key]: value }));
@@ -89,68 +92,36 @@ function CreateJobPage() {
 				setDraft((prev) => ({
 					...prev,
 					pipeline: {
-						stages: rows.map((row, index) => ({
-							id: newClientId("stage"),
-							title: String(row.title ?? `Stage ${index + 1}`),
-							stage_type: ((row.stage_type as string) ||
-								"ManualReview") as import("#/integrations/api/client").StageType,
-							required: Boolean(row.required),
-							candidate_facing: Boolean(row.candidate_facing),
-							pass_threshold:
-								typeof row.pass_threshold === "number"
-									? row.pass_threshold
-									: null,
-							contributes_to_score: Boolean(row.contributes_to_score),
-							automation: ((row.automation as string) ||
-								"None") as import("#/integrations/api/client").StageAutomation,
-							order: index,
-						})),
+						stages: rows.map((row, index) =>
+							normalizeJobStage(
+								{
+									id: newClientId("stage"),
+									title: String(row.title ?? `Stage ${index + 1}`),
+									stage_type: ((row.stage_type as string) ||
+										"ManualReview") as StageType,
+									required: Boolean(row.required),
+									candidate_facing: Boolean(row.candidate_facing),
+									pass_threshold:
+										typeof row.pass_threshold === "number"
+											? row.pass_threshold
+											: null,
+									contributes_to_score: Boolean(row.contributes_to_score),
+									automation: ((row.automation as string) ||
+										"None") as StageAutomation,
+									pass_score:
+										typeof row.pass_score === "number"
+											? row.pass_score
+											: undefined,
+								},
+								index,
+							),
+						),
 					},
 				}));
 			}
 		} catch (e) {
 			setErrorMessage(
 				e instanceof Error ? e.message : "Could not generate pipeline.",
-			);
-		}
-	}
-
-	async function handleGenerateRubric() {
-		setErrorMessage(null);
-		try {
-			const result = await generate.mutateAsync({
-				kind: "rubric_questions",
-				context: {
-					title: draft.title,
-					job_title: draft.jobTitle,
-					seniority: draft.seniority,
-					skills: draft.skills,
-					job_description: draft.jobDescription,
-				},
-			});
-			const content = result.content as {
-				rubric?: Array<Record<string, unknown>>;
-			};
-			if (Array.isArray(content.rubric)) {
-				const rows = content.rubric;
-				setDraft((prev) => ({
-					...prev,
-					rubric: rows.map((row, index) => ({
-						id: newClientId("rubric"),
-						skill: String(row.skill ?? ""),
-						weight: Number(row.weight ?? 1),
-						scoring_guide: String(row.scoring_guide ?? ""),
-						question: String(row.question ?? ""),
-						follow_up_prompts: Array.isArray(row.follow_up_prompts)
-							? row.follow_up_prompts.map(String)
-							: [],
-						order: index,
-					})),
-				}));
-			}
-		} catch (e) {
-			setErrorMessage(
-				e instanceof Error ? e.message : "Could not generate rubric.",
 			);
 		}
 	}
@@ -166,7 +137,6 @@ function CreateJobPage() {
 
 		try {
 			if (!id) {
-				// First save — POST to create Draft
 				const created = await createJob.mutateAsync(
 					buildCreatePayload(draft, { publishOnCreate: false }),
 				);
@@ -177,7 +147,6 @@ function CreateJobPage() {
 				});
 				advancePhase();
 			} else {
-				// Subsequent saves — PUT
 				await updateJob.mutateAsync({ id, data: buildUpdatePayload(draft) });
 				advancePhase();
 			}
@@ -227,145 +196,101 @@ function CreateJobPage() {
 		}
 	}
 
-	// Derive per-phase validation errors for inline display
+	const currentPhaseIndex = PHASES.indexOf(phase);
 	const phaseErrors = validatePhase(phase, draft).errors;
 
+	const steps = PHASES.map((p, index) => {
+		const isVisited = visitedPhases.has(p);
+		let status: "active" | "completed" | "locked" | "pending";
+		if (index === currentPhaseIndex) {
+			status = "active";
+		} else if (index < currentPhaseIndex && isVisited) {
+			status = "completed";
+		} else if (index > 0 && !id) {
+			status = "locked";
+		} else {
+			status = "pending";
+		}
+		return { label: p, status };
+	});
+
+	function handleStepClick(index: number) {
+		const step = steps[index];
+		if (step.status === "locked") {
+			setErrorMessage("Save the draft first to unlock later phases.");
+			return;
+		}
+		setPhase(PHASES[index]);
+		setVisitedPhases((prev) => new Set([...prev, PHASES[index]]));
+	}
+
 	return (
-		<div className="mx-auto w-full max-w-6xl">
-			<Button
-				type="button"
-				variant="ghost"
-				className="mb-3 -ml-2"
-				onClick={() => void navigate({ to: "/dashboard/jobs" })}
-			>
-				<ArrowLeft className="size-4" />
-				Back to jobs
-			</Button>
-
-			<div className="mb-6">
-				<h1 className="text-2xl font-bold tracking-tight text-foreground">
-					{id ? "Edit job" : "Create job"}
-				</h1>
-				<p className="mt-1 text-sm text-muted-foreground">
-					Define the posting, hiring stages, screening, and AI voice interview
-					before sharing the public invite link.
-				</p>
-			</div>
-
-			<div className="grid gap-6 lg:grid-cols-[240px_1fr]">
-				{/* Sidebar */}
-				<div className="h-fit rounded-lg border border-border bg-card p-2">
-					{PHASES.map((p, index) => {
-						const isActive = p === phase;
-						const isDisabled = index > 0 && !id;
-						const isVisited = visitedPhases.has(p);
-
-						return (
-							<button
-								key={p}
-								type="button"
-								disabled={isDisabled}
-								className={cn(
-									"flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-left text-sm transition-colors",
-									isActive
-										? "bg-primary text-primary-foreground"
-										: isDisabled
-											? "cursor-not-allowed text-muted-foreground/50"
-											: "text-muted-foreground hover:bg-accent hover:text-accent-foreground",
-								)}
-								onClick={() => {
-									if (!isDisabled) {
-										setPhase(p);
-										setVisitedPhases((prev) => new Set([...prev, p]));
-									}
-								}}
-							>
-								<span className="flex size-6 shrink-0 items-center justify-center rounded-full border border-current/25 text-xs">
-									{isDisabled ? (
-										<Lock className="size-3" />
-									) : isVisited && !isActive ? (
-										<Check className="size-3" />
-									) : (
-										index + 1
-									)}
-								</span>
-								{p}
-							</button>
-						);
-					})}
-				</div>
-
-				{/* Main content */}
-				<div className="space-y-4">
-					{errorMessage ? (
-						<Alert variant="destructive">
-							<AlertDescription>{errorMessage}</AlertDescription>
-						</Alert>
-					) : null}
-
-					{phase === "Details" ? (
-						<PhaseDetails
-							draft={draft}
-							update={update}
-							errors={phaseErrors}
-							setDraft={setDraft}
-						/>
-					) : null}
-
-					{phase === "Hiring process" ? (
-						<PhaseProcess
-							draft={draft}
-							update={update}
-							errors={phaseErrors}
-							onGeneratePipeline={handleGeneratePipeline}
-							onGenerateRubric={handleGenerateRubric}
-							generating={generate.isPending}
-						/>
-					) : null}
-
-					{phase === "Publish" ? (
-						<PhasePublish draft={draft} update={update} />
-					) : null}
-
-					{/* Footer navigation */}
-					<div className="flex justify-between pt-2">
+		<div className="mx-auto w-full max-w-5xl">
+			{/* Sticky header */}
+			<div className="sticky top-0 z-20 -mx-4 mb-6 border-b border-border bg-background/80 px-4 py-4 backdrop-blur-sm">
+				<div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+					<div>
 						<Button
-							type="button"
-							variant="outline"
-							disabled={phase === "Details"}
-							onClick={goBack}
+							variant="ghost"
+							size="sm"
+							className="-ml-2 mb-1 text-muted-foreground"
+							onClick={() => void navigate({ to: "/dashboard/jobs" })}
 						>
 							<ArrowLeft className="size-4" />
-							Back
+							Jobs
 						</Button>
-
-						{isLastPhase ? (
-							<Button
-								type="button"
-								disabled={isSaving || !id}
-								onClick={handlePublish}
-							>
-								{isSaving ? (
-									<Loader2 className="size-4 animate-spin" />
-								) : (
-									<Check className="size-4" />
-								)}
-								Publish job
-							</Button>
-						) : (
-							<Button
-								type="button"
-								disabled={isSaving}
-								onClick={handleSaveAndContinue}
-							>
-								{isSaving ? <Loader2 className="size-4 animate-spin" /> : null}
-								Save &amp; continue
-								{!isSaving ? <ArrowRight className="size-4" /> : null}
-							</Button>
-						)}
+						<h1 className="text-xl font-semibold tracking-tight text-foreground">
+							{existingJob?.title || "Create new job"}
+						</h1>
 					</div>
 				</div>
+				<div className="mt-4">
+					<HorizontalStepper steps={steps} onStepClick={handleStepClick} />
+				</div>
 			</div>
+
+			{/* Inline alert */}
+			{errorMessage ? (
+				<Alert variant="destructive" className="mb-4">
+					<AlertDescription>{errorMessage}</AlertDescription>
+				</Alert>
+			) : null}
+
+			{/* Step content */}
+			{phase === "Details" ? (
+				<PhaseDetails
+					draft={draft}
+					update={update}
+					errors={phaseErrors}
+					setDraft={setDraft}
+					onSaveAndContinue={handleSaveAndContinue}
+					isSaving={isSaving}
+				/>
+			) : null}
+
+			{phase === "Hiring process" ? (
+				<PhaseProcess
+					draft={draft}
+					update={update}
+					errors={phaseErrors}
+					onGeneratePipeline={handleGeneratePipeline}
+					generating={generate.isPending}
+					onSaveAndContinue={handleSaveAndContinue}
+					isSaving={isSaving}
+					onBack={goBack}
+				/>
+			) : null}
+
+			{phase === "Publish" ? (
+				<PhasePublish
+					draft={draft}
+					update={update}
+					onPublish={handlePublish}
+					isSaving={isSaving}
+					canPublish={!!id}
+					onBack={goBack}
+				/>
+			) : null}
 		</div>
 	);
 }

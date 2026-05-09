@@ -77,6 +77,16 @@ function InterviewDetailPage() {
 	const assignNameId = useId();
 	const assignEmailId = useId();
 
+	const candidateInviteLink = job?.invite_link
+		? (() => {
+				const candidateOrigin =
+					import.meta.env.VITE_CANDIDATE_APP_URL || window.location.origin;
+				return job.invite_link.startsWith("http")
+					? job.invite_link
+					: `${candidateOrigin.replace(/\/$/, "")}${job.invite_link.startsWith("/") ? "" : "/"}${job.invite_link}`;
+			})()
+		: null;
+
 	const handleJoin = async () => {
 		setJoinError(null);
 		setJoining(true);
@@ -103,13 +113,10 @@ function InterviewDetailPage() {
 	};
 
 	const copyInviteLink = async () => {
-		if (!job?.invite_link) {
+		if (!candidateInviteLink) {
 			return;
 		}
-		const link = job.invite_link.startsWith("http")
-			? job.invite_link
-			: `${window.location.origin}${job.invite_link.startsWith("/") ? "" : "/"}${job.invite_link}`;
-		await navigator.clipboard.writeText(link);
+		await navigator.clipboard.writeText(candidateInviteLink);
 		setCopied(true);
 		setTimeout(() => setCopied(false), 2000);
 	};
@@ -238,14 +245,16 @@ function InterviewDetailPage() {
 												{idx + 1}
 											</span>
 											<div className="min-w-0 flex-1">
-												<p className="text-sm font-medium">{stage.title}</p>
+												<p className="text-sm font-medium">
+													{stage.title ?? stage.stage_type}
+												</p>
 												<div className="mt-1 flex flex-wrap items-center gap-2">
 													<Badge variant="secondary" className="text-xs">
 														{stage.stage_type}
 													</Badge>
-													{stage.pass_threshold ? (
+													{stage.pass_score ? (
 														<span className="text-xs text-muted-foreground">
-															Pass {stage.pass_threshold}
+															Pass {stage.pass_score}
 														</span>
 													) : null}
 												</div>
@@ -264,28 +273,11 @@ function InterviewDetailPage() {
 					<Card>
 						<CardHeader>
 							<CardTitle className="text-base">
-								Voice rubric ({job.rubric?.length ?? job.questions?.length ?? 0}
-								)
+								Voice guidance ({job.questions?.length ?? 0})
 							</CardTitle>
 						</CardHeader>
 						<CardContent>
-							{job.rubric && job.rubric.length > 0 ? (
-								<ol className="space-y-3">
-									{job.rubric.map((row, idx) => (
-										<li key={row.id || idx} className="flex gap-3">
-											<span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-muted text-xs font-medium">
-												{idx + 1}
-											</span>
-											<div className="min-w-0 flex-1">
-												<p className="text-sm font-medium">{row.skill}</p>
-												<p className="mt-1 text-sm text-muted-foreground">
-													{row.question}
-												</p>
-											</div>
-										</li>
-									))}
-								</ol>
-							) : job.questions && job.questions.length > 0 ? (
+							{job.questions && job.questions.length > 0 ? (
 								<ol className="space-y-3">
 									{job.questions.map((q, idx) => (
 										<li key={q.id || idx} className="flex gap-3">
@@ -298,7 +290,8 @@ function InterviewDetailPage() {
 								</ol>
 							) : (
 								<p className="text-sm text-muted-foreground">
-									No voice rubric configured yet.
+									No interviewer question bank on this role yet — link reusable
+									assessments to pipeline stages instead.
 								</p>
 							)}
 						</CardContent>
@@ -605,7 +598,7 @@ function InterviewDetailPage() {
 								</p>
 								<div className="flex gap-2">
 									<code className="min-w-0 flex-1 truncate rounded-md bg-muted px-3 py-2 text-xs">
-										{job.invite_link}
+										{candidateInviteLink}
 									</code>
 									<Button
 										variant="outline"
