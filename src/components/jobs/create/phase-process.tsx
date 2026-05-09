@@ -1,632 +1,704 @@
+import { queryOptions, useQueries } from "@tanstack/react-query";
 import {
 	ArrowDown,
+	ArrowLeft,
+	ArrowRight,
 	ArrowUp,
 	Bot,
 	GripVertical,
-	Plus,
-	Sparkles,
-	Trash2,
+	Loader2,
 } from "lucide-react";
+import { type JSX, useState } from "react";
+import { AssessmentPickerModal } from "#/components/jobs/create/assessment-picker-modal";
+import {
+	defaultPipeline,
+	newClientId,
+	normalizeJobStage,
+} from "#/components/jobs/create/job-create-state";
+import { PipelineAddStageMenu } from "#/components/jobs/create/pipeline-add-stage-menu";
+import {
+	getLinkedAssessmentId,
+	setLinkedAssessmentId,
+	stageRequiresAssessmentLink,
+	unlinkStage,
+} from "#/components/jobs/create/pipeline-stage-meta";
+import type { DraftState, DraftUpdate } from "#/components/jobs/create/types";
 import { Button } from "#/components/ui/button";
-import { Card, CardContent } from "#/components/ui/card";
 import { Input } from "#/components/ui/input";
 import { Label } from "#/components/ui/label";
 import { Select } from "#/components/ui/select";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "#/components/ui/tabs";
-import { Textarea } from "#/components/ui/textarea";
 import type {
+	CodingAssessment,
+	GenericAssessment,
 	JobStage,
-	RubricItem,
-	ScreeningQuestion,
+	PrescreeningForm,
+	PsychometricAssessment,
+	StageAutomation,
+	StageType,
+	VoiceAssessment,
 } from "#/integrations/api/client";
-import { newClientId } from "./job-create-state";
-import { TagInput } from "./tag-input";
-import {
-	type DraftState,
-	type DraftUpdate,
-	STAGE_AUTOMATIONS,
-	STAGE_TYPES,
-} from "./types";
+import { assessmentQueries } from "#/integrations/api/queries";
 
 type PhaseProcessProps = {
 	draft: DraftState;
 	update: DraftUpdate;
 	errors: Record<string, string>;
 	onGeneratePipeline: () => Promise<void>;
-	onGenerateRubric: () => Promise<void>;
 	generating: boolean;
+	onSaveAndContinue: () => Promise<void>;
+	isSaving: boolean;
+	onBack: () => void;
 };
 
-// --- Pipeline sub-tab ---
-
-type PipelineTabProps = {
-	draft: DraftState;
-	update: DraftUpdate;
-	onGeneratePipeline: () => Promise<void>;
-	generating: boolean;
-};
-
-function PipelineTab({
-	draft,
-	update,
-	onGeneratePipeline,
-	generating,
-}: PipelineTabProps) {
-	function setStages(stages: JobStage[]) {
-		update("pipeline", {
-			stages: stages.map((stage, order) => ({ ...stage, order })),
-		});
-	}
-
-	return (
-		<div className="space-y-3">
-			<div className="flex justify-end gap-2">
-				<Button
-					type="button"
-					variant="outline"
-					disabled={generating}
-					onClick={onGeneratePipeline}
-				>
-					<Bot className="size-4" />
-					Generate stages
-				</Button>
-				<Button
-					type="button"
-					variant="secondary"
-					onClick={() =>
-						setStages([
-							...draft.pipeline.stages,
-							{
-								id: newClientId("stage"),
-								title: "New stage",
-								stage_type: "ManualReview",
-								required: false,
-								candidate_facing: false,
-								pass_threshold: null,
-								contributes_to_score: false,
-								automation: "None",
-								order: draft.pipeline.stages.length,
-							},
-						])
-					}
-				>
-					<Plus className="size-4" />
-					Add stage
-				</Button>
-			</div>
-			{draft.pipeline.stages.map((stage, index) => (
-				<div
-					key={stage.id}
-					className="grid gap-3 rounded-lg border border-border bg-card p-3 md:grid-cols-[auto_1fr_180px_160px_auto]"
-				>
-					<GripVertical className="mt-2 size-4 text-muted-foreground" />
-					<Input
-						value={stage.title}
-						onChange={(e) =>
-							setStages(
-								draft.pipeline.stages.map((row) =>
-									row.id === stage.id ? { ...row, title: e.target.value } : row,
-								),
-							)
-						}
-					/>
-					<Select
-						value={stage.stage_type}
-						onChange={(e) =>
-							setStages(
-								draft.pipeline.stages.map((row) =>
-									row.id === stage.id
-										? {
-												...row,
-												stage_type: e.target.value as JobStage["stage_type"],
-											}
-										: row,
-								),
-							)
-						}
-					>
-						{STAGE_TYPES.map((type) => (
-							<option key={type}>{type}</option>
-						))}
-					</Select>
-					<Select
-						value={stage.automation}
-						onChange={(e) =>
-							setStages(
-								draft.pipeline.stages.map((row) =>
-									row.id === stage.id
-										? {
-												...row,
-												automation: e.target.value as JobStage["automation"],
-											}
-										: row,
-								),
-							)
-						}
-					>
-						{STAGE_AUTOMATIONS.map((automation) => (
-							<option key={automation}>{automation}</option>
-						))}
-					</Select>
-					<div className="flex gap-1">
-						<Button
-							type="button"
-							variant="outline"
-							size="icon-sm"
-							disabled={index === 0}
-							onClick={() => {
-								const next = [...draft.pipeline.stages];
-								[next[index - 1], next[index]] = [next[index], next[index - 1]];
-								setStages(next);
-							}}
-							aria-label="Move stage up"
-						>
-							<ArrowUp className="size-4" />
-						</Button>
-						<Button
-							type="button"
-							variant="outline"
-							size="icon-sm"
-							disabled={index === draft.pipeline.stages.length - 1}
-							onClick={() => {
-								const next = [...draft.pipeline.stages];
-								[next[index + 1], next[index]] = [next[index], next[index + 1]];
-								setStages(next);
-							}}
-							aria-label="Move stage down"
-						>
-							<ArrowDown className="size-4" />
-						</Button>
-						<Button
-							type="button"
-							variant="outline"
-							size="icon-sm"
-							onClick={() =>
-								setStages(
-									draft.pipeline.stages.filter((row) => row.id !== stage.id),
-								)
-							}
-							aria-label="Remove stage"
-						>
-							<Trash2 className="size-4" />
-						</Button>
-					</div>
-					<div className="col-span-full flex flex-wrap gap-3 text-xs text-muted-foreground">
-						<label className="flex items-center gap-1.5">
-							<input
-								type="checkbox"
-								checked={stage.required}
-								onChange={(e) =>
-									setStages(
-										draft.pipeline.stages.map((row) =>
-											row.id === stage.id
-												? { ...row, required: e.target.checked }
-												: row,
-										),
-									)
-								}
-								className="size-3.5"
-							/>
-							Required
-						</label>
-						<label className="flex items-center gap-1.5">
-							<input
-								type="checkbox"
-								checked={stage.candidate_facing}
-								onChange={(e) =>
-									setStages(
-										draft.pipeline.stages.map((row) =>
-											row.id === stage.id
-												? { ...row, candidate_facing: e.target.checked }
-												: row,
-										),
-									)
-								}
-								className="size-3.5"
-							/>
-							Candidate-facing
-						</label>
-						<label className="flex items-center gap-1.5">
-							<input
-								type="checkbox"
-								checked={stage.contributes_to_score}
-								onChange={(e) =>
-									setStages(
-										draft.pipeline.stages.map((row) =>
-											row.id === stage.id
-												? { ...row, contributes_to_score: e.target.checked }
-												: row,
-										),
-									)
-								}
-								className="size-3.5"
-							/>
-							Contributes to score
-						</label>
-					</div>
-				</div>
-			))}
-		</div>
-	);
+function noopAssessmentQuery(stageId: string) {
+	return queryOptions({
+		queryKey: ["assessment-detail-skip", stageId],
+		queryFn: async () => null,
+		enabled: false,
+	});
 }
-
-// --- Voice interview sub-tab ---
-
-type VoiceTabProps = {
-	draft: DraftState;
-	update: DraftUpdate;
-};
-
-function VoiceTab({ draft, update }: VoiceTabProps) {
-	return (
-		<div className="space-y-4">
-			<div className="grid gap-4 md:grid-cols-4">
-				<div className="grid gap-2">
-					<Label htmlFor="voice-duration">Duration (min)</Label>
-					<Input
-						id="voice-duration"
-						type="number"
-						value={draft.durationMinutes}
-						onChange={(e) =>
-							update("durationMinutes", Number(e.target.value) || 30)
-						}
-					/>
-				</div>
-				<div className="grid gap-2">
-					<Label htmlFor="voice-max-score">Max score</Label>
-					<Input
-						id="voice-max-score"
-						type="number"
-						value={draft.maxScore}
-						onChange={(e) => update("maxScore", Number(e.target.value) || 10)}
-					/>
-				</div>
-				<div className="grid gap-2">
-					<Label htmlFor="voice-threshold">Pass threshold</Label>
-					<Input
-						id="voice-threshold"
-						type="number"
-						value={draft.passThreshold}
-						onChange={(e) =>
-							update("passThreshold", Number(e.target.value) || 6)
-						}
-					/>
-				</div>
-				<div className="grid gap-2">
-					<Label htmlFor="voice-gender">Voice gender</Label>
-					<Select
-						id="voice-gender"
-						value={draft.voiceGender}
-						onChange={(e) =>
-							update("voiceGender", e.target.value as DraftState["voiceGender"])
-						}
-					>
-						<option value="Neutral">Neutral</option>
-						<option value="Female">Female</option>
-						<option value="Male">Male</option>
-					</Select>
-				</div>
-			</div>
-			<div className="grid gap-2">
-				<Label>Allowed languages</Label>
-				<TagInput
-					value={draft.allowedLanguages}
-					onChange={(v) => update("allowedLanguages", v)}
-					placeholder="English, Hindi…"
-				/>
-			</div>
-			<div className="grid gap-4 md:grid-cols-2">
-				<div className="grid gap-2">
-					<Label htmlFor="voice-greeting">Greeting</Label>
-					<Input
-						id="voice-greeting"
-						value={draft.greeting}
-						onChange={(e) => update("greeting", e.target.value)}
-						placeholder="Hi, I'm your AI interviewer for today…"
-					/>
-				</div>
-				<div className="grid gap-2">
-					<Label htmlFor="voice-parting">Parting words</Label>
-					<Input
-						id="voice-parting"
-						value={draft.partingWords}
-						onChange={(e) => update("partingWords", e.target.value)}
-						placeholder="Thank you for your time…"
-					/>
-				</div>
-			</div>
-		</div>
-	);
-}
-
-// --- Prescreening sub-tab ---
-
-type PrescreeningTabProps = {
-	draft: DraftState;
-	update: DraftUpdate;
-};
-
-function PrescreeningTab({ draft, update }: PrescreeningTabProps) {
-	function setQuestions(rows: ScreeningQuestion[]) {
-		update(
-			"screeningQuestions",
-			rows.map((row, order) => ({ ...row, order })),
-		);
-	}
-
-	return (
-		<div className="space-y-3">
-			<div className="flex justify-end">
-				<Button
-					type="button"
-					variant="secondary"
-					onClick={() =>
-						setQuestions([
-							...draft.screeningQuestions,
-							{
-								id: newClientId("screen"),
-								label: "",
-								question_type: "Text",
-								required: false,
-								options: [],
-								knockout: null,
-								order: draft.screeningQuestions.length,
-							},
-						])
-					}
-				>
-					<Plus className="size-4" />
-					Add question
-				</Button>
-			</div>
-			{draft.screeningQuestions.length === 0 ? (
-				<p className="text-sm text-muted-foreground">
-					No prescreening questions added yet.
-				</p>
-			) : null}
-			{draft.screeningQuestions.map((row) => (
-				<div
-					key={row.id}
-					className="grid gap-3 rounded-lg border border-border p-3 md:grid-cols-[1fr_180px_auto]"
-				>
-					<Input
-						value={row.label}
-						onChange={(e) =>
-							setQuestions(
-								draft.screeningQuestions.map((item) =>
-									item.id === row.id
-										? { ...item, label: e.target.value }
-										: item,
-								),
-							)
-						}
-						placeholder="Question label"
-					/>
-					<Select
-						value={row.question_type}
-						onChange={(e) =>
-							setQuestions(
-								draft.screeningQuestions.map((item) =>
-									item.id === row.id
-										? {
-												...item,
-												question_type: e.target
-													.value as ScreeningQuestion["question_type"],
-											}
-										: item,
-								),
-							)
-						}
-					>
-						{["Text", "Number", "Boolean", "Select", "MultiSelect", "Date"].map(
-							(type) => (
-								<option key={type}>{type}</option>
-							),
-						)}
-					</Select>
-					<Button
-						type="button"
-						variant="outline"
-						size="icon"
-						onClick={() =>
-							setQuestions(
-								draft.screeningQuestions.filter((item) => item.id !== row.id),
-							)
-						}
-						aria-label="Remove screening question"
-					>
-						<Trash2 className="size-4" />
-					</Button>
-				</div>
-			))}
-		</div>
-	);
-}
-
-// --- Rubric sub-tab ---
-
-type RubricTabProps = {
-	draft: DraftState;
-	update: DraftUpdate;
-	onGenerateRubric: () => Promise<void>;
-	generating: boolean;
-};
-
-function RubricTab({
-	draft,
-	update,
-	onGenerateRubric,
-	generating,
-}: RubricTabProps) {
-	function setRubric(rubric: RubricItem[]) {
-		update(
-			"rubric",
-			rubric.map((row, order) => ({ ...row, order })),
-		);
-	}
-
-	return (
-		<div className="space-y-4">
-			<div className="flex justify-end gap-2">
-				<Button
-					type="button"
-					variant="outline"
-					disabled={generating}
-					onClick={onGenerateRubric}
-				>
-					<Sparkles className="size-4" />
-					Generate rubric
-				</Button>
-				<Button
-					type="button"
-					variant="secondary"
-					onClick={() =>
-						setRubric([
-							...draft.rubric,
-							{
-								id: newClientId("rubric"),
-								skill: "",
-								weight: 1,
-								scoring_guide: "",
-								question: "",
-								follow_up_prompts: [],
-								order: draft.rubric.length,
-							},
-						])
-					}
-				>
-					<Plus className="size-4" />
-					Add rubric row
-				</Button>
-			</div>
-			{draft.rubric.map((row) => (
-				<div
-					key={row.id}
-					className="grid gap-3 rounded-lg border border-border p-3"
-				>
-					<div className="grid gap-3 md:grid-cols-[1fr_100px]">
-						<Input
-							value={row.skill}
-							onChange={(e) =>
-								setRubric(
-									draft.rubric.map((item) =>
-										item.id === row.id
-											? { ...item, skill: e.target.value }
-											: item,
-									),
-								)
-							}
-							placeholder="Skill"
-						/>
-						<Input
-							type="number"
-							value={row.weight}
-							onChange={(e) =>
-								setRubric(
-									draft.rubric.map((item) =>
-										item.id === row.id
-											? { ...item, weight: Number(e.target.value) || 1 }
-											: item,
-									),
-								)
-							}
-						/>
-					</div>
-					<Input
-						value={row.question}
-						onChange={(e) =>
-							setRubric(
-								draft.rubric.map((item) =>
-									item.id === row.id
-										? { ...item, question: e.target.value }
-										: item,
-								),
-							)
-						}
-						placeholder="Main interview question"
-					/>
-					<Textarea
-						value={row.scoring_guide}
-						onChange={(e) =>
-							setRubric(
-								draft.rubric.map((item) =>
-									item.id === row.id
-										? { ...item, scoring_guide: e.target.value }
-										: item,
-								),
-							)
-						}
-						placeholder="Scoring guide — what separates a 7 from a 9?"
-						className="min-h-[80px]"
-					/>
-					<div className="flex justify-end">
-						<Button
-							type="button"
-							variant="outline"
-							size="sm"
-							onClick={() =>
-								setRubric(draft.rubric.filter((item) => item.id !== row.id))
-							}
-						>
-							<Trash2 className="size-4" />
-							Remove
-						</Button>
-					</div>
-				</div>
-			))}
-		</div>
-	);
-}
-
-// --- Main export ---
 
 export function PhaseProcess({
 	draft,
 	update,
 	errors,
 	onGeneratePipeline,
-	onGenerateRubric,
 	generating,
+	onSaveAndContinue,
+	isSaving,
+	onBack,
 }: PhaseProcessProps) {
+	const [picker, setPicker] = useState<{
+		open: boolean;
+		mode: "link" | "edit";
+		targetStageId: string | null;
+		editAssessmentId: string | null;
+	}>(() => ({
+		open: false,
+		mode: "link",
+		targetStageId: null,
+		editAssessmentId: null,
+	}));
+
+	function setStages(stages: JobStage[]) {
+		update("pipeline", {
+			stages: stages.map((stage, order) =>
+				normalizeJobStage({ ...stage, order }, order),
+			),
+		});
+	}
+
+	const queries = draft.pipeline.stages.map((stage) => {
+		const id = getLinkedAssessmentId(stage);
+		const needsFetch = Boolean(
+			id &&
+				stage.stage_type !== "Applied" &&
+				stageRequiresAssessmentLink(stage.stage_type),
+		);
+
+		switch (stage.stage_type) {
+			case "VoiceInterview":
+				return needsFetch && id
+					? assessmentQueries.voice.detail(id)
+					: noopAssessmentQuery(stage.id);
+			case "GenericAssessment":
+				return needsFetch && id
+					? assessmentQueries.generic.detail(id)
+					: noopAssessmentQuery(stage.id);
+			case "CodingAssessment":
+				return needsFetch && id
+					? assessmentQueries.coding.detail(id)
+					: noopAssessmentQuery(stage.id);
+			case "PsychometricAssessment":
+				return needsFetch && id
+					? assessmentQueries.psychometric.detail(id)
+					: noopAssessmentQuery(stage.id);
+			case "Prescreening":
+				return needsFetch && id
+					? assessmentQueries.prescreening.detail(id)
+					: noopAssessmentQuery(stage.id);
+			default:
+				return noopAssessmentQuery(stage.id);
+		}
+	});
+
+	const fetched = useQueries({ queries });
+
+	const voiceIdsLinked = draft.pipeline.stages
+		.filter(
+			(s) =>
+				s.stage_type === "VoiceInterview" &&
+				typeof s.voice_assessment_id === "string" &&
+				s.voice_assessment_id.length > 0,
+		)
+		.map((s) => s.voice_assessment_id as string);
+
+	const phoneWatch = useQueries({
+		queries: voiceIdsLinked.map((id) => assessmentQueries.voice.detail(id)),
+	});
+
+	const phoneLocksAdds =
+		voiceIdsLinked.length > 0 &&
+		voiceIdsLinked.some((_id, i) => {
+			const row = phoneWatch[i]?.data as VoiceAssessment | null | undefined;
+			return row?.delivery_method === "Phone";
+		});
+
+	const unlinkedAssessmentCount = draft.pipeline.stages.filter(
+		(s) =>
+			stageRequiresAssessmentLink(s.stage_type) && !getLinkedAssessmentId(s),
+	).length;
+
+	function addStage(stageType: StageType) {
+		const base = normalizeJobStage(
+			{
+				id: newClientId("stage"),
+				title: humanTitle(stageType),
+				stage_type: stageType,
+				is_mandatory: stageType === "VoiceInterview",
+				candidate_facing:
+					stageType === "Prescreening" ||
+					stageType === "Consent" ||
+					stageType === "HumanInterview" ||
+					stageType === "Offer" ||
+					stageType === "GenericAssessment",
+				contributes_to_score: stageType === "VoiceInterview",
+				automation: stageType === "VoiceInterview" ? "SendInvitation" : "None",
+				pass_score: null,
+				is_system_stage:
+					stageType === "Applied" ||
+					stageType === "Hired" ||
+					stageType === "Rejected",
+				voice_assessment_id: null,
+				generic_assessment_id: null,
+				coding_assessment_id: null,
+				psychometric_assessment_id: null,
+				prescreening_form_id: null,
+			},
+			draft.pipeline.stages.length,
+		);
+		setStages([...draft.pipeline.stages, base]);
+	}
+
+	const pickerStage = picker.targetStageId
+		? draft.pipeline.stages.find((s) => s.id === picker.targetStageId)
+		: null;
+
 	return (
-		<Card className="border-border">
-			<CardContent className="pt-6">
-				{errors["pipeline.stages"] ? (
-					<p className="mb-4 text-xs text-destructive">
-						{errors["pipeline.stages"]}
-					</p>
-				) : null}
-				<Tabs defaultValue="pipeline">
-					<TabsList className="mb-4">
-						<TabsTrigger value="pipeline">Pipeline</TabsTrigger>
-						<TabsTrigger value="voice">Voice interview</TabsTrigger>
-						<TabsTrigger value="prescreening">Prescreening</TabsTrigger>
-						<TabsTrigger value="rubric">Rubric</TabsTrigger>
-					</TabsList>
-					<TabsContent value="pipeline">
-						<PipelineTab
-							draft={draft}
-							update={update}
-							onGeneratePipeline={onGeneratePipeline}
-							generating={generating}
-						/>
-					</TabsContent>
-					<TabsContent value="voice">
-						<VoiceTab draft={draft} update={update} />
-					</TabsContent>
-					<TabsContent value="prescreening">
-						<PrescreeningTab draft={draft} update={update} />
-					</TabsContent>
-					<TabsContent value="rubric">
-						<RubricTab
-							draft={draft}
-							update={update}
-							onGenerateRubric={onGenerateRubric}
-							generating={generating}
-						/>
-					</TabsContent>
-				</Tabs>
-			</CardContent>
-		</Card>
+		<div className="space-y-6">
+			{errors["pipeline.stages"] ? (
+				<p className="rounded-md border border-destructive/40 bg-destructive/10 px-3 py-2 text-xs text-destructive">
+					{errors["pipeline.stages"]}
+				</p>
+			) : null}
+			{unlinkedAssessmentCount > 0 ? (
+				<p className="rounded-md border border-border bg-muted/60 px-3 py-2 text-xs text-muted-foreground">
+					{unlinkedAssessmentCount} assessment stage(s) still need an entity
+					linked before publishing.
+				</p>
+			) : null}
+
+			<div className="flex flex-wrap gap-2">
+				<Button
+					type="button"
+					variant="outline"
+					disabled={generating}
+					onClick={() => void onGeneratePipeline()}
+				>
+					<Bot className="size-4" />
+					Generate stages
+				</Button>
+				<Button
+					type="button"
+					variant="outline"
+					disabled={generating}
+					onClick={() => setStages(defaultPipeline().stages)}
+				>
+					Reset defaults
+				</Button>
+				<PipelineAddStageMenu
+					existingStages={draft.pipeline.stages}
+					phoneInterviewLocksAdds={phoneLocksAdds}
+					onAdd={addStage}
+				/>
+			</div>
+
+			<ul className="space-y-3">
+				{draft.pipeline.stages.map((stage, index) => {
+					const fq = fetched[index]?.data ?? null;
+
+					let summaryLines: JSX.Element | null = null;
+					const linkedId = getLinkedAssessmentId(stage);
+					if (
+						fetched[index]?.status === "pending" ||
+						fetched[index]?.fetchStatus === "fetching"
+					) {
+						summaryLines = (
+							<span className="inline-flex items-center gap-2 text-muted-foreground">
+								<Loader2 className="size-4 animate-spin" />
+								Fetching linked assessment…
+							</span>
+						);
+					} else if (
+						linkedId &&
+						stageRequiresAssessmentLink(stage.stage_type)
+					) {
+						switch (stage.stage_type) {
+							case "VoiceInterview": {
+								const v = fq as VoiceAssessment | null;
+								const qCount = v?.questions?.length ?? 0;
+								summaryLines = (
+									<>
+										<p className="text-sm font-medium text-foreground">
+											{v?.title ?? "Voice assessment"}
+										</p>
+										<p className="mt-1 text-xs text-muted-foreground">
+											{v?.skills?.length ?? 0} skills · {qCount} questions ·
+											pass {v?.pass_score ?? "—"}
+										</p>
+										{v?.delivery_method === "Phone" ? (
+											<p className="mt-2 text-[11px] text-amber-700">
+												Phone delivery: additional stages locked for this
+												funnel.
+											</p>
+										) : null}
+									</>
+								);
+								break;
+							}
+							case "GenericAssessment": {
+								const v = fq as GenericAssessment | null;
+								summaryLines = (
+									<>
+										<p className="text-sm font-medium">
+											{v?.title ?? "Assessment"}
+										</p>
+										<p className="mt-1 text-xs text-muted-foreground">
+											{v?.questions?.length ?? 0} questions ·{" "}
+											{v?.time_limit_minutes ?? "—"} min
+										</p>
+									</>
+								);
+								break;
+							}
+							case "CodingAssessment": {
+								const v = fq as CodingAssessment | null;
+								summaryLines = (
+									<>
+										<p className="text-sm font-medium">
+											{v?.title ?? "Coding pack"}
+										</p>
+										<p className="mt-1 text-xs text-muted-foreground">
+											{v?.problems?.length ?? 0} problems · pass{" "}
+											{v?.pass_completion_number ?? "—"}
+										</p>
+									</>
+								);
+								break;
+							}
+							case "PsychometricAssessment": {
+								const v = fq as PsychometricAssessment | null;
+								summaryLines = (
+									<>
+										<p className="text-sm font-medium">
+											{v?.title ?? "Psychometric"}
+										</p>
+										<p className="mt-1 text-xs text-muted-foreground">
+											{v?.framework ?? "—"}
+										</p>
+									</>
+								);
+								break;
+							}
+							case "Prescreening": {
+								const v = fq as PrescreeningForm | null;
+								summaryLines = (
+									<>
+										<p className="text-sm font-medium">
+											{v?.name ?? "Prescreening"}
+										</p>
+										<p className="mt-1 text-xs text-muted-foreground">
+											{v?.questions?.length ?? 0} questions
+										</p>
+									</>
+								);
+								break;
+							}
+							default:
+								break;
+						}
+					} else if (fetched[index]?.isError) {
+						summaryLines = (
+							<span className="text-xs text-destructive">
+								Could not load assessment (routes may still be deploying).
+							</span>
+						);
+					} else if (
+						stageRequiresAssessmentLink(stage.stage_type) &&
+						!linkedId
+					) {
+						summaryLines = (
+							<span className="text-sm text-muted-foreground">
+								No reusable assessment linked yet.
+							</span>
+						);
+					} else if (!stageRequiresAssessmentLink(stage.stage_type)) {
+						summaryLines = (
+							<span className="text-xs text-muted-foreground">
+								System/interview-only stage · no reusable entity needed.
+							</span>
+						);
+					}
+
+					return (
+						<li
+							key={stage.id}
+							className="rounded-lg border border-border bg-card p-3 md:grid md:grid-cols-[auto_1fr_auto] md:gap-4"
+						>
+							<div className="mb-3 flex md:mb-0">
+								<GripVertical className="mt-7 size-4 text-muted-foreground" />
+								<span className="mt-8 md:hidden ml-3 text-[10px] font-medium uppercase text-muted-foreground">
+									Reorder
+								</span>
+							</div>
+							<div className="grid gap-3">
+								<div className="flex flex-wrap items-center gap-2">
+									<Input
+										className="max-w-[220px]"
+										value={stage.title ?? ""}
+										onChange={(e) =>
+											setStages(
+												draft.pipeline.stages.map((row) =>
+													row.id === stage.id
+														? { ...row, title: e.target.value || null }
+														: row,
+												),
+											)
+										}
+									/>
+									<BadgeMuted>{stage.stage_type}</BadgeMuted>
+								</div>
+
+								{stageRequiresAssessmentLink(stage.stage_type) ? (
+									<div
+										className={
+											linkedId
+												? "rounded-md border border-border bg-muted/30 p-3"
+												: "rounded-md border border-dashed border-border p-3"
+										}
+									>
+										{summaryLines}
+										<div className="mt-3 flex flex-wrap gap-2">
+											{!linkedId ? (
+												<Button
+													type="button"
+													size="sm"
+													variant="secondary"
+													onClick={() =>
+														setPicker({
+															open: true,
+															mode: "link",
+															targetStageId: stage.id,
+															editAssessmentId: null,
+														})
+													}
+												>
+													Link assessment
+												</Button>
+											) : (
+												<>
+													<Button
+														type="button"
+														size="sm"
+														variant="outline"
+														onClick={() =>
+															setPicker({
+																open: true,
+																mode: "edit",
+																targetStageId: stage.id,
+																editAssessmentId: linkedId,
+															})
+														}
+													>
+														Edit assessment
+													</Button>
+													<Button
+														type="button"
+														size="sm"
+														variant="ghost"
+														onClick={() =>
+															setStages(
+																draft.pipeline.stages.map((row) =>
+																	row.id === stage.id ? unlinkStage(row) : row,
+																),
+															)
+														}
+													>
+														Unlink
+													</Button>
+												</>
+											)}
+										</div>
+									</div>
+								) : (
+									<div className="rounded-md bg-muted/20 p-2 text-xs text-muted-foreground">
+										Configure candidate prompts or interviewer notes per stage
+										runner.
+									</div>
+								)}
+
+								<div className="grid gap-4 border-t border-border pt-3 md:grid-cols-[1fr_auto]">
+									<div className="flex flex-wrap gap-4">
+										<div className="grid gap-1">
+											<Label className="text-xs font-normal text-muted-foreground">
+												Automation
+											</Label>
+											<Select
+												value={stage.automation}
+												onChange={(e) =>
+													setStages(
+														draft.pipeline.stages.map((row) =>
+															row.id === stage.id
+																? {
+																		...row,
+																		automation: e.target
+																			.value as StageAutomation,
+																	}
+																: row,
+														),
+													)
+												}
+												className="min-w-[180px]"
+											>
+												{(
+													[
+														"None",
+														"SendInvitation",
+														"ScheduleMeeting",
+														"SendRejection",
+														"SendHiredNotification",
+													] as StageAutomation[]
+												).map((a) => (
+													<option key={a} value={a}>
+														{a}
+													</option>
+												))}
+											</Select>
+										</div>
+										<label className="flex items-center gap-2">
+											<input
+												type="checkbox"
+												checked={stage.is_mandatory}
+												onChange={(e) =>
+													setStages(
+														draft.pipeline.stages.map((row) =>
+															row.id === stage.id
+																? { ...row, is_mandatory: e.target.checked }
+																: row,
+														),
+													)
+												}
+											/>
+											<span className="text-xs">Mandatory</span>
+										</label>
+										<label className="flex items-center gap-2">
+											<input
+												type="checkbox"
+												checked={stage.contributes_to_score}
+												onChange={(e) =>
+													setStages(
+														draft.pipeline.stages.map((row) =>
+															row.id === stage.id
+																? {
+																		...row,
+																		contributes_to_score: e.target.checked,
+																	}
+																: row,
+														),
+													)
+												}
+											/>
+											<span className="text-xs">Contributes</span>
+										</label>
+										<label className="flex items-center gap-2">
+											<input
+												type="checkbox"
+												checked={stage.candidate_facing}
+												onChange={(e) =>
+													setStages(
+														draft.pipeline.stages.map((row) =>
+															row.id === stage.id
+																? {
+																		...row,
+																		candidate_facing: e.target.checked,
+																	}
+																: row,
+														),
+													)
+												}
+											/>
+											<span className="text-xs">Candidate-facing</span>
+										</label>
+									</div>
+									<div className="flex items-end gap-2">
+										<div className="grid gap-1">
+											<Label className="text-xs font-normal text-muted-foreground">
+												Pass score
+											</Label>
+											<Input
+												type="number"
+												className="w-[104px]"
+												value={stage.pass_score ?? ""}
+												onChange={(e) =>
+													setStages(
+														draft.pipeline.stages.map((row) =>
+															row.id === stage.id
+																? {
+																		...row,
+																		pass_score: e.target.value
+																			? Number(e.target.value)
+																			: null,
+																	}
+																: row,
+														),
+													)
+												}
+											/>
+										</div>
+									</div>
+								</div>
+							</div>
+							<div className="mt-4 flex shrink-0 flex-row justify-end gap-1 md:mt-[38px] md:flex-col md:justify-start">
+								<Button
+									type="button"
+									variant="outline"
+									size="icon-sm"
+									disabled={index === 0}
+									onClick={() => {
+										const next = [...draft.pipeline.stages];
+										[next[index - 1], next[index]] = [
+											next[index],
+											next[index - 1],
+										];
+										setStages(next);
+									}}
+									aria-label="Move stage up"
+								>
+									<ArrowUp className="size-4" />
+								</Button>
+								<Button
+									type="button"
+									variant="outline"
+									size="icon-sm"
+									disabled={index === draft.pipeline.stages.length - 1}
+									onClick={() => {
+										const next = [...draft.pipeline.stages];
+										[next[index + 1], next[index]] = [
+											next[index],
+											next[index + 1],
+										];
+										setStages(next);
+									}}
+									aria-label="Move stage down"
+								>
+									<ArrowDown className="size-4" />
+								</Button>
+								<Button
+									type="button"
+									variant="outline"
+									size="icon-sm"
+									disabled={stage.is_system_stage}
+									title={
+										stage.is_system_stage
+											? "System stages can't be deleted"
+											: "Remove stage"
+									}
+									onClick={() =>
+										setStages(
+											draft.pipeline.stages.filter(
+												(row) => row.id !== stage.id,
+											),
+										)
+									}
+									aria-label="Remove stage"
+								>
+									×
+								</Button>
+							</div>
+						</li>
+					);
+				})}
+			</ul>
+
+			{pickerStage ? (
+				<AssessmentPickerModal
+					open={picker.open}
+					onOpenChange={(open) =>
+						open
+							? setPicker((p) => ({ ...p, open: true }))
+							: setPicker({
+									open: false,
+									mode: "link",
+									targetStageId: null,
+									editAssessmentId: null,
+								})
+					}
+					stageType={pickerStage.stage_type}
+					mode={picker.mode}
+					editingAssessmentId={picker.editAssessmentId}
+					onLinked={(assessmentId) => {
+						setStages(
+							draft.pipeline.stages.map((row) =>
+								pickerStage && row.id === pickerStage.id
+									? setLinkedAssessmentId(row, assessmentId)
+									: row,
+							),
+						);
+					}}
+				/>
+			) : null}
+
+			<div className="flex items-center justify-between pt-2">
+				<Button type="button" variant="ghost" onClick={onBack}>
+					<ArrowLeft className="size-4" />
+					Back
+				</Button>
+				<Button
+					type="button"
+					disabled={isSaving}
+					onClick={() => void onSaveAndContinue()}
+				>
+					{isSaving ? <Loader2 className="size-4 animate-spin" /> : null}
+					Save &amp; continue
+					{!isSaving ? <ArrowRight className="size-4" /> : null}
+				</Button>
+			</div>
+		</div>
 	);
+}
+
+function BadgeMuted({ children }: { children: string }) {
+	return (
+		<span className="rounded-md border border-border bg-muted/50 px-2 py-1 text-[11px] font-medium text-muted-foreground">
+			{children}
+		</span>
+	);
+}
+
+function humanTitle(t: JobStage["stage_type"]): string {
+	const map: Record<string, string> = {
+		Applied: "Applied",
+		Prescreening: "Prescreening",
+		VoiceInterview: "Voice interview",
+		GenericAssessment: "Generic assessment",
+		CodingAssessment: "Coding assessment",
+		PsychometricAssessment: "Psychometric",
+		ManualReview: "Manual review",
+		Consent: "Consent",
+		HumanInterview: "Human interview",
+		Offer: "Offer",
+		Hired: "Hired",
+		Rejected: "Rejected",
+	};
+	return map[t] ?? t;
 }

@@ -9,6 +9,7 @@ import {
 	List,
 	ListOrdered,
 } from "lucide-react";
+import type { ReactNode } from "react";
 import { Button } from "#/components/ui/button";
 import { cn } from "#/lib/utils";
 
@@ -17,6 +18,7 @@ type RichTextEditorProps = {
 	onChange: (html: string) => void;
 	placeholder?: string;
 	className?: string;
+	toolbarExtra?: ReactNode;
 };
 
 export function RichTextEditor({
@@ -24,6 +26,7 @@ export function RichTextEditor({
 	onChange,
 	placeholder,
 	className,
+	toolbarExtra,
 }: RichTextEditorProps) {
 	const editor = useEditor({
 		extensions: [
@@ -117,6 +120,9 @@ export function RichTextEditor({
 				>
 					<LinkIcon className="size-3.5" />
 				</Button>
+				{toolbarExtra ? (
+					<div className="ml-auto flex items-center">{toolbarExtra}</div>
+				) : null}
 			</div>
 			<EditorContent
 				editor={editor}
