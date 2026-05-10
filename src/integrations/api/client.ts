@@ -271,21 +271,69 @@ export interface Application {
 	candidate_email: string;
 	status: "Active" | "Withdrawn" | "Rejected" | "Hired";
 	board_status:
+		| "Prospect"
 		| "Invited"
 		| "Applied"
 		| "Screening"
 		| "Interview"
 		| "Offer"
+		| "GoodFit"
+		| "PoorFit"
 		| "Hired"
 		| "Rejected";
 	current_stage_id: string | null;
 	source: string;
+	invitation_expires_at: string | null;
+	is_invitation_expired: boolean;
+	last_invited_at: string | null;
+	comms_summary: {
+		invitation_count: number;
+		last_created_at: string | null;
+	} | null;
 	created_at: string;
 }
 
 export interface AssignCandidateRequest {
 	candidate_name: string;
 	candidate_email: string;
+}
+
+export interface AddProspectRequest {
+	name?: string;
+	email: string;
+}
+
+export interface BulkAssignCandidateRequest {
+	candidates: AssignCandidateRequest[];
+}
+
+export interface BulkAssignResponse {
+	sent: number;
+	skipped: number;
+	errors: string[];
+}
+
+export interface Communication {
+	id: string;
+	application_id: string;
+	job_id: string;
+	comm_type: "Invitation" | "Reminder";
+	outcome: "Success" | "Failure" | "Pending";
+	created_at: string;
+	actor_id: string | null;
+}
+
+export interface AuditLog {
+	id: string;
+	application_id: string;
+	job_id: string;
+	actor_id: string;
+	action_type: "ManualDragAndDrop" | "InvitationRenewed" | "Revoked";
+	from_board_status: string | null;
+	to_board_status: string | null;
+	from_stage_id: string | null;
+	to_stage_id: string | null;
+	created_at: string;
 }
 
 export interface JoinJobResponse {

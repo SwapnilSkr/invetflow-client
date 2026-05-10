@@ -4,12 +4,17 @@ import {
 	useQueryClient,
 } from "@tanstack/react-query";
 import {
+	type AddProspectRequest,
 	type Application,
 	type AssessmentListParams,
 	type AssignCandidateRequest,
+	type AuditLog,
 	apiClient,
 	apiClientPublic,
+	type BulkAssignCandidateRequest,
+	type BulkAssignResponse,
 	type CandidateInterview,
+	type Communication,
 	type CreateCodingAssessmentPayload,
 	type CreateGenericAssessmentPayload,
 	type CreateJobRequest,
@@ -71,6 +76,10 @@ export const organizationKeys = {
 
 export const applicationKeys = {
 	forJob: (jobId: string) => ["applications", "job", jobId] as const,
+	communications: (applicationId: string) =>
+		["applications", applicationId, "communications"] as const,
+	auditLog: (applicationId: string) =>
+		["applications", applicationId, "audit-log"] as const,
 };
 
 export const candidateInterviewKeys = {
@@ -415,6 +424,22 @@ export const applicationQueries = {
 			queryFn: () =>
 				apiClient<Application[]>(`/api/jobs/${jobId}/applications`),
 		}),
+	communications: (applicationId: string) =>
+		queryOptions({
+			queryKey: applicationKeys.communications(applicationId),
+			queryFn: () =>
+				apiClient<Communication[]>(
+					`/api/applications/${applicationId}/communications`,
+				),
+			enabled: applicationId.length > 0,
+		}),
+	auditLog: (applicationId: string) =>
+		queryOptions({
+			queryKey: applicationKeys.auditLog(applicationId),
+			queryFn: () =>
+				apiClient<AuditLog[]>(`/api/applications/${applicationId}/audit-log`),
+			enabled: applicationId.length > 0,
+		}),
 };
 
 export const candidateInterviewQueries = {
@@ -508,6 +533,74 @@ export function useAssignCandidate() {
 			queryClient.invalidateQueries({ queryKey: jobKeys.detail(id) });
 			queryClient.invalidateQueries({ queryKey: jobKeys.lists() });
 			queryClient.invalidateQueries({ queryKey: applicationKeys.forJob(id) });
+		},
+	});
+}
+
+export function useBulkAssignCandidates() {
+	const queryClient = useQueryClient();
+
+	return useMutation({
+		mutationFn: ({
+			id,
+			data,
+		}: {
+			id: string;
+			data: BulkAssignCandidateRequest;
+		}) =>
+			apiClient<BulkAssignResponse>(`/api/jobs/${id}/assign-bulk`, {
+				method: "POST",
+				body: JSON.stringify(data),
+			}),
+		onSuccess: (_, { id }) => {
+			queryClient.invalidateQueries({ queryKey: jobKeys.detail(id) });
+			queryClient.invalidateQueries({ queryKey: jobKeys.lists() });
+			queryClient.invalidateQueries({ queryKey: applicationKeys.forJob(id) });
+		},
+	});
+}
+
+export function useAddProspect(jobId: string) {
+	const queryClient = useQueryClient();
+
+	return useMutation({
+		mutationFn: (data: AddProspectRequest) =>
+			apiClient<Application>(`/api/jobs/${jobId}/prospects`, {
+				method: "POST",
+				body: JSON.stringify(data),
+			}),
+		onSuccess: () => {
+			queryClient.invalidateQueries({
+				queryKey: applicationKeys.forJob(jobId),
+			});
+		},
+	});
+}
+
+export function useUpdateBoardStatus(jobId: string) {
+	const queryClient = useQueryClient();
+
+	return useMutation({
+		mutationFn: ({
+			applicationId,
+			boardStatus,
+			intent,
+		}: {
+			applicationId: string;
+			boardStatus: Application["board_status"];
+			intent?: "promote_to_invited";
+		}) =>
+			apiClient<Application>(
+				`/api/applications/${applicationId}/board-status`,
+				{
+					method: "PATCH",
+					body: JSON.stringify({ board_status: boardStatus, intent }),
+				},
+			),
+		onSuccess: () => {
+			queryClient.invalidateQueries({
+				queryKey: applicationKeys.forJob(jobId),
+			});
 		},
 	});
 }
