@@ -22,6 +22,7 @@ import { Route as DashboardJobsRouteImport } from './routes/dashboard/jobs'
 import { Route as DashboardCandidatesRouteImport } from './routes/dashboard/candidates'
 import { Route as DashboardAssessmentsRouteImport } from './routes/dashboard/assessments'
 import { Route as JobsIdSessionRouteImport } from './routes/jobs/$id.session'
+import { Route as JobsIdPipelineRouteImport } from './routes/jobs/$id.pipeline'
 import { Route as InterviewJoinTokenRouteImport } from './routes/interview/join.$token'
 import { Route as DashboardJobsNewRouteImport } from './routes/dashboard/jobs.new'
 import { Route as DashboardAssessmentsVoiceNewRouteImport } from './routes/dashboard/assessments.voice.new'
@@ -98,6 +99,11 @@ const DashboardAssessmentsRoute = DashboardAssessmentsRouteImport.update({
 const JobsIdSessionRoute = JobsIdSessionRouteImport.update({
   id: '/session',
   path: '/session',
+  getParentRoute: () => JobsIdRoute,
+} as any)
+const JobsIdPipelineRoute = JobsIdPipelineRouteImport.update({
+  id: '/pipeline',
+  path: '/pipeline',
   getParentRoute: () => JobsIdRoute,
 } as any)
 const InterviewJoinTokenRoute = InterviewJoinTokenRouteImport.update({
@@ -186,6 +192,7 @@ export interface FileRoutesByFullPath {
   '/dashboard/': typeof DashboardIndexRoute
   '/dashboard/jobs/new': typeof DashboardJobsNewRoute
   '/interview/join/$token': typeof InterviewJoinTokenRoute
+  '/jobs/$id/pipeline': typeof JobsIdPipelineRoute
   '/jobs/$id/session': typeof JobsIdSessionRoute
   '/dashboard/assessments/coding/$id': typeof DashboardAssessmentsCodingIdRoute
   '/dashboard/assessments/coding/new': typeof DashboardAssessmentsCodingNewRoute
@@ -212,6 +219,7 @@ export interface FileRoutesByTo {
   '/dashboard': typeof DashboardIndexRoute
   '/dashboard/jobs/new': typeof DashboardJobsNewRoute
   '/interview/join/$token': typeof InterviewJoinTokenRoute
+  '/jobs/$id/pipeline': typeof JobsIdPipelineRoute
   '/jobs/$id/session': typeof JobsIdSessionRoute
   '/dashboard/assessments/coding/$id': typeof DashboardAssessmentsCodingIdRoute
   '/dashboard/assessments/coding/new': typeof DashboardAssessmentsCodingNewRoute
@@ -240,6 +248,7 @@ export interface FileRoutesById {
   '/dashboard/': typeof DashboardIndexRoute
   '/dashboard/jobs/new': typeof DashboardJobsNewRoute
   '/interview/join/$token': typeof InterviewJoinTokenRoute
+  '/jobs/$id/pipeline': typeof JobsIdPipelineRoute
   '/jobs/$id/session': typeof JobsIdSessionRoute
   '/dashboard/assessments/coding/$id': typeof DashboardAssessmentsCodingIdRoute
   '/dashboard/assessments/coding/new': typeof DashboardAssessmentsCodingNewRoute
@@ -269,6 +278,7 @@ export interface FileRouteTypes {
     | '/dashboard/'
     | '/dashboard/jobs/new'
     | '/interview/join/$token'
+    | '/jobs/$id/pipeline'
     | '/jobs/$id/session'
     | '/dashboard/assessments/coding/$id'
     | '/dashboard/assessments/coding/new'
@@ -295,6 +305,7 @@ export interface FileRouteTypes {
     | '/dashboard'
     | '/dashboard/jobs/new'
     | '/interview/join/$token'
+    | '/jobs/$id/pipeline'
     | '/jobs/$id/session'
     | '/dashboard/assessments/coding/$id'
     | '/dashboard/assessments/coding/new'
@@ -322,6 +333,7 @@ export interface FileRouteTypes {
     | '/dashboard/'
     | '/dashboard/jobs/new'
     | '/interview/join/$token'
+    | '/jobs/$id/pipeline'
     | '/jobs/$id/session'
     | '/dashboard/assessments/coding/$id'
     | '/dashboard/assessments/coding/new'
@@ -437,6 +449,13 @@ declare module '@tanstack/react-router' {
       path: '/session'
       fullPath: '/jobs/$id/session'
       preLoaderRoute: typeof JobsIdSessionRouteImport
+      parentRoute: typeof JobsIdRoute
+    }
+    '/jobs/$id/pipeline': {
+      id: '/jobs/$id/pipeline'
+      path: '/pipeline'
+      fullPath: '/jobs/$id/pipeline'
+      preLoaderRoute: typeof JobsIdPipelineRouteImport
       parentRoute: typeof JobsIdRoute
     }
     '/interview/join/$token': {
@@ -592,10 +611,12 @@ const DashboardRouteRouteWithChildren = DashboardRouteRoute._addFileChildren(
 )
 
 interface JobsIdRouteChildren {
+  JobsIdPipelineRoute: typeof JobsIdPipelineRoute
   JobsIdSessionRoute: typeof JobsIdSessionRoute
 }
 
 const JobsIdRouteChildren: JobsIdRouteChildren = {
+  JobsIdPipelineRoute: JobsIdPipelineRoute,
   JobsIdSessionRoute: JobsIdSessionRoute,
 }
 
