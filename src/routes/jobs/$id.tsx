@@ -176,6 +176,13 @@ function InterviewDetailPage() {
 					<div className="flex flex-wrap items-center gap-3">
 						<h1 className="text-2xl font-bold tracking-tight">{job.title}</h1>
 						<Badge className={getStatusColor(job.status)}>{job.status}</Badge>
+						{isRecruiter ? (
+							<Button variant="outline" size="sm" asChild>
+								<Link to="/jobs/$id/pipeline" params={{ id }}>
+									Pipeline
+								</Link>
+							</Button>
+						) : null}
 					</div>
 					<p className="mt-1 text-muted-foreground">{job.job_title}</p>
 				</div>
