@@ -4,6 +4,7 @@ import {
 	useQueryClient,
 } from "@tanstack/react-query";
 import {
+	type Application,
 	type AssessmentListParams,
 	type AssignCandidateRequest,
 	apiClient,
@@ -66,6 +67,10 @@ export const jobKeys = {
 export const organizationKeys = {
 	all: ["organizations"] as const,
 	current: () => [...organizationKeys.all, "current"] as const,
+};
+
+export const applicationKeys = {
+	forJob: (jobId: string) => ["applications", "job", jobId] as const,
 };
 
 export const candidateInterviewKeys = {
@@ -403,6 +408,15 @@ export const organizationQueries = {
 		}),
 };
 
+export const applicationQueries = {
+	forJob: (jobId: string) =>
+		queryOptions({
+			queryKey: applicationKeys.forJob(jobId),
+			queryFn: () =>
+				apiClient<Application[]>(`/api/jobs/${jobId}/applications`),
+		}),
+};
+
 export const candidateInterviewQueries = {
 	detail: (id: string) =>
 		queryOptions({
@@ -493,6 +507,7 @@ export function useAssignCandidate() {
 		onSuccess: (_, { id }) => {
 			queryClient.invalidateQueries({ queryKey: jobKeys.detail(id) });
 			queryClient.invalidateQueries({ queryKey: jobKeys.lists() });
+			queryClient.invalidateQueries({ queryKey: applicationKeys.forJob(id) });
 		},
 	});
 }

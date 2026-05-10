@@ -263,6 +263,26 @@ export interface JobInterviewsListResponse {
 	interviews: CandidateInterview[];
 }
 
+export interface Application {
+	id: string;
+	job_id: string;
+	candidate_id: string | null;
+	candidate_name: string | null;
+	candidate_email: string;
+	status: "Active" | "Withdrawn" | "Rejected" | "Hired";
+	board_status:
+		| "Invited"
+		| "Applied"
+		| "Screening"
+		| "Interview"
+		| "Offer"
+		| "Hired"
+		| "Rejected";
+	current_stage_id: string | null;
+	source: string;
+	created_at: string;
+}
+
 export interface AssignCandidateRequest {
 	candidate_name: string;
 	candidate_email: string;
