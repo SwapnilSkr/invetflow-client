@@ -33,6 +33,7 @@ import {
 	deleteVoiceAssessment,
 	type GenerateJobContentRequest,
 	type GenerateJobContentResponse,
+	getApplicationDetail,
 	getCodingAssessment,
 	getGenericAssessment,
 	getPrescreeningForm,
@@ -91,6 +92,8 @@ export const applicationKeys = {
 		["applications", applicationId, "communications"] as const,
 	auditLog: (applicationId: string) =>
 		["applications", applicationId, "audit-log"] as const,
+	recruiterDetail: (jobId: string, applicationId: string) =>
+		["application", "recruiter-detail", jobId, applicationId] as const,
 };
 
 export const candidateInterviewKeys = {
@@ -465,6 +468,13 @@ export const applicationQueries = {
 			queryFn: () =>
 				apiClient<AuditLog[]>(`/api/applications/${applicationId}/audit-log`),
 			enabled: applicationId.length > 0,
+		}),
+	recruiterDetail: (jobId: string, applicationId: string) =>
+		queryOptions({
+			queryKey: applicationKeys.recruiterDetail(jobId, applicationId),
+			queryFn: () => getApplicationDetail(jobId, applicationId),
+			staleTime: 15_000,
+			enabled: jobId.length > 0 && applicationId.length > 0,
 		}),
 };
 

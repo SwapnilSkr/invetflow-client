@@ -263,6 +263,16 @@ export interface JobInterviewsListResponse {
 	interviews: CandidateInterview[];
 }
 
+export interface StageAttempt {
+	stage_id: string;
+	stage_type: string;
+	status: "Pending" | "InProgress" | "Completed" | "Skipped" | "Failed";
+	score: number | null;
+	started_at: string | null;
+	completed_at: string | null;
+	responses: unknown | null;
+}
+
 export interface Application {
 	id: string;
 	job_id: string;
@@ -290,6 +300,7 @@ export interface Application {
 		invitation_count: number;
 		last_created_at: string | null;
 	} | null;
+	stage_attempts?: StageAttempt[];
 	created_at: string;
 }
 
@@ -883,6 +894,13 @@ export async function deletePrescreeningForm(id: string) {
 /** Clears local session and zustand (JWT has no server revoke on invetflow-server). */
 export function logout() {
 	getAuthStoreState().signOut();
+}
+
+export async function getApplicationDetail(
+	jobId: string,
+	applicationId: string,
+): Promise<{ application: Application; resolved_stages: unknown[] }> {
+	return apiClient(`/api/jobs/${jobId}/applications/${applicationId}`);
 }
 
 export async function healthCheck(): Promise<{
