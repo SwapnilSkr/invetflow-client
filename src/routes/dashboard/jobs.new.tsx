@@ -1,7 +1,7 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { ArrowLeft, Loader2 } from "lucide-react";
-import { useEffect, useRef, useState } from "react";
+import { useState } from "react";
 import { HorizontalStepper } from "#/components/jobs/create/horizontal-stepper";
 import {
 	buildMinimalCreatePayload,
@@ -24,6 +24,7 @@ import { Alert, AlertDescription } from "#/components/ui/alert";
 import { Button } from "#/components/ui/button";
 import {
 	isApiError,
+	type Job,
 	type StageAutomation,
 	type StageType,
 } from "#/integrations/api/client";
@@ -42,34 +43,29 @@ export const Route = createFileRoute("/dashboard/jobs/new")({
 	component: CreateJobPage,
 });
 
-function CreateJobPage() {
+type CreateJobWizardProps = {
+	routeJobId: string | undefined;
+	initialJob: Job | undefined;
+};
+
+/** Owns wizard state; remounted via `key` when switching virgin → saved id so draft hydration needs no effect. */
+function CreateJobWizard({ routeJobId, initialJob }: CreateJobWizardProps) {
 	const navigate = useNavigate();
 	const queryClient = useQueryClient();
-	const { id } = Route.useSearch();
-
-	const loadSavedJob = typeof id === "string" && id.length > 0;
-
-	const {
-		data: existingJob,
-		isPending: jobDetailPending,
-		isError: jobDetailError,
-		error: jobDetailErr,
-	} = useQuery({
-		...jobQueries.detail(id ?? ""),
-		enabled: loadSavedJob,
-	});
 
 	const createJob = useCreateJob();
 	const updateJob = useUpdateJob();
 	const generate = useGenerateJobContent();
 
 	const [phase, setPhase] = useState<Phase>(() =>
-		loadSavedJob ? "Hiring process" : "Details",
+		initialJob ? "Hiring process" : "Details",
 	);
-	const [draft, setDraft] = useState<DraftState>(() => defaultDraft());
+	const [draft, setDraft] = useState<DraftState>(() =>
+		initialJob ? draftFromJob(initialJob) : defaultDraft(),
+	);
 	const [errorMessage, setErrorMessage] = useState<string | null>(null);
 	const [visitedPhases, setVisitedPhases] = useState<Set<Phase>>(() => {
-		if (loadSavedJob) {
+		if (initialJob) {
 			return new Set<Phase>(["Details", "Hiring process"]);
 		}
 		return new Set<Phase>(["Details"]);
@@ -78,18 +74,6 @@ function CreateJobPage() {
 	const [phasesWithShownValidation, setPhasesWithShownValidation] = useState<
 		Set<Phase>
 	>(() => new Set());
-	const seededRef = useRef<string | undefined>(undefined);
-
-	useEffect(() => {
-		if (existingJob && seededRef.current !== existingJob.id) {
-			seededRef.current = existingJob.id;
-			setDraft(draftFromJob(existingJob));
-		}
-	}, [existingJob]);
-
-	const showJobLoading = loadSavedJob && !existingJob && jobDetailPending;
-	const showJobError =
-		loadSavedJob && !existingJob && !jobDetailPending && jobDetailError;
 
 	const isSaving = createJob.isPending || updateJob.isPending;
 
@@ -159,21 +143,21 @@ function CreateJobPage() {
 		}
 
 		try {
-			if (!id) {
+			if (!routeJobId) {
 				const created = await createJob.mutateAsync(
 					buildMinimalCreatePayload(draft, { publishOnCreate: false }),
 				);
 				queryClient.setQueryData(jobKeys.detail(created.id), created);
-				seededRef.current = created.id;
-				setDraft(draftFromJob(created));
-				advancePhase();
 				await navigate({
 					to: "/dashboard/jobs/new",
 					search: { id: created.id },
 					replace: true,
 				});
 			} else {
-				await updateJob.mutateAsync({ id, data: buildUpdatePayload(draft) });
+				await updateJob.mutateAsync({
+					id: routeJobId,
+					data: buildUpdatePayload(draft),
+				});
 				advancePhase();
 			}
 		} catch (e) {
@@ -187,16 +171,16 @@ function CreateJobPage() {
 
 	async function handlePublish() {
 		setErrorMessage(null);
-		if (!id) {
+		if (!routeJobId) {
 			setErrorMessage("Save the job first before publishing.");
 			return;
 		}
 		try {
 			await updateJob.mutateAsync({
-				id,
+				id: routeJobId,
 				data: { ...buildUpdatePayload(draft), status: "Active" },
 			});
-			await navigate({ to: "/jobs/$id/pipeline", params: { id } });
+			await navigate({ to: "/jobs/$id/pipeline", params: { id: routeJobId } });
 		} catch (e) {
 			if (isApiError(e) || e instanceof Error) {
 				setErrorMessage(e.message);
@@ -223,9 +207,8 @@ function CreateJobPage() {
 	}
 
 	const currentPhaseIndex = PHASES.indexOf(phase);
-	const phaseErrors = validatePhase(phase, draft).errors;
 	const inlinePhaseErrors = phasesWithShownValidation.has(phase)
-		? phaseErrors
+		? validatePhase(phase, draft).errors
 		: {};
 
 	const steps = PHASES.map((p, index) => {
@@ -235,7 +218,7 @@ function CreateJobPage() {
 			status = "active";
 		} else if (index < currentPhaseIndex && isVisited) {
 			status = "completed";
-		} else if (index > 0 && !id) {
+		} else if (index > 0 && !routeJobId) {
 			status = "locked";
 		} else {
 			status = "pending";
@@ -253,31 +236,8 @@ function CreateJobPage() {
 		setVisitedPhases((prev) => new Set([...prev, PHASES[index]]));
 	}
 
-	if (showJobLoading) {
-		return (
-			<div className="flex min-h-[40vh] flex-col items-center justify-center gap-3 text-muted-foreground">
-				<Loader2 className="size-8 animate-spin" aria-hidden />
-				<p className="text-sm">Loading job draft…</p>
-			</div>
-		);
-	}
-
-	if (showJobError) {
-		const msg =
-			jobDetailErr instanceof Error
-				? jobDetailErr.message
-				: "Could not load this job.";
-		return (
-			<div className="mx-auto w-full max-w-5xl space-y-4">
-				<Alert variant="destructive">
-					<AlertDescription>{msg}</AlertDescription>
-				</Alert>
-				<Button type="button" variant="outline" asChild>
-					<Link to="/dashboard/jobs">Back to jobs</Link>
-				</Button>
-			</div>
-		);
-	}
+	const headingTitle =
+		draft.title.trim() || initialJob?.title || "Create new job";
 
 	return (
 		<div className="mx-auto w-full max-w-5xl">
@@ -295,7 +255,7 @@ function CreateJobPage() {
 							Jobs
 						</Button>
 						<h1 className="text-xl font-semibold tracking-tight text-foreground">
-							{existingJob?.title || "Create new job"}
+							{headingTitle}
 						</h1>
 					</div>
 				</div>
@@ -342,10 +302,63 @@ function CreateJobPage() {
 					update={update}
 					onPublish={handlePublish}
 					isSaving={isSaving}
-					canPublish={!!id}
+					canPublish={!!routeJobId}
 					onBack={goBack}
 				/>
 			) : null}
 		</div>
+	);
+}
+
+function CreateJobPage() {
+	const { id } = Route.useSearch();
+
+	const loadSavedJob = typeof id === "string" && id.length > 0;
+
+	const {
+		data: existingJob,
+		isPending: jobDetailPending,
+		isError: jobDetailError,
+		error: jobDetailErr,
+	} = useQuery({
+		...jobQueries.detail(id ?? ""),
+		enabled: loadSavedJob,
+	});
+
+	const showJobLoading = loadSavedJob && !existingJob && jobDetailPending;
+	const showJobError =
+		loadSavedJob && !existingJob && !jobDetailPending && jobDetailError;
+
+	if (showJobLoading) {
+		return (
+			<div className="flex min-h-[40vh] flex-col items-center justify-center gap-3 text-muted-foreground">
+				<Loader2 className="size-8 animate-spin" aria-hidden />
+				<p className="text-sm">Loading job draft…</p>
+			</div>
+		);
+	}
+
+	if (showJobError) {
+		const msg =
+			jobDetailErr instanceof Error
+				? jobDetailErr.message
+				: "Could not load this job.";
+		return (
+			<div className="mx-auto w-full max-w-5xl space-y-4">
+				<Alert variant="destructive">
+					<AlertDescription>{msg}</AlertDescription>
+				</Alert>
+				<Button type="button" variant="outline" asChild>
+					<Link to="/dashboard/jobs">Back to jobs</Link>
+				</Button>
+			</div>
+		);
+	}
+
+	const wizardKey = id ?? "__new__";
+	const initialJob: Job | undefined = loadSavedJob ? existingJob : undefined;
+
+	return (
+		<CreateJobWizard key={wizardKey} routeJobId={id} initialJob={initialJob} />
 	);
 }
