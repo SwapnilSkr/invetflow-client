@@ -56,6 +56,13 @@ export async function requireRecruiter(): Promise<void> {
 }
 
 /**
+ * Alias for recruiter-side staff routes (Recruiter + Admin + Owner).
+ */
+export async function requireStaff(): Promise<void> {
+	await requireRecruiter();
+}
+
+/**
  * Candidate home: only users who registered as job seekers.
  */
 export async function requireCandidate(): Promise<void> {
