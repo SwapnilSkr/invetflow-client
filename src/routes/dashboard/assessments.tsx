@@ -190,7 +190,8 @@ function SectionShell({
 					</div>
 				) : q.error ? (
 					<p className="text-sm text-muted-foreground">
-						List unavailable until Phase 1 assessment routes ship.
+						Could not load {kind.label.toLowerCase()} assessments. Check your
+						connection and try again.
 					</p>
 				) : (
 					<ul className="divide-y divide-border">
