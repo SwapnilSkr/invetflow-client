@@ -5,7 +5,13 @@ import {
 	type DropResult,
 } from "@hello-pangea/dnd";
 import { useQuery } from "@tanstack/react-query";
-import { createFileRoute, Link } from "@tanstack/react-router";
+import {
+	createFileRoute,
+	Link,
+	useCanGoBack,
+	useNavigate,
+	useRouter,
+} from "@tanstack/react-router";
 import { ArrowLeft, UserPlus } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { ApplicationCard } from "#/components/jobs/pipeline/ApplicationCard";
@@ -45,6 +51,59 @@ type PipelineColumn = {
 	isProspects?: boolean;
 	allowInvite?: boolean;
 };
+
+type PipelinePageHeaderProps = {
+	job: Job;
+	jobId: string;
+};
+
+/** Toolbar: history Back + fixed destinations. Hooks live here (not nested in JobPipelinePage) to avoid inline child components. */
+function PipelinePageHeader({ job, jobId }: PipelinePageHeaderProps) {
+	const router = useRouter();
+	const canGoBack = useCanGoBack();
+	const navigate = useNavigate();
+
+	function handleBack() {
+		if (canGoBack) {
+			router.history.back();
+			return;
+		}
+		void navigate({ to: "/jobs/$id", params: { id: jobId } });
+	}
+
+	return (
+		<div className="mb-6 flex flex-wrap items-start justify-between gap-4">
+			<div className="min-w-0 flex-1">
+				<Button
+					type="button"
+					variant="ghost"
+					size="sm"
+					className="-ml-2"
+					onClick={handleBack}
+				>
+					<ArrowLeft className="h-4 w-4" />
+					Back
+				</Button>
+				<div className="mt-3 flex flex-wrap items-center gap-3">
+					<h1 className="text-2xl font-semibold">{job.title}</h1>
+					<Badge className={getStatusColor(job.status)}>{job.status}</Badge>
+				</div>
+			</div>
+			<div className="flex shrink-0 flex-wrap items-center justify-end gap-2">
+				<Button variant="secondary" size="sm" asChild>
+					<Link to="/jobs/$id" params={{ id: jobId }}>
+						Job overview
+					</Link>
+				</Button>
+				<Button variant="default" size="sm" asChild>
+					<Link to="/dashboard/jobs/new" search={{ id: jobId }}>
+						Edit posting
+					</Link>
+				</Button>
+			</div>
+		</div>
+	);
+}
 
 function JobPipelinePage() {
 	const { id } = Route.useParams();
@@ -173,20 +232,7 @@ function JobPipelinePage() {
 
 	return (
 		<div className="container mx-auto max-w-7xl py-6">
-			<div className="mb-6 flex items-center justify-between gap-4">
-				<div>
-					<Button variant="ghost" size="sm" asChild>
-						<Link to="/jobs/$id" params={{ id }}>
-							<ArrowLeft className="mr-2 h-4 w-4" />
-							Edit job
-						</Link>
-					</Button>
-					<div className="mt-3 flex items-center gap-3">
-						<h1 className="text-2xl font-semibold">{job.title}</h1>
-						<Badge className={getStatusColor(job.status)}>{job.status}</Badge>
-					</div>
-				</div>
-			</div>
+			<PipelinePageHeader job={job} jobId={id} />
 
 			{flashMessage ? (
 				<Alert className="mb-4" variant="success">

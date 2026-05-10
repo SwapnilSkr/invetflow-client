@@ -14,6 +14,7 @@ import {
 	Globe2,
 	History,
 	Link as LinkIcon,
+	Pencil,
 	Play,
 	UserPlus,
 	Users,
@@ -44,10 +45,14 @@ export const Route = createFileRoute("/jobs/$id")({
 });
 
 function InterviewIdRoute() {
-	const isSessionChild = useRouterState({
-		select: (s) => s.location.pathname.endsWith("/session"),
+	/** Nested routes (`/session`, `/pipeline`) must render `<Outlet />` or their page never mounts. */
+	const isNestedJobChild = useRouterState({
+		select: (s) => {
+			const path = s.location.pathname.replace(/\/$/, "");
+			return path.endsWith("/session") || path.endsWith("/pipeline");
+		},
 	});
-	if (isSessionChild) {
+	if (isNestedJobChild) {
 		return <Outlet />;
 	}
 	return <InterviewDetailPage />;
@@ -177,11 +182,19 @@ function InterviewDetailPage() {
 						<h1 className="text-2xl font-bold tracking-tight">{job.title}</h1>
 						<Badge className={getStatusColor(job.status)}>{job.status}</Badge>
 						{isRecruiter ? (
-							<Button variant="outline" size="sm" asChild>
-								<Link to="/jobs/$id/pipeline" params={{ id }}>
-									Pipeline
-								</Link>
-							</Button>
+							<>
+								<Button variant="outline" size="sm" asChild>
+									<Link to="/dashboard/jobs/new" search={{ id }}>
+										<Pencil className="mr-1.5 h-3.5 w-3.5" />
+										Edit job
+									</Link>
+								</Button>
+								<Button variant="outline" size="sm" asChild>
+									<Link to="/jobs/$id/pipeline" params={{ id }}>
+										Pipeline
+									</Link>
+								</Button>
+							</>
 						) : null}
 					</div>
 					<p className="mt-1 text-muted-foreground">{job.job_title}</p>
