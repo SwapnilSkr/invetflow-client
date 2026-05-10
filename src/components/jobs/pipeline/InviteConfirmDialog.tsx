@@ -16,6 +16,7 @@ interface InviteConfirmDialogProps {
 	onOpenChange: (open: boolean) => void;
 	onConfirm: () => void;
 	pending?: boolean;
+	cooldownActive?: boolean;
 }
 
 export function InviteConfirmDialog({
@@ -26,6 +27,7 @@ export function InviteConfirmDialog({
 	onOpenChange,
 	onConfirm,
 	pending = false,
+	cooldownActive = false,
 }: InviteConfirmDialogProps) {
 	return (
 		<Dialog open={open} onOpenChange={onOpenChange}>
@@ -37,6 +39,12 @@ export function InviteConfirmDialog({
 						schedules the job.
 					</DialogDescription>
 				</DialogHeader>
+				{cooldownActive ? (
+					<div className="rounded-md border border-border bg-muted px-3 py-2 text-sm text-muted-foreground">
+						Cooldown active. Server will reject this request until the wait
+						window ends.
+					</div>
+				) : null}
 				<DialogFooter>
 					<Button
 						variant="outline"
