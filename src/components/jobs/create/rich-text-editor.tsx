@@ -10,8 +10,26 @@ import {
 	ListOrdered,
 } from "lucide-react";
 import type { ReactNode } from "react";
+import { useEffect, useMemo } from "react";
 import { Button } from "#/components/ui/button";
+import { jobDescriptionSourceToTipTapHtml } from "#/lib/job-description-html";
 import { cn } from "#/lib/utils";
+
+const EMPTY_TIPTAP_DOC = /^<p[^>]*>(?:\s|<br\b[^>]*\/?\s*)*<\/p>$/i;
+
+/** True for empty TipTap docs: <p></p>, optional br / trailing break, no user text. */
+function isEmptyTipTapHtml(html: string): boolean {
+	const t = html.trim();
+	if (!t) return true;
+	return EMPTY_TIPTAP_DOC.test(t);
+}
+
+/** Normalizes empty docs so "" from state matches serialized empty editor HTML. */
+function normalizeEditorHtmlForCompare(html: string): string {
+	const trimmed = html.trim();
+	if (!trimmed || isEmptyTipTapHtml(trimmed)) return "";
+	return trimmed;
+}
 
 type RichTextEditorProps = {
 	value: string;
@@ -28,13 +46,21 @@ export function RichTextEditor({
 	className,
 	toolbarExtra,
 }: RichTextEditorProps) {
-	const editor = useEditor({
-		extensions: [
+	const extensions = useMemo(
+		() => [
 			StarterKit,
-			Placeholder.configure({ placeholder: placeholder ?? "Write something…" }),
+			Placeholder.configure({
+				placeholder: placeholder ?? "Write something…",
+				emptyNodeClass: "is-empty",
+			}),
 			Link.configure({ openOnClick: false, autolink: true }),
 		],
-		content: value,
+		[placeholder],
+	);
+
+	const editor = useEditor({
+		extensions,
+		content: jobDescriptionSourceToTipTapHtml(value),
 		// Defer first render to the client — TanStack Start SSRs by default and
 		// ProseMirror needs the DOM.
 		immediatelyRender: false,
@@ -42,6 +68,15 @@ export function RichTextEditor({
 			onChange(ed.getHTML());
 		},
 	});
+
+	useEffect(() => {
+		if (!editor || editor.isDestroyed) return;
+		const html = jobDescriptionSourceToTipTapHtml(value || "");
+		const incoming = normalizeEditorHtmlForCompare(html);
+		const current = normalizeEditorHtmlForCompare(editor.getHTML());
+		if (incoming === current) return;
+		editor.commands.setContent(html || "", { emitUpdate: false });
+	}, [editor, value]);
 
 	if (!editor) return null;
 
@@ -126,7 +161,7 @@ export function RichTextEditor({
 			</div>
 			<EditorContent
 				editor={editor}
-				className="prose prose-sm max-w-none px-3 py-2 text-sm focus:outline-none [&_.ProseMirror]:min-h-[140px] [&_.ProseMirror]:outline-none [&_.ProseMirror_p.is-editor-empty:first-child::before]:pointer-events-none [&_.ProseMirror_p.is-editor-empty:first-child::before]:text-muted-foreground [&_.ProseMirror_p.is-editor-empty:first-child::before]:content-[attr(data-placeholder)]"
+				className="prose prose-sm max-w-none px-3 py-2 text-sm focus:outline-none [&_.ProseMirror]:min-h-[140px] [&_.ProseMirror]:outline-none [&_.ProseMirror_p.is-empty:first-child::before]:pointer-events-none [&_.ProseMirror_p.is-empty:first-child::before]:select-none [&_.ProseMirror_p.is-empty:first-child::before]:float-left [&_.ProseMirror_p.is-empty:first-child::before]:text-muted-foreground [&_.ProseMirror_p.is-empty:first-child::before]:content-[attr(data-placeholder)]"
 			/>
 		</div>
 	);

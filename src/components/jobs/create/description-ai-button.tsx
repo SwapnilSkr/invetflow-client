@@ -11,6 +11,18 @@ import { Textarea } from "#/components/ui/textarea";
 import { useGenerateJobContent } from "#/integrations/api/queries";
 import type { DraftState } from "./types";
 
+function parseJobDescriptionFromContent(content: unknown): string | undefined {
+	if (typeof content === "string") {
+		return content;
+	}
+	if (typeof content !== "object" || content === null) {
+		return undefined;
+	}
+	const o = content as Record<string, unknown>;
+	const raw = o.job_description ?? o.jobDescription;
+	return typeof raw === "string" ? raw : undefined;
+}
+
 type Props = {
 	draft: Pick<
 		DraftState,
@@ -39,12 +51,16 @@ export function DescriptionAiButton({ draft, onApply }: Props) {
 					notes,
 				},
 			});
-			const content = result.content as { job_description?: unknown };
-			if (typeof content.job_description === "string") {
-				onApply(content.job_description);
-				setOpen(false);
-				setNotes("");
+			const raw = parseJobDescriptionFromContent(result.content);
+			if (raw === undefined || !raw.trim()) {
+				setError(
+					"The AI did not return a description in the expected format. Try again.",
+				);
+				return;
 			}
+			onApply(raw);
+			setOpen(false);
+			setNotes("");
 		} catch (e) {
 			setError(
 				e instanceof Error ? e.message : "Failed to generate description.",
