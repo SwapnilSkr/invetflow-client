@@ -1,5 +1,5 @@
 import { formatDistanceToNow } from "date-fns";
-import { Copy, Mail, MoreHorizontal } from "lucide-react";
+import { Copy, FileText, Mail, MoreHorizontal } from "lucide-react";
 import { useState } from "react";
 import { Avatar, AvatarFallback } from "#/components/ui/avatar";
 import { Badge } from "#/components/ui/badge";
@@ -11,10 +11,12 @@ import {
 	DropdownMenuTrigger,
 } from "#/components/ui/dropdown-menu";
 import type { Application } from "#/integrations/api/client";
+import { ApplicationDetailDrawer } from "./ApplicationDetailDrawer";
 import { CommsDrawer } from "./CommsDrawer";
 
 interface ApplicationCardProps {
 	application: Application;
+	jobId: string;
 	inviteUrl: string | null;
 	isInvitationColumn: boolean;
 	isProspectsColumn?: boolean;
@@ -51,6 +53,7 @@ function boardStatusClass(status: Application["board_status"]): string {
 
 export function ApplicationCard({
 	application,
+	jobId,
 	inviteUrl,
 	isInvitationColumn,
 	isProspectsColumn = false,
@@ -59,6 +62,7 @@ export function ApplicationCard({
 	onInviteProspect,
 }: ApplicationCardProps) {
 	const [drawerOpen, setDrawerOpen] = useState(false);
+	const [detailOpen, setDetailOpen] = useState(false);
 	const expiresAt = application.invitation_expires_at
 		? new Date(application.invitation_expires_at)
 		: null;
@@ -159,6 +163,15 @@ export function ApplicationCard({
 							<Copy className="h-3.5 w-3.5" />
 						</Button>
 					) : null}
+					<Button
+						variant="outline"
+						size="icon-sm"
+						onClick={() => setDetailOpen(true)}
+						aria-label="View responses"
+						title="View responses"
+					>
+						<FileText className="h-3.5 w-3.5" />
+					</Button>
 				</div>
 				{application.board_status === "Invited" && application.comms_summary ? (
 					<button
@@ -183,6 +196,12 @@ export function ApplicationCard({
 				application={application}
 				open={drawerOpen}
 				onOpenChange={setDrawerOpen}
+			/>
+			<ApplicationDetailDrawer
+				jobId={jobId}
+				applicationId={application.id}
+				open={detailOpen}
+				onOpenChange={setDetailOpen}
 			/>
 		</>
 	);

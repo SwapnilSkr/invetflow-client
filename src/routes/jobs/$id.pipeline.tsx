@@ -285,6 +285,7 @@ function JobPipelinePage() {
 																				>
 																					<ApplicationCard
 																						application={application}
+																						jobId={id}
 																						inviteUrl={inviteUrl}
 																						isInvitationColumn={Boolean(
 																							column.isInvitations,
