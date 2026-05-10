@@ -6,6 +6,7 @@ import {
 	ClipboardCheck,
 	Cpu,
 	FileQuestion,
+	Info,
 	MessageCircle,
 	UserSearch,
 	UserSquare2,
@@ -27,26 +28,84 @@ import {
 	DropdownMenuSeparator,
 	DropdownMenuTrigger,
 } from "#/components/ui/dropdown-menu";
+import {
+	Tooltip,
+	TooltipContent,
+	TooltipProvider,
+	TooltipTrigger,
+} from "#/components/ui/tooltip";
 import type { JobStage, StageType } from "#/integrations/api/client";
 
 const STAGE_META: Partial<
 	Record<
 		StageType,
-		{ label: string; Icon: ComponentType<{ className?: string }> }
+		{
+			label: string;
+			description: string;
+			Icon: ComponentType<{ className?: string }>;
+		}
 	>
 > = {
-	Applied: { label: "Applied", Icon: CheckCircle2 },
-	Prescreening: { label: "Prescreening", Icon: FileQuestion },
-	VoiceInterview: { label: "Voice interview", Icon: Voicemail },
-	GenericAssessment: { label: "Generic assessment", Icon: ClipboardCheck },
-	CodingAssessment: { label: "Coding assessment", Icon: Cpu },
-	PsychometricAssessment: { label: "Psychometric", Icon: Brain },
-	ManualReview: { label: "Manual review", Icon: UserSearch },
-	Consent: { label: "Consent", Icon: MessageCircle },
-	HumanInterview: { label: "Human interview", Icon: UserSquare2 },
-	Offer: { label: "Offer", Icon: ClipboardCheck },
-	Hired: { label: "Hired", Icon: CheckCircle2 },
-	Rejected: { label: "Rejected", Icon: AlertTriangle },
+	Applied: {
+		label: "Applied",
+		description: "Default entry point for candidates who apply to the job.",
+		Icon: CheckCircle2,
+	},
+	Prescreening: {
+		label: "Prescreening",
+		description: "Collects structured form answers before deeper evaluation.",
+		Icon: FileQuestion,
+	},
+	VoiceInterview: {
+		label: "Voice interview",
+		description: "Runs an AI voice interview and can contribute to scoring.",
+		Icon: Voicemail,
+	},
+	GenericAssessment: {
+		label: "Generic assessment",
+		description: "Links a reusable question-based assessment.",
+		Icon: ClipboardCheck,
+	},
+	CodingAssessment: {
+		label: "Coding assessment",
+		description: "Links a reusable coding problem set.",
+		Icon: Cpu,
+	},
+	PsychometricAssessment: {
+		label: "Psychometric",
+		description: "Links a reusable psychometric evaluation.",
+		Icon: Brain,
+	},
+	ManualReview: {
+		label: "Manual review",
+		description: "Adds an internal recruiter review step.",
+		Icon: UserSearch,
+	},
+	Consent: {
+		label: "Consent",
+		description: "Collects candidate consent before continuing.",
+		Icon: MessageCircle,
+	},
+	HumanInterview: {
+		label: "Human interview",
+		description: "Tracks a live interviewer-led stage.",
+		Icon: UserSquare2,
+	},
+	Offer: {
+		label: "Offer",
+		description: "Tracks the offer stage for selected candidates.",
+		Icon: ClipboardCheck,
+	},
+	Hired: {
+		label: "Hired",
+		description: "System endpoint for candidates who are hired.",
+		Icon: CheckCircle2,
+	},
+	Rejected: {
+		label: "Rejected",
+		description: "System endpoint for candidates who are rejected.",
+		Icon: AlertTriangle,
+	},
 };
 
 type PipelineAddStageMenuProps = {
@@ -70,60 +129,69 @@ export function PipelineAddStageMenu({
 					rulesets.
 				</p>
 			) : null}
-			<DropdownMenu>
-				<DropdownMenuTrigger asChild>
-					<Button
-						type="button"
-						variant="secondary"
-						disabled={phoneInterviewLocksAdds}
-						className="gap-2"
-					>
-						Add stage
-						<ChevronDown className="size-4 opacity-70" />
-					</Button>
-				</DropdownMenuTrigger>
-				<DropdownMenuContent className="w-64">
-					<DropdownMenuLabel>Stage types</DropdownMenuLabel>
-					<DropdownMenuSeparator />
-					{ADDABLE_STAGE_TYPES.map((type) => {
-						const meta = STAGE_META[type];
-						const Icon = meta?.Icon ?? ClipboardCheck;
-						const dupEntity =
-							ENTITY_STAGE_TYPES.includes(type) &&
-							entityStageAlreadyPresent(existingStages, type);
-						const reservedSystem =
-							isSystemStageType(type) &&
-							existingStages.some((s) => s.stage_type === type);
-						const disabled =
-							dupEntity || reservedSystem || phoneInterviewLocksAdds;
-						return (
-							<DropdownMenuItem
-								key={type}
-								disabled={disabled}
-								onSelect={(e) => {
-									e.preventDefault();
-									if (!disabled) onAdd(type);
-								}}
-							>
-								<span className="flex items-center gap-2">
-									<Icon className="size-4 text-muted-foreground" />
-									<span>{meta?.label ?? type}</span>
-								</span>
-								{dupEntity ? (
-									<span className="ml-auto text-[10px] text-muted-foreground">
-										In pipeline
-									</span>
-								) : null}
-								{reservedSystem ? (
-									<span className="ml-auto text-[10px] text-muted-foreground">
-										System stage
-									</span>
-								) : null}
-							</DropdownMenuItem>
-						);
-					})}
-				</DropdownMenuContent>
-			</DropdownMenu>
+			<TooltipProvider delayDuration={180}>
+				<DropdownMenu>
+					<DropdownMenuTrigger asChild>
+						<Button
+							type="button"
+							variant="secondary"
+							disabled={phoneInterviewLocksAdds}
+							className="gap-2"
+						>
+							Add stage
+							<ChevronDown className="size-4 opacity-70" />
+						</Button>
+					</DropdownMenuTrigger>
+					<DropdownMenuContent className="w-64">
+						<DropdownMenuLabel>Stage types</DropdownMenuLabel>
+						<DropdownMenuSeparator />
+						{ADDABLE_STAGE_TYPES.map((type) => {
+							const meta = STAGE_META[type];
+							const Icon = meta?.Icon ?? ClipboardCheck;
+							const dupEntity =
+								ENTITY_STAGE_TYPES.includes(type) &&
+								entityStageAlreadyPresent(existingStages, type);
+							const reservedSystem =
+								isSystemStageType(type) &&
+								existingStages.some((s) => s.stage_type === type);
+							const disabled =
+								dupEntity || reservedSystem || phoneInterviewLocksAdds;
+							return (
+								<Tooltip key={type}>
+									<TooltipTrigger asChild>
+										<DropdownMenuItem
+											disabled={disabled}
+											onSelect={(e) => {
+												e.preventDefault();
+												if (!disabled) onAdd(type);
+											}}
+										>
+											<span className="flex items-center gap-2">
+												<Icon className="size-4 text-muted-foreground" />
+												<span>{meta?.label ?? type}</span>
+											</span>
+											{dupEntity ? (
+												<span className="ml-auto text-[10px] text-muted-foreground">
+													In pipeline
+												</span>
+											) : null}
+											{reservedSystem ? (
+												<span className="ml-auto text-[10px] text-muted-foreground">
+													System stage
+												</span>
+											) : null}
+											<Info className="ml-auto size-3.5 text-muted-foreground" />
+										</DropdownMenuItem>
+									</TooltipTrigger>
+									<TooltipContent side="right" className="max-w-[260px]">
+										{meta?.description ?? "Adds this stage to the hiring flow."}
+									</TooltipContent>
+								</Tooltip>
+							);
+						})}
+					</DropdownMenuContent>
+				</DropdownMenu>
+			</TooltipProvider>
 		</div>
 	);
 }
