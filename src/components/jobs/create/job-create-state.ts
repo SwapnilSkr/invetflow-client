@@ -302,6 +302,15 @@ export function buildCreatePayload(
 	};
 }
 
+/** First POST only: omit pipeline so the API applies server default stages (draft-first flow). */
+export function buildMinimalCreatePayload(
+	draft: DraftState,
+	opts: { publishOnCreate: boolean },
+): CreateJobRequest {
+	const { pipeline: _pipeline, ...rest } = buildCreatePayload(draft, opts);
+	return rest;
+}
+
 export function buildUpdatePayload(draft: DraftState): UpdateJobRequest {
 	const pipeline: JobPipeline = {
 		stages: draft.pipeline.stages.map((stage, index) => ({

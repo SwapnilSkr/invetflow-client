@@ -1,10 +1,10 @@
-import { useQuery } from "@tanstack/react-query";
-import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { ArrowLeft } from "lucide-react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { ArrowLeft, Loader2 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { HorizontalStepper } from "#/components/jobs/create/horizontal-stepper";
 import {
-	buildCreatePayload,
+	buildMinimalCreatePayload,
 	buildUpdatePayload,
 	defaultDraft,
 	draftFromJob,
@@ -28,6 +28,7 @@ import {
 	type StageType,
 } from "#/integrations/api/client";
 import {
+	jobKeys,
 	jobQueries,
 	useCreateJob,
 	useGenerateJobContent,
@@ -43,23 +44,40 @@ export const Route = createFileRoute("/dashboard/jobs/new")({
 
 function CreateJobPage() {
 	const navigate = useNavigate();
+	const queryClient = useQueryClient();
 	const { id } = Route.useSearch();
 
-	const { data: existingJob } = useQuery({
+	const loadSavedJob = typeof id === "string" && id.length > 0;
+
+	const {
+		data: existingJob,
+		isPending: jobDetailPending,
+		isError: jobDetailError,
+		error: jobDetailErr,
+	} = useQuery({
 		...jobQueries.detail(id ?? ""),
-		enabled: typeof id === "string" && id.length > 0,
+		enabled: loadSavedJob,
 	});
 
 	const createJob = useCreateJob();
 	const updateJob = useUpdateJob();
 	const generate = useGenerateJobContent();
 
-	const [phase, setPhase] = useState<Phase>("Details");
+	const [phase, setPhase] = useState<Phase>(() =>
+		loadSavedJob ? "Hiring process" : "Details",
+	);
 	const [draft, setDraft] = useState<DraftState>(() => defaultDraft());
 	const [errorMessage, setErrorMessage] = useState<string | null>(null);
-	const [visitedPhases, setVisitedPhases] = useState<Set<Phase>>(
-		() => new Set<Phase>(["Details"]),
-	);
+	const [visitedPhases, setVisitedPhases] = useState<Set<Phase>>(() => {
+		if (loadSavedJob) {
+			return new Set<Phase>(["Details", "Hiring process"]);
+		}
+		return new Set<Phase>(["Details"]);
+	});
+	/** Inline field errors only after user tries Save & continue for that phase */
+	const [phasesWithShownValidation, setPhasesWithShownValidation] = useState<
+		Set<Phase>
+	>(() => new Set());
 	const seededRef = useRef<string | undefined>(undefined);
 
 	useEffect(() => {
@@ -68,6 +86,10 @@ function CreateJobPage() {
 			setDraft(draftFromJob(existingJob));
 		}
 	}, [existingJob]);
+
+	const showJobLoading = loadSavedJob && !existingJob && jobDetailPending;
+	const showJobError =
+		loadSavedJob && !existingJob && !jobDetailPending && jobDetailError;
 
 	const isSaving = createJob.isPending || updateJob.isPending;
 
@@ -131,6 +153,7 @@ function CreateJobPage() {
 
 		const validation = validatePhase(phase, draft);
 		if (!validation.ok) {
+			setPhasesWithShownValidation((prev) => new Set([...prev, phase]));
 			setErrorMessage("Please fix the errors above before continuing.");
 			return;
 		}
@@ -138,14 +161,17 @@ function CreateJobPage() {
 		try {
 			if (!id) {
 				const created = await createJob.mutateAsync(
-					buildCreatePayload(draft, { publishOnCreate: false }),
+					buildMinimalCreatePayload(draft, { publishOnCreate: false }),
 				);
+				queryClient.setQueryData(jobKeys.detail(created.id), created);
+				seededRef.current = created.id;
+				setDraft(draftFromJob(created));
+				advancePhase();
 				await navigate({
 					to: "/dashboard/jobs/new",
 					search: { id: created.id },
 					replace: true,
 				});
-				advancePhase();
 			} else {
 				await updateJob.mutateAsync({ id, data: buildUpdatePayload(draft) });
 				advancePhase();
@@ -198,6 +224,9 @@ function CreateJobPage() {
 
 	const currentPhaseIndex = PHASES.indexOf(phase);
 	const phaseErrors = validatePhase(phase, draft).errors;
+	const inlinePhaseErrors = phasesWithShownValidation.has(phase)
+		? phaseErrors
+		: {};
 
 	const steps = PHASES.map((p, index) => {
 		const isVisited = visitedPhases.has(p);
@@ -222,6 +251,32 @@ function CreateJobPage() {
 		}
 		setPhase(PHASES[index]);
 		setVisitedPhases((prev) => new Set([...prev, PHASES[index]]));
+	}
+
+	if (showJobLoading) {
+		return (
+			<div className="flex min-h-[40vh] flex-col items-center justify-center gap-3 text-muted-foreground">
+				<Loader2 className="size-8 animate-spin" aria-hidden />
+				<p className="text-sm">Loading job draft…</p>
+			</div>
+		);
+	}
+
+	if (showJobError) {
+		const msg =
+			jobDetailErr instanceof Error
+				? jobDetailErr.message
+				: "Could not load this job.";
+		return (
+			<div className="mx-auto w-full max-w-5xl space-y-4">
+				<Alert variant="destructive">
+					<AlertDescription>{msg}</AlertDescription>
+				</Alert>
+				<Button type="button" variant="outline" asChild>
+					<Link to="/dashboard/jobs">Back to jobs</Link>
+				</Button>
+			</div>
+		);
 	}
 
 	return (
@@ -261,7 +316,7 @@ function CreateJobPage() {
 				<PhaseDetails
 					draft={draft}
 					update={update}
-					errors={phaseErrors}
+					errors={inlinePhaseErrors}
 					setDraft={setDraft}
 					onSaveAndContinue={handleSaveAndContinue}
 					isSaving={isSaving}
@@ -272,7 +327,7 @@ function CreateJobPage() {
 				<PhaseProcess
 					draft={draft}
 					update={update}
-					errors={phaseErrors}
+					errors={inlinePhaseErrors}
 					onGeneratePipeline={handleGeneratePipeline}
 					generating={generate.isPending}
 					onSaveAndContinue={handleSaveAndContinue}
