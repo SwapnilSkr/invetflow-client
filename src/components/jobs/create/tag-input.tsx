@@ -77,7 +77,7 @@ export function TagInput({
 				placeholder={
 					value.length === 0 ? (placeholder ?? "Add tag…") : undefined
 				}
-				className="h-auto min-w-[80px] flex-1 border-0 p-0 shadow-none focus-visible:border-0 focus-visible:ring-0"
+				className="h-auto min-h-7 min-w-[80px] flex-1 cursor-text border-0 bg-transparent p-0 text-foreground leading-normal shadow-none caret-primary focus-visible:border-0 focus-visible:ring-0"
 			/>
 		</div>
 	);
