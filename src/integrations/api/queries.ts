@@ -47,6 +47,7 @@ import {
 	listPrescreeningForms,
 	listPsychometricAssessments,
 	listVoiceAssessments,
+	type OrgApplicationsResponse,
 	type Organization,
 	type TranscriptEntry,
 	type UpdateJobRequest,
@@ -74,8 +75,18 @@ export const organizationKeys = {
 	current: () => [...organizationKeys.all, "current"] as const,
 };
 
+export interface OrgApplicationFilters {
+	search?: string;
+	job_id?: string;
+	status?: string;
+	page?: number;
+	limit?: number;
+}
+
 export const applicationKeys = {
 	forJob: (jobId: string) => ["applications", "job", jobId] as const,
+	forOrg: (filters: OrgApplicationFilters) =>
+		["applications", "org", filters] as const,
 	communications: (applicationId: string) =>
 		["applications", applicationId, "communications"] as const,
 	auditLog: (applicationId: string) =>
@@ -423,6 +434,21 @@ export const applicationQueries = {
 			queryKey: applicationKeys.forJob(jobId),
 			queryFn: () =>
 				apiClient<Application[]>(`/api/jobs/${jobId}/applications`),
+		}),
+	forOrg: (filters: OrgApplicationFilters = {}) =>
+		queryOptions({
+			queryKey: applicationKeys.forOrg(filters),
+			queryFn: () => {
+				const params = new URLSearchParams();
+				if (filters.search) params.set("search", filters.search);
+				if (filters.job_id) params.set("job_id", filters.job_id);
+				if (filters.status) params.set("status", filters.status);
+				if (filters.page) params.set("page", String(filters.page));
+				if (filters.limit) params.set("limit", String(filters.limit));
+				return apiClient<OrgApplicationsResponse>(
+					`/api/applications/org?${params.toString()}`,
+				);
+			},
 		}),
 	communications: (applicationId: string) =>
 		queryOptions({

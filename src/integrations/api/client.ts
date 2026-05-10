@@ -293,6 +293,17 @@ export interface Application {
 	created_at: string;
 }
 
+export interface ApplicationWithJob extends Application {
+	job_title: string;
+}
+
+export interface OrgApplicationsResponse {
+	applications: ApplicationWithJob[];
+	total: number;
+	page: number;
+	limit: number;
+}
+
 export interface AssignCandidateRequest {
 	candidate_name: string;
 	candidate_email: string;
