@@ -136,7 +136,7 @@ function DashboardJobsPage() {
 									<CardContent className="p-0">
 										<div className="flex flex-wrap items-center gap-3 px-4 py-4">
 											<Link
-												to="/jobs/$id"
+												to="/jobs/$id/pipeline"
 												params={{ id: row.id }}
 												className="min-w-0 flex-1 no-underline"
 											>

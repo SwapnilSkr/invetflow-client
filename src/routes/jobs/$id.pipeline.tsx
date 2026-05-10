@@ -178,7 +178,7 @@ function JobPipelinePage() {
 					<Button variant="ghost" size="sm" asChild>
 						<Link to="/jobs/$id" params={{ id }}>
 							<ArrowLeft className="mr-2 h-4 w-4" />
-							Back to job
+							Edit job
 						</Link>
 					</Button>
 					<div className="mt-3 flex items-center gap-3">

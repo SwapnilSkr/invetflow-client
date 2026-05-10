@@ -170,7 +170,7 @@ function CreateJobPage() {
 				id,
 				data: { ...buildUpdatePayload(draft), status: "Active" },
 			});
-			await navigate({ to: "/jobs/$id", params: { id } });
+			await navigate({ to: "/jobs/$id/pipeline", params: { id } });
 		} catch (e) {
 			if (isApiError(e) || e instanceof Error) {
 				setErrorMessage(e.message);

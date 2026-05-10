@@ -336,7 +336,7 @@ function RecruiterDashboard() {
 														) : null}{" "}
 														has completed{" "}
 														<Link
-															to="/jobs/$id"
+															to="/jobs/$id/pipeline"
 															params={{ id: row.job.id }}
 															className="font-medium text-[#0052cc] no-underline hover:underline"
 														>
@@ -453,7 +453,7 @@ function RecruiterDashboard() {
 										<div className="flex items-start justify-between gap-3 border-t border-black/8 px-4 py-3">
 											<div className="min-w-0">
 												<Link
-													to="/jobs/$id"
+													to="/jobs/$id/pipeline"
 													params={{ id: interview.job.id }}
 													className="block truncate text-sm font-semibold text-[#111827] no-underline hover:underline"
 												>
