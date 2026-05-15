@@ -6,6 +6,7 @@ import type {
 	CreatePsychometricAssessmentPayload,
 	CreateVoiceAssessmentPayload,
 	GenericQuestion,
+	PsychometricItem,
 	VoiceRubric,
 } from "#/integrations/api/client";
 
@@ -101,13 +102,24 @@ export function emptyCodingAssessmentPayload(): CreateCodingAssessmentPayload {
 	};
 }
 
+export function emptyPsychometricItem(): PsychometricItem {
+	return {
+		id: newClientId("pi"),
+		prompt: "",
+		kind: "Likert5",
+		order: 0,
+	};
+}
+
 export function emptyPsychometricAssessmentPayload(): CreatePsychometricAssessmentPayload {
+	const row = emptyPsychometricItem();
 	return {
 		title: "Untitled psychometric",
 		description: null,
 		slug: `psych-${newClientId("slug").slice(-8)}`,
 		framework: "BigFive",
 		time_limit_minutes: 30,
+		items: [row],
 	};
 }
 
