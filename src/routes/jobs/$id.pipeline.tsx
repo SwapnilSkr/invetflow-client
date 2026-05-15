@@ -28,6 +28,7 @@ import {
 	useAssignCandidate,
 	useUpdateBoardStatus,
 } from "#/integrations/api/queries";
+import { buildCandidateUrl } from "#/lib/candidate-url";
 import { requireStaff } from "#/lib/require-role";
 import { getStatusColor } from "#/lib/utils";
 
@@ -456,12 +457,8 @@ function JobPipelinePage() {
 }
 
 function buildInviteUrl(job: Job | undefined): string | null {
-	if (!job?.invite_token) {
-		return null;
-	}
-	const candidateOrigin =
-		import.meta.env.VITE_CANDIDATE_APP_URL || window.location.origin;
-	return `${candidateOrigin.replace(/\/$/, "")}/interview/join/${job.invite_token}`;
+	if (!job) return null;
+	return buildCandidateUrl(job.invite_link ?? null);
 }
 
 function buildColumns(

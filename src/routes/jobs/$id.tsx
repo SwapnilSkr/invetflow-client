@@ -36,6 +36,7 @@ import {
 	useScheduleJob,
 	useUpdateJob,
 } from "#/integrations/api/queries";
+import { buildCandidateUrl } from "#/lib/candidate-url";
 import { requireSession } from "#/lib/require-role";
 import { getStatusColor } from "#/lib/utils";
 
@@ -82,15 +83,7 @@ function InterviewDetailPage() {
 	const assignNameId = useId();
 	const assignEmailId = useId();
 
-	const candidateInviteLink = job?.invite_link
-		? (() => {
-				const candidateOrigin =
-					import.meta.env.VITE_CANDIDATE_APP_URL || window.location.origin;
-				return job.invite_link.startsWith("http")
-					? job.invite_link
-					: `${candidateOrigin.replace(/\/$/, "")}${job.invite_link.startsWith("/") ? "" : "/"}${job.invite_link}`;
-			})()
-		: null;
+	const candidateInviteLink = buildCandidateUrl(job?.invite_link ?? null);
 
 	const handleJoin = async () => {
 		setJoinError(null);
