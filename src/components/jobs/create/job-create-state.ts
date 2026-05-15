@@ -430,6 +430,29 @@ export function validatePhase(
 		return { ok: true, errors: {} };
 	}
 
+	if (phase === "Preview") {
+		// Preview requires the same validations as Publish for blockers,
+		// but warnings/recommendations never block.
+		const pub = publishSchema.safeParse(draft);
+		if (!pub.success) {
+			const errors: Record<string, string> = {};
+			for (const issue of pub.error.issues) {
+				errors[issue.path.join(".")] = issue.message;
+			}
+			return { ok: false, errors };
+		}
+		if (!entityStagesLinked(draft.pipeline)) {
+			return {
+				ok: false,
+				errors: {
+					"pipeline.stages":
+						"Every assessment stage must be linked before you publish.",
+				},
+			};
+		}
+		return { ok: true, errors: {} };
+	}
+
 	const pub = publishSchema.safeParse(draft);
 	if (!pub.success) {
 		const errors: Record<string, string> = {};
@@ -451,10 +474,40 @@ export function validatePhase(
 }
 
 /**
- * Whether step `index` in `PHASES` may be opened from the stepper.
- * Mirrors Save & continue gating: no persisted id → only Details; thereafter each
- * phase requires prior phases to validate.
+ * Gating used by the primary "Save & continue" CTA.
+ * Hiring process → Preview only needs pipeline structure (not linked assessments).
+ * Preview → Publish requires full Hiring process validation.
  */
+export function canAdvanceFromPhase(
+	phase: Phase,
+	draft: DraftState,
+): { ok: boolean; errors: Record<string, string> } {
+	if (phase === "Details") {
+		return validatePhase("Details", draft);
+	}
+	if (phase === "Hiring process") {
+		// Allow progression to Preview with just a non-empty pipeline.
+		if (!hasPipelineStructure(draft.pipeline)) {
+			return {
+				ok: false,
+				errors: {
+					"pipeline.stages": "Add at least one stage before continuing.",
+				},
+			};
+		}
+		return { ok: true, errors: {} };
+	}
+	if (phase === "Preview") {
+		// Blocker: unlinked assessments must be fixed before Publish.
+		return validatePhase("Hiring process", draft);
+	}
+	return validatePhase("Publish", draft);
+}
+
+function hasPipelineStructure(pipeline: JobPipeline): boolean {
+	return pipeline.stages.length > 0;
+}
+
 export function isPhaseIndexUnlocked(
 	index: number,
 	draft: DraftState,
@@ -464,6 +517,11 @@ export function isPhaseIndexUnlocked(
 	if (!hasPersistedJobId) return false;
 	if (!validatePhase("Details", draft).ok) return false;
 	if (index <= 1) return true;
+	// Preview only needs a non-empty pipeline structure so users can
+	// see diagnostics (linking blockers, warnings, recommendations).
+	if (!hasPipelineStructure(draft.pipeline)) return false;
+	if (index <= 2) return true;
+	// Publish still requires full Hiring process validation.
 	return validatePhase("Hiring process", draft).ok;
 }
 
@@ -474,7 +532,9 @@ export function firstIncompleteWizardPhase(
 ): Phase {
 	if (!hasPersistedJobId) return "Details";
 	if (!validatePhase("Details", draft).ok) return "Details";
-	if (!validatePhase("Hiring process", draft).ok) return "Hiring process";
+	if (!hasPipelineStructure(draft.pipeline)) return "Hiring process";
+	if (!validatePhase("Hiring process", draft).ok) return "Preview";
+	if (!validatePhase("Preview", draft).ok) return "Preview";
 	return "Publish";
 }
 
