@@ -1,9 +1,20 @@
-import { ArrowLeft, Check, Globe2, LayoutGrid, Lock } from "lucide-react";
+import {
+	AlertTriangle,
+	ArrowLeft,
+	Check,
+	Globe2,
+	LayoutGrid,
+	Lock,
+} from "lucide-react";
+import { useEffect, useRef, useState } from "react";
 import { Button } from "#/components/ui/button";
 import { Input } from "#/components/ui/input";
 import { Label } from "#/components/ui/label";
 import { Switch } from "#/components/ui/switch";
+import type { LaunchPreviewResponse } from "#/integrations/api/client";
+import { useAnalyzeJobLaunchPreview } from "#/integrations/api/queries";
 import { cn } from "#/lib/utils";
+import { buildCreatePayload } from "./job-create-state";
 import { TagInput } from "./tag-input";
 import type { DraftState, DraftUpdate } from "./types";
 
@@ -15,6 +26,30 @@ type PhasePublishProps = {
 	canPublish: boolean;
 	onBack: () => void;
 };
+
+function useLaunchReadiness(draft: DraftState) {
+	const { mutateAsync } = useAnalyzeJobLaunchPreview();
+	const [analysis, setAnalysis] = useState<LaunchPreviewResponse | null>(null);
+	const requestIdRef = useRef(0);
+
+	useEffect(() => {
+		const currentId = ++requestIdRef.current;
+		const handle = setTimeout(() => {
+			void mutateAsync({
+				job: buildCreatePayload(draft, { publishOnCreate: false }),
+			})
+				.then((res) => {
+					if (currentId === requestIdRef.current) setAnalysis(res);
+				})
+				.catch(() => {
+					if (currentId === requestIdRef.current) setAnalysis(null);
+				});
+		}, 400);
+		return () => clearTimeout(handle);
+	}, [draft, mutateAsync]);
+
+	return analysis;
+}
 
 function SwitchRow({
 	id,
@@ -53,6 +88,9 @@ export function PhasePublish({
 	onBack,
 }: PhasePublishProps) {
 	const visibilityValue = draft.publicLinkEnabled ? "Public" : "Private";
+	const analysis = useLaunchReadiness(draft);
+	const blockingIssues = analysis?.blocking_issues ?? [];
+	const blocked = blockingIssues.length > 0;
 
 	return (
 		<div className="space-y-4">
@@ -225,6 +263,32 @@ export function PhasePublish({
 				</div>
 			</div>
 
+			{blocked ? (
+				<div className="rounded-lg border border-destructive/40 bg-destructive/5 p-4">
+					<div className="flex items-start gap-2">
+						<AlertTriangle className="size-4 shrink-0 text-destructive" />
+						<div>
+							<p className="text-sm font-semibold text-destructive">
+								Resolve these before publishing
+							</p>
+							<ul className="mt-2 space-y-1 text-sm text-foreground">
+								{blockingIssues.map((issue) => (
+									<li key={`${issue.code}-${issue.title}`}>
+										<span className="font-medium">{issue.title}</span>
+										{issue.detail ? (
+											<span className="text-muted-foreground">
+												{" "}
+												— {issue.detail}
+											</span>
+										) : null}
+									</li>
+								))}
+							</ul>
+						</div>
+					</div>
+				</div>
+			) : null}
+
 			{/* CTA row */}
 			<div className="flex items-center justify-between pt-2">
 				<Button type="button" variant="ghost" onClick={onBack}>
@@ -233,7 +297,7 @@ export function PhasePublish({
 				</Button>
 				<Button
 					type="button"
-					disabled={isSaving || !canPublish}
+					disabled={isSaving || !canPublish || blocked}
 					onClick={onPublish}
 				>
 					{isSaving ? (
