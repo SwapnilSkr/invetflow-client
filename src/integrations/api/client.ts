@@ -977,6 +977,7 @@ export interface HumanInterviewSession {
 	interviewer_names: string[];
 	scheduled_at: string;
 	duration_minutes: number;
+	max_participants: number;
 	meeting_link: string | null;
 	room_type: HumanInterviewRoomType;
 	livekit_room_name: string | null;
@@ -1009,6 +1010,8 @@ export interface UpdateHumanInterviewBody {
 	location?: string | null;
 	timezone?: string;
 	status?: HumanInterviewStatus;
+	/** room_type cannot change after scheduling; the server accepts and ignores it for forward compatibility. */
+	room_type?: HumanInterviewRoomType;
 }
 
 export interface RecordHumanInterviewOutcomeBody {

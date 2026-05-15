@@ -778,6 +778,8 @@ export const humanInterviewKeys = {
 	forApplication: (jobId: string, applicationId: string) =>
 		[...humanInterviewKeys.all, "byApp", jobId, applicationId] as const,
 	detail: (id: string) => [...humanInterviewKeys.all, "detail", id] as const,
+	joinToken: (id: string) =>
+		[...humanInterviewKeys.all, "joinToken", id] as const,
 };
 
 export const humanInterviewQueries = {
@@ -794,6 +796,15 @@ export const humanInterviewQueries = {
 			queryKey: humanInterviewKeys.detail(id),
 			queryFn: () => getHumanInterview(id),
 			enabled: id.length > 0,
+		}),
+	joinToken: (id: string) =>
+		queryOptions({
+			queryKey: humanInterviewKeys.joinToken(id),
+			queryFn: () => joinHumanInterviewMeeting(id),
+			enabled: id.length > 0,
+			staleTime: 5 * 60_000,
+			refetchOnWindowFocus: false,
+			retry: false,
 		}),
 };
 
@@ -880,11 +891,5 @@ export function useCancelHumanInterview(jobId: string, applicationId: string) {
 		mutationFn: (id: string) => cancelHumanInterview(id),
 		onSuccess: () =>
 			invalidateAfterHumanInterviewChange(queryClient, jobId, applicationId),
-	});
-}
-
-export function useJoinHumanInterviewMeeting() {
-	return useMutation({
-		mutationFn: (id: string) => joinHumanInterviewMeeting(id),
 	});
 }
