@@ -13,6 +13,7 @@ import {
 import { Input } from "#/components/ui/input";
 import { Label } from "#/components/ui/label";
 import type {
+	HumanInterviewRoomType,
 	HumanInterviewSession,
 	ScheduleHumanInterviewBody,
 	UpdateHumanInterviewBody,
@@ -62,6 +63,9 @@ export function ScheduleHumanInterviewDialog({
 	const [meetingLink, setMeetingLink] = useState<string>(
 		existing?.meeting_link ?? "",
 	);
+	const [roomType, setRoomType] = useState<HumanInterviewRoomType>(
+		existing?.room_type ?? "External",
+	);
 	const [location, setLocation] = useState<string>(existing?.location ?? "");
 	const [timezone, setTimezone] = useState<string>(
 		existing?.timezone ?? defaultTimezone,
@@ -77,6 +81,7 @@ export function ScheduleHumanInterviewDialog({
 		setScheduledAt(existing ? new Date(existing.scheduled_at) : null);
 		setDuration(existing?.duration_minutes ?? 30);
 		setMeetingLink(existing?.meeting_link ?? "");
+		setRoomType(existing?.room_type ?? "External");
 		setLocation(existing?.location ?? "");
 		setTimezone(existing?.timezone ?? defaultTimezone);
 		setErrorMessage(null);
@@ -106,6 +111,9 @@ export function ScheduleHumanInterviewDialog({
 		if (!timezone.trim()) {
 			return "Timezone is required.";
 		}
+		if (roomType === "External" && !meetingLink.trim() && !location.trim()) {
+			return "Add a meeting link or location for external interviews.";
+		}
 		return null;
 	};
 
@@ -123,7 +131,7 @@ export function ScheduleHumanInterviewDialog({
 					interviewer_user_ids: interviewerIds,
 					scheduled_at: at.toISOString(),
 					duration_minutes: duration,
-					meeting_link: meetingLink.trim() || null,
+					meeting_link: roomType === "Internal" ? null : meetingLink.trim() || null,
 					location: location.trim() || null,
 					timezone: timezone.trim(),
 				};
@@ -134,7 +142,8 @@ export function ScheduleHumanInterviewDialog({
 					interviewer_user_ids: interviewerIds,
 					scheduled_at: at.toISOString(),
 					duration_minutes: duration,
-					meeting_link: meetingLink.trim() || null,
+					meeting_link: roomType === "Internal" ? null : meetingLink.trim() || null,
+					room_type: roomType,
 					location: location.trim() || null,
 					timezone: timezone.trim(),
 				};
@@ -201,17 +210,41 @@ export function ScheduleHumanInterviewDialog({
 						</div>
 					</div>
 
-					<div className="space-y-1.5">
-						<Label htmlFor="hi-link">Meeting link</Label>
-						<Input
-							id="hi-link"
-							type="url"
-							placeholder="https://meet.example.com/abc"
-							value={meetingLink}
-							onChange={(e) => setMeetingLink(e.target.value)}
-							disabled={isSubmitting}
-						/>
+					<div className="space-y-2">
+						<Label>Room type</Label>
+						<div className="grid grid-cols-2 gap-2">
+							<Button
+								type="button"
+								variant={roomType === "Internal" ? "default" : "outline"}
+								onClick={() => setRoomType("Internal")}
+								disabled={isSubmitting || isEdit}
+							>
+								Internal
+							</Button>
+							<Button
+								type="button"
+								variant={roomType === "External" ? "default" : "outline"}
+								onClick={() => setRoomType("External")}
+								disabled={isSubmitting || isEdit}
+							>
+								External
+							</Button>
+						</div>
 					</div>
+
+					{roomType === "External" ? (
+						<div className="space-y-1.5">
+							<Label htmlFor="hi-link">Meeting link</Label>
+							<Input
+								id="hi-link"
+								type="url"
+								placeholder="https://meet.example.com/abc"
+								value={meetingLink}
+								onChange={(e) => setMeetingLink(e.target.value)}
+								disabled={isSubmitting}
+							/>
+						</div>
+					) : null}
 
 					<div className="space-y-1.5">
 						<Label htmlFor="hi-location">Location (in-person, optional)</Label>
