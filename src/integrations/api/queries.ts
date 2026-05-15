@@ -21,6 +21,7 @@ import {
 	type CreatePrescreeningFormPayload,
 	type CreatePsychometricAssessmentPayload,
 	type CreateVoiceAssessmentPayload,
+	cancelHumanInterview,
 	createCodingAssessment,
 	createGenericAssessment,
 	createPrescreeningForm,
@@ -36,24 +37,38 @@ import {
 	getApplicationDetail,
 	getCodingAssessment,
 	getGenericAssessment,
+	getHumanInterview,
+	joinHumanInterviewMeeting,
 	getPrescreeningForm,
 	getPsychometricAssessment,
 	getVoiceAssessment,
+	type HumanInterviewSession,
 	type InterviewScores,
 	type Job,
 	type JobInterviewsListResponse,
 	type JoinJobResponse,
+	type LaunchPreviewRequest,
+	type LaunchPreviewResponse,
 	listCodingAssessments,
 	listGenericAssessments,
+	listHumanInterviewsForApplication,
+	listOrganizationMembers,
 	listPrescreeningForms,
 	listPsychometricAssessments,
 	listVoiceAssessments,
 	type OrgApplicationsResponse,
 	type Organization,
+	type OrganizationMember,
+	type RecordHumanInterviewOutcomeBody,
+	recordHumanInterviewOutcome,
+	type ScheduleHumanInterviewBody,
+	scheduleHumanInterview,
 	type TranscriptEntry,
+	type UpdateHumanInterviewBody,
 	type UpdateJobRequest,
 	updateCodingAssessment,
 	updateGenericAssessment,
+	updateHumanInterview,
 	updatePrescreeningForm,
 	updatePsychometricAssessment,
 	updateVoiceAssessment,
@@ -672,6 +687,16 @@ export function useJoinJob() {
 	});
 }
 
+export function useAnalyzeJobLaunchPreview() {
+	return useMutation({
+		mutationFn: (data: LaunchPreviewRequest) =>
+			apiClient<LaunchPreviewResponse>("/api/jobs/launch-preview", {
+				method: "POST",
+				body: JSON.stringify(data),
+			}),
+	});
+}
+
 export function useEndCandidateInterview() {
 	const queryClient = useQueryClient();
 
@@ -743,5 +768,123 @@ export function useSaveScores() {
 				queryKey: candidateInterviewKeys.scores(interviewId),
 			});
 		},
+	});
+}
+
+// --- Human interview (recruiter-led) -----------------------------------------
+
+export const humanInterviewKeys = {
+	all: ["humanInterviews"] as const,
+	forApplication: (jobId: string, applicationId: string) =>
+		[...humanInterviewKeys.all, "byApp", jobId, applicationId] as const,
+	detail: (id: string) => [...humanInterviewKeys.all, "detail", id] as const,
+};
+
+export const humanInterviewQueries = {
+	forApplication: (jobId: string, applicationId: string) =>
+		queryOptions({
+			queryKey: humanInterviewKeys.forApplication(jobId, applicationId),
+			queryFn: (): Promise<HumanInterviewSession[]> =>
+				listHumanInterviewsForApplication(jobId, applicationId),
+			enabled: jobId.length > 0 && applicationId.length > 0,
+			staleTime: 15_000,
+		}),
+	detail: (id: string) =>
+		queryOptions({
+			queryKey: humanInterviewKeys.detail(id),
+			queryFn: () => getHumanInterview(id),
+			enabled: id.length > 0,
+		}),
+};
+
+export const organizationMembersKeys = {
+	all: ["organizationMembers"] as const,
+	list: (orgId: string) =>
+		[...organizationMembersKeys.all, "list", orgId] as const,
+};
+
+export function useOrganizationMembers(orgId: string | null | undefined) {
+	return queryOptions({
+		queryKey: organizationMembersKeys.list(orgId ?? ""),
+		queryFn: (): Promise<OrganizationMember[]> =>
+			listOrganizationMembers(orgId as string),
+		enabled: !!orgId,
+		staleTime: 60_000,
+	});
+}
+
+function invalidateAfterHumanInterviewChange(
+	queryClient: ReturnType<typeof useQueryClient>,
+	jobId: string,
+	applicationId: string,
+) {
+	queryClient.invalidateQueries({ queryKey: humanInterviewKeys.all });
+	queryClient.invalidateQueries({
+		queryKey: applicationKeys.recruiterDetail(jobId, applicationId),
+	});
+}
+
+export function useScheduleHumanInterview(
+	jobId: string,
+	applicationId: string,
+) {
+	const queryClient = useQueryClient();
+	return useMutation({
+		mutationFn: (body: ScheduleHumanInterviewBody) =>
+			scheduleHumanInterview(jobId, applicationId, body),
+		onSuccess: () =>
+			invalidateAfterHumanInterviewChange(queryClient, jobId, applicationId),
+	});
+}
+
+export function useUpdateHumanInterview(jobId: string, applicationId: string) {
+	const queryClient = useQueryClient();
+	return useMutation({
+		mutationFn: ({
+			id,
+			body,
+		}: {
+			id: string;
+			body: UpdateHumanInterviewBody;
+		}) => updateHumanInterview(id, body),
+		onSuccess: (data) => {
+			invalidateAfterHumanInterviewChange(queryClient, jobId, applicationId);
+			queryClient.setQueryData(humanInterviewKeys.detail(data.id), data);
+		},
+	});
+}
+
+export function useRecordHumanInterviewOutcome(
+	jobId: string,
+	applicationId: string,
+) {
+	const queryClient = useQueryClient();
+	return useMutation({
+		mutationFn: ({
+			id,
+			body,
+		}: {
+			id: string;
+			body: RecordHumanInterviewOutcomeBody;
+		}) => recordHumanInterviewOutcome(id, body),
+		onSuccess: (data) => {
+			invalidateAfterHumanInterviewChange(queryClient, jobId, applicationId);
+			queryClient.setQueryData(humanInterviewKeys.detail(data.id), data);
+		},
+	});
+}
+
+export function useCancelHumanInterview(jobId: string, applicationId: string) {
+	const queryClient = useQueryClient();
+	return useMutation({
+		mutationFn: (id: string) => cancelHumanInterview(id),
+		onSuccess: () =>
+			invalidateAfterHumanInterviewChange(queryClient, jobId, applicationId),
+	});
+}
+
+export function useJoinHumanInterviewMeeting() {
+	return useMutation({
+		mutationFn: (id: string) => joinHumanInterviewMeeting(id),
 	});
 }

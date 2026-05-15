@@ -259,6 +259,44 @@ export interface GenerateJobContentResponse {
 	content: unknown;
 }
 
+export type LaunchPreviewSeverity = "blocker" | "warning" | "recommendation";
+
+export interface LaunchPreviewFinding {
+	code: string;
+	severity: LaunchPreviewSeverity;
+	title: string;
+	detail: string;
+	stage_id?: string | null;
+}
+
+export interface LaunchPreviewStageSummary {
+	stage_id: string;
+	title: string;
+	stage_type: StageType;
+	candidate_facing: boolean;
+	automation: StageAutomation;
+	linked_assessment: boolean;
+	contributes_to_score: boolean;
+	estimated_minutes: number;
+}
+
+export interface LaunchPreviewRequest {
+	job: CreateJobRequest;
+}
+
+export interface LaunchPreviewResponse {
+	readiness_score: number;
+	candidate_time_minutes: number;
+	candidate_facing_stage_count: number;
+	internal_stage_count: number;
+	automation_coverage_percent: number;
+	scoring_coverage_percent: number;
+	blocking_issues: LaunchPreviewFinding[];
+	warnings: LaunchPreviewFinding[];
+	recommendations: LaunchPreviewFinding[];
+	stage_summaries: LaunchPreviewStageSummary[];
+}
+
 export interface JobInterviewsListResponse {
 	interviews: CandidateInterview[];
 }
@@ -275,6 +313,7 @@ export interface StageAttempt {
 
 export interface Application {
 	id: string;
+	organization_id: string;
 	job_id: string;
 	candidate_id: string | null;
 	candidate_name: string | null;
@@ -595,6 +634,8 @@ export type {
 	PrescreeningQuestionType,
 	PsychometricAssessment,
 	PsychometricFramework,
+	PsychometricItem,
+	PsychometricItemKind,
 	TestCase,
 	VoiceAssessment,
 	VoiceDeliveryMethod,
@@ -912,4 +953,150 @@ export async function healthCheck(): Promise<{
 		throw await parseHttpError(response, "Health check failed");
 	}
 	return response.json();
+}
+
+// --- Human interview (recruiter-led) -----------------------------------------
+
+export type HumanInterviewStatus =
+	| "Scheduled"
+	| "InProgress"
+	| "Completed"
+	| "Cancelled"
+	| "NoShow";
+
+export type HumanInterviewOutcome = "Pass" | "Fail" | "Pending";
+export type HumanInterviewRoomType = "Internal" | "External";
+
+export interface HumanInterviewSession {
+	id: string;
+	organization_id: string;
+	job_id: string;
+	application_id: string;
+	stage_id: string;
+	interviewer_user_ids: string[];
+	interviewer_names: string[];
+	scheduled_at: string;
+	duration_minutes: number;
+	meeting_link: string | null;
+	room_type: HumanInterviewRoomType;
+	livekit_room_name: string | null;
+	location: string | null;
+	timezone: string;
+	status: HumanInterviewStatus;
+	outcome: HumanInterviewOutcome | null;
+	score: number | null;
+	feedback_html: string | null;
+	created_at: string;
+	updated_at: string;
+}
+
+export interface ScheduleHumanInterviewBody {
+	stage_id: string;
+	interviewer_user_ids: string[];
+	scheduled_at: string;
+	duration_minutes?: number;
+	meeting_link?: string | null;
+	room_type?: HumanInterviewRoomType;
+	location?: string | null;
+	timezone: string;
+}
+
+export interface UpdateHumanInterviewBody {
+	interviewer_user_ids?: string[];
+	scheduled_at?: string;
+	duration_minutes?: number;
+	meeting_link?: string | null;
+	location?: string | null;
+	timezone?: string;
+	status?: HumanInterviewStatus;
+}
+
+export interface RecordHumanInterviewOutcomeBody {
+	outcome: "Pass" | "Fail";
+	score?: number | null;
+	feedback_html?: string | null;
+}
+
+export interface HumanInterviewJoinTokenResponse {
+	interview_id: string;
+	livekit_token: string;
+	livekit_url: string;
+}
+
+export async function listHumanInterviewsForApplication(
+	jobId: string,
+	applicationId: string,
+): Promise<HumanInterviewSession[]> {
+	return apiClient<HumanInterviewSession[]>(
+		`/api/jobs/${jobId}/applications/${applicationId}/human-interviews`,
+	);
+}
+
+export async function scheduleHumanInterview(
+	jobId: string,
+	applicationId: string,
+	body: ScheduleHumanInterviewBody,
+): Promise<HumanInterviewSession> {
+	return apiClient<HumanInterviewSession>(
+		`/api/jobs/${jobId}/applications/${applicationId}/human-interviews`,
+		{ method: "POST", body: JSON.stringify(body) },
+	);
+}
+
+export async function getHumanInterview(
+	id: string,
+): Promise<HumanInterviewSession> {
+	return apiClient<HumanInterviewSession>(`/api/human-interviews/${id}`);
+}
+
+export async function updateHumanInterview(
+	id: string,
+	body: UpdateHumanInterviewBody,
+): Promise<HumanInterviewSession> {
+	return apiClient<HumanInterviewSession>(`/api/human-interviews/${id}`, {
+		method: "PUT",
+		body: JSON.stringify(body),
+	});
+}
+
+export async function recordHumanInterviewOutcome(
+	id: string,
+	body: RecordHumanInterviewOutcomeBody,
+): Promise<HumanInterviewSession> {
+	return apiClient<HumanInterviewSession>(
+		`/api/human-interviews/${id}/outcome`,
+		{ method: "POST", body: JSON.stringify(body) },
+	);
+}
+
+export async function cancelHumanInterview(id: string): Promise<void> {
+	return apiClient<void>(`/api/human-interviews/${id}/cancel`, {
+		method: "POST",
+	});
+}
+
+export async function joinHumanInterviewMeeting(
+	id: string,
+): Promise<HumanInterviewJoinTokenResponse> {
+	return apiClient<HumanInterviewJoinTokenResponse>(
+		`/api/human-interviews/${id}/join-token`,
+		{ method: "POST" },
+	);
+}
+
+// --- Organization members ----------------------------------------------------
+
+export interface OrganizationMember {
+	id: string;
+	organization_id: string;
+	user_id: string;
+	name: string | null;
+	email: string | null;
+	role: "Owner" | "Admin" | "Recruiter" | "Member";
+}
+
+export async function listOrganizationMembers(
+	orgId: string,
+): Promise<OrganizationMember[]> {
+	return apiClient<OrganizationMember[]>(`/api/organizations/${orgId}/members`);
 }
