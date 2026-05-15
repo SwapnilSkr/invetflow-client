@@ -23,22 +23,18 @@ import type {
 	StageType,
 } from "#/integrations/api/client";
 import { useAnalyzeJobLaunchPreview } from "#/integrations/api/queries";
+import { candidateOrigin } from "#/lib/candidate-url";
 import { buildCreatePayload } from "./job-create-state";
 import type { DraftState } from "./types";
 
-const CANDIDATE_APP_URL =
-	import.meta.env.VITE_CANDIDATE_APP_URL || "http://localhost:3002";
-const DEFAULT_CANDIDATE_APP_ORIGIN = "http://localhost:3002";
-
-function originFromUrl(value: string): string {
+const CANDIDATE_APP_URL = candidateOrigin();
+const CANDIDATE_APP_ORIGIN = (() => {
 	try {
-		return new URL(value).origin;
+		return new URL(CANDIDATE_APP_URL).origin;
 	} catch {
-		return DEFAULT_CANDIDATE_APP_ORIGIN;
+		return CANDIDATE_APP_URL;
 	}
-}
-
-const CANDIDATE_APP_ORIGIN = originFromUrl(CANDIDATE_APP_URL);
+})();
 
 type TabKey = "workflow" | "candidate" | "hiring-team" | "launch-check";
 
