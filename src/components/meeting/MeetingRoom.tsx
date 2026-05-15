@@ -1,12 +1,9 @@
-import {
-	LiveKitRoom,
-	RoomAudioRenderer,
-	VideoConference,
-} from "@livekit/components-react";
+import { LiveKitRoom, RoomAudioRenderer } from "@livekit/components-react";
 import "@livekit/components-styles";
 import { useQuery } from "@tanstack/react-query";
 import { useNavigate } from "@tanstack/react-router";
 import { Loader2 } from "lucide-react";
+import { MeetingExperience } from "#/components/meeting/MeetingExperience";
 import { Alert, AlertDescription } from "#/components/ui/alert";
 import { Button } from "#/components/ui/button";
 import { humanInterviewQueries } from "#/integrations/api/queries";
@@ -78,7 +75,7 @@ export function MeetingRoom({ sessionId, jobId }: MeetingRoomProps) {
 					navigate({ to: "/jobs/$id/pipeline", params: { id: jobId } })
 				}
 			>
-				<VideoConference />
+				<MeetingExperience title="Human interview" roleLabel="Recruiter room" />
 				<RoomAudioRenderer />
 			</LiveKitRoom>
 		</div>
