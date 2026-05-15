@@ -7,13 +7,15 @@ import {
 	useRouter,
 } from "@tanstack/react-router";
 import { ArrowLeft, Loader2 } from "lucide-react";
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { HorizontalStepper } from "#/components/jobs/create/horizontal-stepper";
 import {
 	buildMinimalCreatePayload,
 	buildUpdatePayload,
 	defaultDraft,
 	draftFromJob,
+	firstIncompleteWizardPhase,
+	isPhaseIndexUnlocked,
 	newClientId,
 	normalizeJobStage,
 	validatePhase,
@@ -54,6 +56,28 @@ type CreateJobWizardProps = {
 	initialJob: Job | undefined;
 };
 
+function initWizardState(initialJob: Job | undefined): {
+	draft: DraftState;
+	phase: Phase;
+	visitedPhases: Set<Phase>;
+} {
+	if (!initialJob) {
+		return {
+			draft: defaultDraft(),
+			phase: "Details",
+			visitedPhases: new Set<Phase>(["Details"]),
+		};
+	}
+	const draft = draftFromJob(initialJob);
+	const phase = firstIncompleteWizardPhase(draft, true);
+	const end = PHASES.indexOf(phase) + 1;
+	return {
+		draft,
+		phase,
+		visitedPhases: new Set(PHASES.slice(0, end) as Phase[]),
+	};
+}
+
 /** Owns wizard state; remounted via `key` when switching virgin → saved id so draft hydration needs no effect. */
 function CreateJobWizard({ routeJobId, initialJob }: CreateJobWizardProps) {
 	const router = useRouter();
@@ -65,19 +89,25 @@ function CreateJobWizard({ routeJobId, initialJob }: CreateJobWizardProps) {
 	const updateJob = useUpdateJob();
 	const generate = useGenerateJobContent();
 
-	const [phase, setPhase] = useState<Phase>(() =>
-		initialJob ? "Hiring process" : "Details",
+	const initialWizardRef = useRef<ReturnType<typeof initWizardState> | null>(
+		null,
 	);
-	const [draft, setDraft] = useState<DraftState>(() =>
-		initialJob ? draftFromJob(initialJob) : defaultDraft(),
-	);
-	const [errorMessage, setErrorMessage] = useState<string | null>(null);
-	const [visitedPhases, setVisitedPhases] = useState<Set<Phase>>(() => {
-		if (initialJob) {
-			return new Set<Phase>(["Details", "Hiring process"]);
+	function bootstrapWizardOnce() {
+		if (initialWizardRef.current === null) {
+			initialWizardRef.current = initWizardState(initialJob);
 		}
-		return new Set<Phase>(["Details"]);
-	});
+		return initialWizardRef.current;
+	}
+
+	const [draft, setDraft] = useState<DraftState>(
+		() => bootstrapWizardOnce().draft,
+	);
+	const hasPersistedJobId = Boolean(routeJobId);
+	const [phase, setPhase] = useState<Phase>(() => bootstrapWizardOnce().phase);
+	const [errorMessage, setErrorMessage] = useState<string | null>(null);
+	const [visitedPhases, setVisitedPhases] = useState<Set<Phase>>(
+		() => bootstrapWizardOnce().visitedPhases,
+	);
 	/** Inline field errors only after user tries Save & continue for that phase */
 	const [phasesWithShownValidation, setPhasesWithShownValidation] = useState<
 		Set<Phase>
@@ -229,13 +259,14 @@ function CreateJobWizard({ routeJobId, initialJob }: CreateJobWizardProps) {
 
 	const steps = PHASES.map((p, index) => {
 		const isVisited = visitedPhases.has(p);
+		const unlocked = isPhaseIndexUnlocked(index, draft, hasPersistedJobId);
 		let status: "active" | "completed" | "locked" | "pending";
 		if (index === currentPhaseIndex) {
 			status = "active";
+		} else if (!unlocked) {
+			status = "locked";
 		} else if (index < currentPhaseIndex && isVisited) {
 			status = "completed";
-		} else if (index > 0 && !routeJobId) {
-			status = "locked";
 		} else {
 			status = "pending";
 		}
@@ -245,7 +276,17 @@ function CreateJobWizard({ routeJobId, initialJob }: CreateJobWizardProps) {
 	function handleStepClick(index: number) {
 		const step = steps[index];
 		if (step.status === "locked") {
-			setErrorMessage("Save the draft first to unlock later phases.");
+			if (!routeJobId && index > 0) {
+				setErrorMessage("Save the draft first to unlock later phases.");
+			} else if (!validatePhase("Details", draft).ok) {
+				setErrorMessage("Complete the Details step before opening this phase.");
+			} else if (!validatePhase("Hiring process", draft).ok) {
+				setErrorMessage(
+					"Complete the Hiring process step before opening this phase.",
+				);
+			} else {
+				setErrorMessage("This step is not available yet.");
+			}
 			return;
 		}
 		setPhase(PHASES[index]);

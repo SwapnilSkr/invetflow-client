@@ -22,6 +22,7 @@ export function HorizontalStepper({ steps, onStepClick }: Props) {
 						<button
 							type="button"
 							disabled={isLocked}
+							aria-current={isActive ? "step" : undefined}
 							onClick={() => {
 								if (!isLocked) onStepClick(index);
 							}}
@@ -31,10 +32,18 @@ export function HorizontalStepper({ steps, onStepClick }: Props) {
 								isCompleted && "bg-primary/10 text-primary",
 								step.status === "pending" &&
 									"text-muted-foreground hover:bg-muted",
-								isLocked && "cursor-not-allowed text-muted-foreground/50",
+								isLocked &&
+									"cursor-not-allowed border border-border/80 bg-muted/50 text-muted-foreground/60",
 							)}
 						>
-							<span className="flex size-5 items-center justify-center rounded-full border border-current/30 text-xs">
+							<span
+								className={cn(
+									"flex size-5 items-center justify-center rounded-full border text-xs",
+									isLocked
+										? "border-border bg-background/60"
+										: "border-current/30",
+								)}
+							>
 								{isCompleted ? (
 									<Check className="size-3" />
 								) : isLocked ? (

@@ -450,6 +450,34 @@ export function validatePhase(
 	return { ok: true, errors: {} };
 }
 
+/**
+ * Whether step `index` in `PHASES` may be opened from the stepper.
+ * Mirrors Save & continue gating: no persisted id → only Details; thereafter each
+ * phase requires prior phases to validate.
+ */
+export function isPhaseIndexUnlocked(
+	index: number,
+	draft: DraftState,
+	hasPersistedJobId: boolean,
+): boolean {
+	if (index <= 0) return true;
+	if (!hasPersistedJobId) return false;
+	if (!validatePhase("Details", draft).ok) return false;
+	if (index <= 1) return true;
+	return validatePhase("Hiring process", draft).ok;
+}
+
+/** Initial / resume focus: first phase that still fails validation (with id) or Details when unsaved. */
+export function firstIncompleteWizardPhase(
+	draft: DraftState,
+	hasPersistedJobId: boolean,
+): Phase {
+	if (!hasPersistedJobId) return "Details";
+	if (!validatePhase("Details", draft).ok) return "Details";
+	if (!validatePhase("Hiring process", draft).ok) return "Hiring process";
+	return "Publish";
+}
+
 type BlueprintContent = {
 	job_description?: string;
 	skills?: string[];
