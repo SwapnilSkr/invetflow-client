@@ -179,6 +179,15 @@ export interface CodingAssessment {
 	updated_at: string;
 }
 
+export type PsychometricItemKind = "Likert5" | "Forced2";
+
+export interface PsychometricItem {
+	id: string;
+	prompt: string;
+	kind: PsychometricItemKind;
+	order: number;
+}
+
 export interface PsychometricAssessment {
 	id: string | null;
 	organization_id: string;
@@ -187,6 +196,7 @@ export interface PsychometricAssessment {
 	slug: string;
 	framework: PsychometricFramework;
 	time_limit_minutes: number | null;
+	items: PsychometricItem[];
 	is_deleted: boolean;
 	created_at: string;
 	updated_at: string;
