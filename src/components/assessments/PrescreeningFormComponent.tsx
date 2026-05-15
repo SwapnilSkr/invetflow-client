@@ -1,5 +1,5 @@
 import { Loader2, Plus, Trash2 } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { emptyPrescreeningPayload } from "#/components/assessments/assessment-defaults";
 import { newClientId } from "#/components/jobs/create/job-create-state";
 import { Button } from "#/components/ui/button";
@@ -29,6 +29,7 @@ export function PrescreeningFormComponent({
 	onCancel,
 	disabled,
 }: Props) {
+	const nameInputRef = useRef<HTMLInputElement>(null);
 	const [value, setValue] = useState<CreatePrescreeningFormPayload>(
 		() => initial ?? emptyPrescreeningPayload(),
 	);
@@ -37,6 +38,10 @@ export function PrescreeningFormComponent({
 	useEffect(() => {
 		if (initial) setValue(initial);
 	}, [initial]);
+
+	useEffect(() => {
+		nameInputRef.current?.focus();
+	}, []);
 
 	async function submit() {
 		setBusy(true);
@@ -65,6 +70,7 @@ export function PrescreeningFormComponent({
 			<div className="grid gap-2">
 				<Label htmlFor="pf-name">Name</Label>
 				<Input
+					ref={nameInputRef}
 					id="pf-name"
 					value={value.name}
 					onChange={(e) => setValue((p) => ({ ...p, name: e.target.value }))}
@@ -273,20 +279,27 @@ export function PrescreeningFormComponent({
 				))}
 			</section>
 
-			<div className="sticky bottom-0 flex justify-end gap-2 border-t border-border bg-background pt-4">
-				{onCancel ? (
-					<Button type="button" variant="ghost" onClick={onCancel}>
-						Cancel
+			<div className="sticky bottom-0 space-y-2 border-t border-border bg-background pt-4">
+				<div className="flex justify-end gap-2">
+					{onCancel ? (
+						<Button type="button" variant="ghost" onClick={onCancel}>
+							Cancel
+						</Button>
+					) : null}
+					<Button
+						type="button"
+						disabled={disabled ?? (busy || !value.name.trim())}
+						onClick={() => void submit()}
+					>
+						{busy ? <Loader2 className="size-4 animate-spin" /> : null}
+						{submitLabel}
 					</Button>
+				</div>
+				{!value.name.trim() ? (
+					<p className="text-right text-xs text-muted-foreground">
+						Add a name to enable {submitLabel}.
+					</p>
 				) : null}
-				<Button
-					type="button"
-					disabled={disabled ?? (busy || !value.name.trim())}
-					onClick={() => void submit()}
-				>
-					{busy ? <Loader2 className="size-4 animate-spin" /> : null}
-					{submitLabel}
-				</Button>
 			</div>
 		</div>
 	);

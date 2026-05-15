@@ -1,5 +1,5 @@
 import { Loader2, Plus, Trash2 } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
 	emptyGenericAssessmentPayload,
 	emptyGenericQuestion,
@@ -30,6 +30,7 @@ export function GenericAssessmentForm({
 	onCancel,
 	disabled,
 }: Props) {
+	const titleInputRef = useRef<HTMLInputElement>(null);
 	const [value, setValue] = useState<CreateGenericAssessmentPayload>(
 		() => initial ?? emptyGenericAssessmentPayload(),
 	);
@@ -38,6 +39,10 @@ export function GenericAssessmentForm({
 	useEffect(() => {
 		if (initial) setValue(initial);
 	}, [initial]);
+
+	useEffect(() => {
+		titleInputRef.current?.focus();
+	}, []);
 
 	async function submit() {
 		setBusy(true);
@@ -67,6 +72,7 @@ export function GenericAssessmentForm({
 				<div className="grid gap-2 md:col-span-2">
 					<Label htmlFor="ga-title">Title</Label>
 					<Input
+						ref={titleInputRef}
 						id="ga-title"
 						value={value.title}
 						onChange={(e) => setValue((p) => ({ ...p, title: e.target.value }))}
@@ -313,20 +319,27 @@ export function GenericAssessmentForm({
 				))}
 			</section>
 
-			<div className="sticky bottom-0 flex justify-end gap-2 border-t border-border bg-background pt-4">
-				{onCancel ? (
-					<Button type="button" variant="ghost" onClick={onCancel}>
-						Cancel
+			<div className="sticky bottom-0 space-y-2 border-t border-border bg-background pt-4">
+				<div className="flex justify-end gap-2">
+					{onCancel ? (
+						<Button type="button" variant="ghost" onClick={onCancel}>
+							Cancel
+						</Button>
+					) : null}
+					<Button
+						type="button"
+						disabled={disabled ?? (busy || !value.title.trim())}
+						onClick={() => void submit()}
+					>
+						{busy ? <Loader2 className="size-4 animate-spin" /> : null}
+						{submitLabel}
 					</Button>
+				</div>
+				{!value.title.trim() ? (
+					<p className="text-right text-xs text-muted-foreground">
+						Add a title to enable {submitLabel}.
+					</p>
 				) : null}
-				<Button
-					type="button"
-					disabled={disabled ?? (busy || !value.title.trim())}
-					onClick={() => void submit()}
-				>
-					{busy ? <Loader2 className="size-4 animate-spin" /> : null}
-					{submitLabel}
-				</Button>
 			</div>
 		</div>
 	);

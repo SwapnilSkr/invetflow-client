@@ -1,5 +1,5 @@
 import { Loader2, Plus, Trash2 } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { emptyCodingAssessmentPayload } from "#/components/assessments/assessment-defaults";
 import { newClientId } from "#/components/jobs/create/job-create-state";
 import { TagInput } from "#/components/jobs/create/tag-input";
@@ -25,6 +25,7 @@ export function CodingAssessmentForm({
 	onCancel,
 	disabled,
 }: Props) {
+	const titleInputRef = useRef<HTMLInputElement>(null);
 	const [value, setValue] = useState<CreateCodingAssessmentPayload>(
 		() => initial ?? emptyCodingAssessmentPayload(),
 	);
@@ -33,6 +34,10 @@ export function CodingAssessmentForm({
 	useEffect(() => {
 		if (initial) setValue(initial);
 	}, [initial]);
+
+	useEffect(() => {
+		titleInputRef.current?.focus();
+	}, []);
 
 	async function submit() {
 		setBusy(true);
@@ -62,6 +67,7 @@ export function CodingAssessmentForm({
 				<div className="grid gap-2 md:col-span-2">
 					<Label>Title</Label>
 					<Input
+						ref={titleInputRef}
 						value={value.title}
 						onChange={(e) => setValue((p) => ({ ...p, title: e.target.value }))}
 					/>
@@ -319,20 +325,27 @@ export function CodingAssessmentForm({
 				))}
 			</section>
 
-			<div className="sticky bottom-0 flex justify-end gap-2 border-t border-border bg-background pt-4">
-				{onCancel ? (
-					<Button type="button" variant="ghost" onClick={onCancel}>
-						Cancel
+			<div className="sticky bottom-0 space-y-2 border-t border-border bg-background pt-4">
+				<div className="flex justify-end gap-2">
+					{onCancel ? (
+						<Button type="button" variant="ghost" onClick={onCancel}>
+							Cancel
+						</Button>
+					) : null}
+					<Button
+						type="button"
+						disabled={disabled ?? (busy || !value.title.trim())}
+						onClick={() => void submit()}
+					>
+						{busy ? <Loader2 className="size-4 animate-spin" /> : null}
+						{submitLabel}
 					</Button>
+				</div>
+				{!value.title.trim() ? (
+					<p className="text-right text-xs text-muted-foreground">
+						Add a title to enable {submitLabel}.
+					</p>
 				) : null}
-				<Button
-					type="button"
-					disabled={disabled ?? (busy || !value.title.trim())}
-					onClick={() => void submit()}
-				>
-					{busy ? <Loader2 className="size-4 animate-spin" /> : null}
-					{submitLabel}
-				</Button>
 			</div>
 		</div>
 	);
