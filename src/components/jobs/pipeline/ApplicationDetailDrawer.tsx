@@ -1,18 +1,24 @@
 import { useQuery } from "@tanstack/react-query";
 import { Check, ChevronDown, ChevronUp, X } from "lucide-react";
 import { useState } from "react";
+import { Alert, AlertDescription } from "#/components/ui/alert";
 import { Badge } from "#/components/ui/badge";
+import { Button } from "#/components/ui/button";
 import {
 	Dialog,
 	DialogContent,
 	DialogDescription,
+	DialogFooter,
 	DialogHeader,
 	DialogTitle,
 } from "#/components/ui/dialog";
 import { Progress } from "#/components/ui/progress";
 import { Skeleton } from "#/components/ui/skeleton";
 import type { StageAttempt } from "#/integrations/api/client";
-import { applicationQueries } from "#/integrations/api/queries";
+import {
+	applicationQueries,
+	useUpdateBoardStatus,
+} from "#/integrations/api/queries";
 import { HumanInterviewBlock } from "./human-interview/HumanInterviewBlock";
 
 interface ApplicationDetailDrawerProps {
@@ -35,6 +41,7 @@ export function ApplicationDetailDrawer({
 	const application = detail.data?.application;
 	const attempts = application?.stage_attempts ?? [];
 	const orgId = application?.organization_id ?? "";
+	const currentStageId = application?.current_stage_id ?? null;
 
 	return (
 		<Dialog open={open} onOpenChange={onOpenChange}>
@@ -71,6 +78,7 @@ export function ApplicationDetailDrawer({
 								jobId={jobId}
 								applicationId={applicationId}
 								orgId={orgId}
+								isCurrentStage={attempt.stage_id === currentStageId}
 							/>
 						))}
 					</div>
@@ -85,15 +93,19 @@ function AttemptSection({
 	jobId,
 	applicationId,
 	orgId,
+	isCurrentStage,
 }: {
 	attempt: StageAttempt;
 	jobId: string;
 	applicationId: string;
 	orgId: string;
+	isCurrentStage: boolean;
 }) {
 	const [expanded, setExpanded] = useState(false);
 	const isHumanInterview = attempt.stage_type === "HumanInterview";
-	const hasExpandableBody = isHumanInterview || !!attempt.responses;
+	const isManualReview = attempt.stage_type === "ManualReview";
+	const hasExpandableBody =
+		isHumanInterview || isManualReview || !!attempt.responses;
 
 	return (
 		<div className="rounded-lg border border-border">
@@ -132,6 +144,12 @@ function AttemptSection({
 								Loading organization context...
 							</p>
 						)
+					) : isManualReview ? (
+						<ManualReviewBlock
+							jobId={jobId}
+							applicationId={applicationId}
+							isCurrentStage={isCurrentStage}
+						/>
 					) : attempt.responses ? (
 						<ResponsesView
 							stageType={attempt.stage_type}
@@ -140,6 +158,118 @@ function AttemptSection({
 					) : null}
 				</div>
 			) : null}
+		</div>
+	);
+}
+
+function ManualReviewBlock({
+	jobId,
+	applicationId,
+	isCurrentStage,
+}: {
+	jobId: string;
+	applicationId: string;
+	isCurrentStage: boolean;
+}) {
+	const [rejectConfirmOpen, setRejectConfirmOpen] = useState(false);
+	const [errorMessage, setErrorMessage] = useState<string | null>(null);
+	const updateBoardStatus = useUpdateBoardStatus(jobId);
+
+	if (!isCurrentStage) {
+		return (
+			<p className="text-sm text-muted-foreground">
+				This stage has already been resolved.
+			</p>
+		);
+	}
+
+	const handleAdvance = async () => {
+		setErrorMessage(null);
+		try {
+			await updateBoardStatus.mutateAsync({
+				applicationId,
+				boardStatus: "Interview",
+			});
+		} catch (err) {
+			setErrorMessage(
+				err instanceof Error ? err.message : "Could not advance candidate.",
+			);
+		}
+	};
+
+	const handleReject = async () => {
+		setErrorMessage(null);
+		setRejectConfirmOpen(false);
+		try {
+			await updateBoardStatus.mutateAsync({
+				applicationId,
+				boardStatus: "Rejected",
+			});
+		} catch (err) {
+			setErrorMessage(
+				err instanceof Error ? err.message : "Could not reject candidate.",
+			);
+		}
+	};
+
+	return (
+		<div className="space-y-3">
+			<p className="text-sm text-muted-foreground">
+				Awaiting recruiter decision.
+			</p>
+			{errorMessage ? (
+				<Alert variant="destructive">
+					<AlertDescription>{errorMessage}</AlertDescription>
+				</Alert>
+			) : null}
+			<div className="flex flex-wrap gap-2">
+				<Button
+					type="button"
+					size="sm"
+					onClick={() => void handleAdvance()}
+					disabled={updateBoardStatus.isPending}
+				>
+					Advance to next stage
+				</Button>
+				<Button
+					type="button"
+					size="sm"
+					variant="destructive"
+					onClick={() => setRejectConfirmOpen(true)}
+					disabled={updateBoardStatus.isPending}
+				>
+					Reject
+				</Button>
+			</div>
+			<Dialog open={rejectConfirmOpen} onOpenChange={setRejectConfirmOpen}>
+				<DialogContent>
+					<DialogHeader>
+						<DialogTitle>Reject candidate?</DialogTitle>
+						<DialogDescription>
+							This will move the candidate to Rejected. This action cannot be
+							undone from the pipeline view.
+						</DialogDescription>
+					</DialogHeader>
+					<DialogFooter>
+						<Button
+							type="button"
+							variant="outline"
+							onClick={() => setRejectConfirmOpen(false)}
+							disabled={updateBoardStatus.isPending}
+						>
+							Cancel
+						</Button>
+						<Button
+							type="button"
+							variant="destructive"
+							onClick={() => void handleReject()}
+							disabled={updateBoardStatus.isPending}
+						>
+							{updateBoardStatus.isPending ? "Rejecting..." : "Reject"}
+						</Button>
+					</DialogFooter>
+				</DialogContent>
+			</Dialog>
 		</div>
 	);
 }
