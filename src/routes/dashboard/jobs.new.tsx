@@ -7,11 +7,12 @@ import {
 	useRouter,
 } from "@tanstack/react-router";
 import { ArrowLeft, Loader2 } from "lucide-react";
-import { useRef, useState } from "react";
+import { lazy, Suspense, useRef, useState } from "react";
 import { HorizontalStepper } from "#/components/jobs/create/horizontal-stepper";
 import {
 	buildMinimalCreatePayload,
 	buildUpdatePayload,
+	canAdvanceFromPhase,
 	defaultDraft,
 	draftFromJob,
 	firstIncompleteWizardPhase,
@@ -22,7 +23,6 @@ import {
 } from "#/components/jobs/create/job-create-state";
 import { PhaseDetails } from "#/components/jobs/create/phase-details";
 import { PhaseProcess } from "#/components/jobs/create/phase-process";
-import { PhasePublish } from "#/components/jobs/create/phase-publish";
 import {
 	type DraftState,
 	PHASES,
@@ -43,6 +43,26 @@ import {
 	useGenerateJobContent,
 	useUpdateJob,
 } from "#/integrations/api/queries";
+
+const PhasePreview = lazy(() =>
+	import("#/components/jobs/create/phase-preview").then((m) => ({
+		default: m.PhasePreview,
+	})),
+);
+const PhasePublish = lazy(() =>
+	import("#/components/jobs/create/phase-publish").then((m) => ({
+		default: m.PhasePublish,
+	})),
+);
+
+function WizardPhaseFallback() {
+	return (
+		<div className="flex min-h-[40vh] flex-col items-center justify-center gap-3 text-muted-foreground">
+			<Loader2 className="size-8 animate-spin" aria-hidden />
+			<p className="text-sm">Loading…</p>
+		</div>
+	);
+}
 
 export const Route = createFileRoute("/dashboard/jobs/new")({
 	validateSearch: (s: Record<string, unknown>) => ({
@@ -173,7 +193,7 @@ function CreateJobWizard({ routeJobId, initialJob }: CreateJobWizardProps) {
 	async function handleSaveAndContinue() {
 		setErrorMessage(null);
 
-		const validation = validatePhase(phase, draft);
+		const validation = canAdvanceFromPhase(phase, draft);
 		if (!validation.ok) {
 			setPhasesWithShownValidation((prev) => new Set([...prev, phase]));
 			setErrorMessage("Please fix the errors above before continuing.");
@@ -284,6 +304,8 @@ function CreateJobWizard({ routeJobId, initialJob }: CreateJobWizardProps) {
 				setErrorMessage(
 					"Complete the Hiring process step before opening this phase.",
 				);
+			} else if (!validatePhase("Preview", draft).ok) {
+				setErrorMessage("Complete the Preview step before opening this phase.");
 			} else {
 				setErrorMessage("This step is not available yet.");
 			}
@@ -354,15 +376,29 @@ function CreateJobWizard({ routeJobId, initialJob }: CreateJobWizardProps) {
 				/>
 			) : null}
 
+			{phase === "Preview" ? (
+				<Suspense fallback={<WizardPhaseFallback />}>
+					<PhasePreview
+						draft={draft}
+						routeJobId={routeJobId}
+						onBack={goBack}
+						onSaveAndContinue={handleSaveAndContinue}
+						isSaving={isSaving}
+					/>
+				</Suspense>
+			) : null}
+
 			{phase === "Publish" ? (
-				<PhasePublish
-					draft={draft}
-					update={update}
-					onPublish={handlePublish}
-					isSaving={isSaving}
-					canPublish={!!routeJobId}
-					onBack={goBack}
-				/>
+				<Suspense fallback={<WizardPhaseFallback />}>
+					<PhasePublish
+						draft={draft}
+						update={update}
+						onPublish={handlePublish}
+						isSaving={isSaving}
+						canPublish={!!routeJobId}
+						onBack={goBack}
+					/>
+				</Suspense>
 			) : null}
 		</div>
 	);
