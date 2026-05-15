@@ -3,8 +3,8 @@ import {
 	createFileRoute,
 	Link,
 	Outlet,
+	useChildMatches,
 	useNavigate,
-	useRouterState,
 } from "@tanstack/react-router";
 import {
 	ArrowLeft,
@@ -46,14 +46,8 @@ export const Route = createFileRoute("/jobs/$id")({
 });
 
 function InterviewIdRoute() {
-	/** Nested routes (`/session`, `/pipeline`) must render `<Outlet />` or their page never mounts. */
-	const isNestedJobChild = useRouterState({
-		select: (s) => {
-			const path = s.location.pathname.replace(/\/$/, "");
-			return path.endsWith("/session") || path.endsWith("/pipeline");
-		},
-	});
-	if (isNestedJobChild) {
+	const childMatches = useChildMatches();
+	if (childMatches.length > 0) {
 		return <Outlet />;
 	}
 	return <InterviewDetailPage />;
