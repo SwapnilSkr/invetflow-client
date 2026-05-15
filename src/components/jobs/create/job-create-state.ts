@@ -205,7 +205,7 @@ export function defaultDraft(): DraftState {
 		jobDescription: "",
 		pipeline: defaultPipeline(),
 		publicLinkEnabled: true,
-		careersPage: false,
+		careersPage: true,
 		externalBoards: [],
 		requireResume: true,
 		requirePhone: true,

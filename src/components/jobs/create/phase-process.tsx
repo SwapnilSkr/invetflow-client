@@ -79,13 +79,7 @@ function noopAssessmentQuery(stageId: string) {
 	});
 }
 
-const AUTOMATION_OPTIONS: StageAutomation[] = [
-	"None",
-	"SendInvitation",
-	"ScheduleMeeting",
-	"SendRejection",
-	"SendHiredNotification",
-];
+const AUTOMATION_OPTIONS: StageAutomation[] = ["None", "SendInvitation"];
 
 export function PhaseProcess({
 	draft,
