@@ -35,6 +35,7 @@ import { Route as DashboardAssessmentsGenericNewRouteImport } from './routes/das
 import { Route as DashboardAssessmentsGenericIdRouteImport } from './routes/dashboard/assessments.generic.$id'
 import { Route as DashboardAssessmentsCodingNewRouteImport } from './routes/dashboard/assessments.coding.new'
 import { Route as DashboardAssessmentsCodingIdRouteImport } from './routes/dashboard/assessments.coding.$id'
+import { Route as JobsIdInterviewsSessionIdMeetRouteImport } from './routes/jobs/$id.interviews.$sessionId.meet'
 
 const SignInRoute = SignInRouteImport.update({
   id: '/sign-in',
@@ -176,6 +177,12 @@ const DashboardAssessmentsCodingIdRoute =
     path: '/coding/$id',
     getParentRoute: () => DashboardAssessmentsRoute,
   } as any)
+const JobsIdInterviewsSessionIdMeetRoute =
+  JobsIdInterviewsSessionIdMeetRouteImport.update({
+    id: '/interviews/$sessionId/meet',
+    path: '/interviews/$sessionId/meet',
+    getParentRoute: () => JobsIdRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -204,6 +211,7 @@ export interface FileRoutesByFullPath {
   '/dashboard/assessments/psychometric/new': typeof DashboardAssessmentsPsychometricNewRoute
   '/dashboard/assessments/voice/$id': typeof DashboardAssessmentsVoiceIdRoute
   '/dashboard/assessments/voice/new': typeof DashboardAssessmentsVoiceNewRoute
+  '/jobs/$id/interviews/$sessionId/meet': typeof JobsIdInterviewsSessionIdMeetRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -231,6 +239,7 @@ export interface FileRoutesByTo {
   '/dashboard/assessments/psychometric/new': typeof DashboardAssessmentsPsychometricNewRoute
   '/dashboard/assessments/voice/$id': typeof DashboardAssessmentsVoiceIdRoute
   '/dashboard/assessments/voice/new': typeof DashboardAssessmentsVoiceNewRoute
+  '/jobs/$id/interviews/$sessionId/meet': typeof JobsIdInterviewsSessionIdMeetRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -260,6 +269,7 @@ export interface FileRoutesById {
   '/dashboard/assessments/psychometric/new': typeof DashboardAssessmentsPsychometricNewRoute
   '/dashboard/assessments/voice/$id': typeof DashboardAssessmentsVoiceIdRoute
   '/dashboard/assessments/voice/new': typeof DashboardAssessmentsVoiceNewRoute
+  '/jobs/$id/interviews/$sessionId/meet': typeof JobsIdInterviewsSessionIdMeetRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -290,6 +300,7 @@ export interface FileRouteTypes {
     | '/dashboard/assessments/psychometric/new'
     | '/dashboard/assessments/voice/$id'
     | '/dashboard/assessments/voice/new'
+    | '/jobs/$id/interviews/$sessionId/meet'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -317,6 +328,7 @@ export interface FileRouteTypes {
     | '/dashboard/assessments/psychometric/new'
     | '/dashboard/assessments/voice/$id'
     | '/dashboard/assessments/voice/new'
+    | '/jobs/$id/interviews/$sessionId/meet'
   id:
     | '__root__'
     | '/'
@@ -345,6 +357,7 @@ export interface FileRouteTypes {
     | '/dashboard/assessments/psychometric/new'
     | '/dashboard/assessments/voice/$id'
     | '/dashboard/assessments/voice/new'
+    | '/jobs/$id/interviews/$sessionId/meet'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -542,6 +555,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DashboardAssessmentsCodingIdRouteImport
       parentRoute: typeof DashboardAssessmentsRoute
     }
+    '/jobs/$id/interviews/$sessionId/meet': {
+      id: '/jobs/$id/interviews/$sessionId/meet'
+      path: '/interviews/$sessionId/meet'
+      fullPath: '/jobs/$id/interviews/$sessionId/meet'
+      preLoaderRoute: typeof JobsIdInterviewsSessionIdMeetRouteImport
+      parentRoute: typeof JobsIdRoute
+    }
   }
 }
 
@@ -613,11 +633,13 @@ const DashboardRouteRouteWithChildren = DashboardRouteRoute._addFileChildren(
 interface JobsIdRouteChildren {
   JobsIdPipelineRoute: typeof JobsIdPipelineRoute
   JobsIdSessionRoute: typeof JobsIdSessionRoute
+  JobsIdInterviewsSessionIdMeetRoute: typeof JobsIdInterviewsSessionIdMeetRoute
 }
 
 const JobsIdRouteChildren: JobsIdRouteChildren = {
   JobsIdPipelineRoute: JobsIdPipelineRoute,
   JobsIdSessionRoute: JobsIdSessionRoute,
+  JobsIdInterviewsSessionIdMeetRoute: JobsIdInterviewsSessionIdMeetRoute,
 }
 
 const JobsIdRouteWithChildren =
@@ -636,12 +658,3 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { createStart } from '@tanstack/react-start'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-  }
-}
