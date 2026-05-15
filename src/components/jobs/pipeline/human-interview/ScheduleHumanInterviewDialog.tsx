@@ -131,7 +131,8 @@ export function ScheduleHumanInterviewDialog({
 					interviewer_user_ids: interviewerIds,
 					scheduled_at: at.toISOString(),
 					duration_minutes: duration,
-					meeting_link: roomType === "Internal" ? null : meetingLink.trim() || null,
+					meeting_link:
+						roomType === "Internal" ? null : meetingLink.trim() || null,
 					location: location.trim() || null,
 					timezone: timezone.trim(),
 				};
@@ -142,7 +143,8 @@ export function ScheduleHumanInterviewDialog({
 					interviewer_user_ids: interviewerIds,
 					scheduled_at: at.toISOString(),
 					duration_minutes: duration,
-					meeting_link: roomType === "Internal" ? null : meetingLink.trim() || null,
+					meeting_link:
+						roomType === "Internal" ? null : meetingLink.trim() || null,
 					room_type: roomType,
 					location: location.trim() || null,
 					timezone: timezone.trim(),
