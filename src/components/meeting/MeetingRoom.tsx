@@ -27,26 +27,15 @@ export function MeetingRoom({ sessionId, jobId }: MeetingRoomProps) {
 		joinMeeting.mutate(sessionId);
 	}, [joinMeeting, joinStarted, sessionId]);
 
-	if (joinMeeting.isPending || !joinMeeting.data) {
-		return (
-			<div className="flex min-h-screen items-center justify-center bg-background text-foreground">
-				<div className="flex items-center gap-3 text-sm text-muted-foreground">
-					<Loader2 className="size-5 animate-spin" aria-hidden />
-					Joining meeting...
-				</div>
-			</div>
-		);
-	}
-
 	if (joinMeeting.isError) {
+		const message =
+			joinMeeting.error instanceof Error
+				? joinMeeting.error.message
+				: "Could not join this meeting.";
 		return (
 			<div className="mx-auto flex min-h-screen max-w-xl flex-col justify-center gap-4 p-6">
 				<Alert variant="destructive">
-					<AlertDescription>
-						{joinMeeting.error instanceof Error
-							? joinMeeting.error.message
-							: "Could not join this meeting."}
-					</AlertDescription>
+					<AlertDescription>{message}</AlertDescription>
 				</Alert>
 				<Button
 					type="button"
@@ -57,6 +46,17 @@ export function MeetingRoom({ sessionId, jobId }: MeetingRoomProps) {
 				>
 					Back to pipeline
 				</Button>
+			</div>
+		);
+	}
+
+	if (joinMeeting.isPending || !joinMeeting.data) {
+		return (
+			<div className="flex min-h-screen items-center justify-center bg-background text-foreground">
+				<div className="flex items-center gap-3 text-sm text-muted-foreground">
+					<Loader2 className="size-5 animate-spin" aria-hidden />
+					Joining meeting...
+				</div>
 			</div>
 		);
 	}
