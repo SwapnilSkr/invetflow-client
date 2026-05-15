@@ -157,36 +157,47 @@ export function PipelineAddStageMenu({
 							const disabled =
 								dupEntity || reservedSystem || phoneInterviewLocksAdds;
 							return (
-								<Tooltip key={type}>
-									<TooltipTrigger asChild>
-										<DropdownMenuItem
-											disabled={disabled}
-											onSelect={(e) => {
-												e.preventDefault();
-												if (!disabled) onAdd(type);
-											}}
-										>
-											<span className="flex items-center gap-2">
-												<Icon className="size-4 text-muted-foreground" />
-												<span>{meta?.label ?? type}</span>
-											</span>
-											{dupEntity ? (
-												<span className="ml-auto text-[10px] text-muted-foreground">
-													In pipeline
-												</span>
-											) : null}
-											{reservedSystem ? (
-												<span className="ml-auto text-[10px] text-muted-foreground">
-													System stage
-												</span>
-											) : null}
-											<Info className="ml-auto size-3.5 text-muted-foreground" />
-										</DropdownMenuItem>
-									</TooltipTrigger>
-									<TooltipContent side="right" className="max-w-[260px]">
-										{meta?.description ?? "Adds this stage to the hiring flow."}
-									</TooltipContent>
-								</Tooltip>
+								<DropdownMenuItem
+									key={type}
+									disabled={disabled}
+									onSelect={(e) => {
+										e.preventDefault();
+										if (!disabled) onAdd(type);
+									}}
+								>
+									<span className="flex items-center gap-2">
+										<Icon className="size-4 text-muted-foreground" />
+										<span>{meta?.label ?? type}</span>
+									</span>
+									{dupEntity ? (
+										<span className="ml-auto text-[10px] text-muted-foreground">
+											In pipeline
+										</span>
+									) : null}
+									{reservedSystem ? (
+										<span className="ml-auto text-[10px] text-muted-foreground">
+											System stage
+										</span>
+									) : null}
+									<Tooltip>
+										<TooltipTrigger asChild>
+											<button
+												type="button"
+												tabIndex={-1}
+												aria-label={`About ${meta?.label ?? type}`}
+												className="ml-auto inline-flex size-5 items-center justify-center rounded-full text-muted-foreground hover:bg-muted hover:text-foreground"
+												onPointerDown={(e) => e.preventDefault()}
+												onClick={(e) => e.preventDefault()}
+											>
+												<Info className="size-3.5" />
+											</button>
+										</TooltipTrigger>
+										<TooltipContent side="right" className="max-w-[260px]">
+											{meta?.description ??
+												"Adds this stage to the hiring flow."}
+										</TooltipContent>
+									</Tooltip>
+								</DropdownMenuItem>
 							);
 						})}
 					</DropdownMenuContent>

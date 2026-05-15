@@ -1,4 +1,3 @@
-import { Link } from "@tiptap/extension-link";
 import { Placeholder } from "@tiptap/extension-placeholder";
 import { EditorContent, useEditor } from "@tiptap/react";
 import { StarterKit } from "@tiptap/starter-kit";
@@ -10,7 +9,7 @@ import {
 	ListOrdered,
 } from "lucide-react";
 import type { ReactNode } from "react";
-import { useEffect, useMemo } from "react";
+import { useCallback, useEffect, useMemo, useRef } from "react";
 import { Button } from "#/components/ui/button";
 import { jobDescriptionSourceToTipTapHtml } from "#/lib/job-description-html";
 import { cn } from "#/lib/utils";
@@ -46,27 +45,39 @@ export function RichTextEditor({
 	className,
 	toolbarExtra,
 }: RichTextEditorProps) {
+	const onChangeRef = useRef(onChange);
+	useEffect(() => {
+		onChangeRef.current = onChange;
+	}, [onChange]);
+
+	const handleEditorUpdate = useCallback(
+		({ editor: ed }: { editor: NonNullable<ReturnType<typeof useEditor>> }) => {
+			onChangeRef.current(ed.getHTML());
+		},
+		[],
+	);
+
 	const extensions = useMemo(
 		() => [
-			StarterKit,
+			StarterKit.configure({
+				link: { openOnClick: false, autolink: true },
+			}),
 			Placeholder.configure({
 				placeholder: placeholder ?? "Write something…",
 				emptyNodeClass: "is-empty",
 			}),
-			Link.configure({ openOnClick: false, autolink: true }),
 		],
 		[placeholder],
 	);
 
+	// Do not pass `content` here: TipTap's useEditor merges options every render when
+	// deps is [] and strict-compares `content` to editor.options.content. Mismatches
+	// (e.g. "" vs normalized doc) trigger setOptions every time → transaction →
+	// re-render → maximum update depth. Sync `value` only in the effect below.
 	const editor = useEditor({
 		extensions,
-		content: jobDescriptionSourceToTipTapHtml(value),
-		// Defer first render to the client — TanStack Start SSRs by default and
-		// ProseMirror needs the DOM.
 		immediatelyRender: false,
-		onUpdate({ editor: ed }) {
-			onChange(ed.getHTML());
-		},
+		onUpdate: handleEditorUpdate,
 	});
 
 	useEffect(() => {

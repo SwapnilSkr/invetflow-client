@@ -829,26 +829,36 @@ function AutomationDropdown({
 			</DropdownMenuTrigger>
 			<DropdownMenuContent align="start" className="w-64">
 				{AUTOMATION_OPTIONS.map((option) => (
-					<Tooltip key={option}>
-						<TooltipTrigger asChild>
-							<DropdownMenuItem
-								className="gap-2"
-								onSelect={(e) => {
-									e.preventDefault();
-									onChange(option);
-								}}
-							>
-								<Check
-									className={`size-4 ${option === value ? "opacity-100" : "opacity-0"}`}
-								/>
-								<span>{automationLabel(option)}</span>
-								<Info className="ml-auto size-3.5 text-muted-foreground" />
-							</DropdownMenuItem>
-						</TooltipTrigger>
-						<TooltipContent side="right" className="max-w-[260px]">
-							{automationHelp(option)}
-						</TooltipContent>
-					</Tooltip>
+					<DropdownMenuItem
+						key={option}
+						className="gap-2"
+						onSelect={(e) => {
+							e.preventDefault();
+							onChange(option);
+						}}
+					>
+						<Check
+							className={`size-4 ${option === value ? "opacity-100" : "opacity-0"}`}
+						/>
+						<span>{automationLabel(option)}</span>
+						<Tooltip>
+							<TooltipTrigger asChild>
+								<button
+									type="button"
+									tabIndex={-1}
+									aria-label={`About ${automationLabel(option)}`}
+									className="ml-auto inline-flex size-5 items-center justify-center rounded-full text-muted-foreground hover:bg-muted hover:text-foreground"
+									onPointerDown={(e) => e.preventDefault()}
+									onClick={(e) => e.preventDefault()}
+								>
+									<Info className="size-3.5" />
+								</button>
+							</TooltipTrigger>
+							<TooltipContent side="right" className="max-w-[260px]">
+								{automationHelp(option)}
+							</TooltipContent>
+						</Tooltip>
+					</DropdownMenuItem>
 				))}
 			</DropdownMenuContent>
 		</DropdownMenu>

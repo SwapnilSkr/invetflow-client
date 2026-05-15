@@ -1,5 +1,11 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import {
+	createFileRoute,
+	Link,
+	useCanGoBack,
+	useNavigate,
+	useRouter,
+} from "@tanstack/react-router";
 import { ArrowLeft, Loader2 } from "lucide-react";
 import { useState } from "react";
 import { HorizontalStepper } from "#/components/jobs/create/horizontal-stepper";
@@ -50,6 +56,8 @@ type CreateJobWizardProps = {
 
 /** Owns wizard state; remounted via `key` when switching virgin → saved id so draft hydration needs no effect. */
 function CreateJobWizard({ routeJobId, initialJob }: CreateJobWizardProps) {
+	const router = useRouter();
+	const canGoBack = useCanGoBack();
 	const navigate = useNavigate();
 	const queryClient = useQueryClient();
 
@@ -206,6 +214,14 @@ function CreateJobWizard({ routeJobId, initialJob }: CreateJobWizardProps) {
 		}
 	}
 
+	function handleHeaderBack() {
+		if (canGoBack) {
+			router.history.back();
+			return;
+		}
+		void navigate({ to: "/dashboard/jobs" });
+	}
+
 	const currentPhaseIndex = PHASES.indexOf(phase);
 	const inlinePhaseErrors = phasesWithShownValidation.has(phase)
 		? validatePhase(phase, draft).errors
@@ -246,13 +262,14 @@ function CreateJobWizard({ routeJobId, initialJob }: CreateJobWizardProps) {
 				<div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
 					<div>
 						<Button
+							type="button"
 							variant="ghost"
 							size="sm"
 							className="-ml-2 mb-1 text-muted-foreground"
-							onClick={() => void navigate({ to: "/dashboard/jobs" })}
+							onClick={handleHeaderBack}
 						>
 							<ArrowLeft className="size-4" />
-							Jobs
+							Back
 						</Button>
 						<h1 className="text-xl font-semibold tracking-tight text-foreground">
 							{headingTitle}

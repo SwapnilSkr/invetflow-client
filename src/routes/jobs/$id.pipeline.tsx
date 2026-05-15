@@ -13,7 +13,7 @@ import {
 	useRouter,
 } from "@tanstack/react-router";
 import { ArrowLeft, UserPlus } from "lucide-react";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { ApplicationCard } from "#/components/jobs/pipeline/ApplicationCard";
 import { InviteConfirmDialog } from "#/components/jobs/pipeline/InviteConfirmDialog";
 import { InviteModal } from "#/components/jobs/pipeline/InviteModal";
@@ -56,6 +56,14 @@ type PipelinePageHeaderProps = {
 	job: Job;
 	jobId: string;
 };
+
+function sameOrder(a: string[], b: string[]): boolean {
+	if (a.length !== b.length) return false;
+	for (let i = 0; i < a.length; i += 1) {
+		if (a[i] !== b[i]) return false;
+	}
+	return true;
+}
 
 /** Toolbar: history Back + fixed destinations. Hooks live here (not nested in JobPipelinePage) to avoid inline child components. */
 function PipelinePageHeader({ job, jobId }: PipelinePageHeaderProps) {
@@ -128,19 +136,34 @@ function JobPipelinePage() {
 	const flashTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
 	const inviteUrl = buildInviteUrl(job);
-	const baseColumns = buildColumns(job, applications);
+	const baseColumns = useMemo(
+		() => buildColumns(job, applications),
+		[job, applications],
+	);
+	const baseColumnIds = useMemo(
+		() => baseColumns.map((column) => column.id),
+		[baseColumns],
+	);
 	const [columnOrder, setColumnOrder] = useState<string[]>([]);
 	useEffect(() => {
 		setColumnOrder((prev) => {
-			const known = new Set(baseColumns.map((column) => column.id));
+			const known = new Set(baseColumnIds);
 			const kept = prev.filter((id) => known.has(id));
-			const missing = baseColumns
-				.map((column) => column.id)
-				.filter((id) => !kept.includes(id));
-			return [...kept, ...missing];
+			const missing = baseColumnIds.filter((id) => !kept.includes(id));
+			const next = [...kept, ...missing];
+			return sameOrder(prev, next) ? prev : next;
 		});
-	}, [baseColumns]);
-	const byId = new Map(baseColumns.map((column) => [column.id, column]));
+	}, [baseColumnIds]);
+	useEffect(
+		() => () => {
+			if (flashTimerRef.current) clearTimeout(flashTimerRef.current);
+		},
+		[],
+	);
+	const byId = useMemo(
+		() => new Map(baseColumns.map((column) => [column.id, column])),
+		[baseColumns],
+	);
 	const columns = columnOrder
 		.map((id) => byId.get(id))
 		.filter((column): column is PipelineColumn => Boolean(column));
