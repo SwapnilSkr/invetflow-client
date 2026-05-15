@@ -1,4 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
+import { Link } from "@tanstack/react-router";
 import { format, formatDistanceToNow } from "date-fns";
 import {
 	Calendar,
@@ -6,6 +7,7 @@ import {
 	ExternalLink,
 	MapPin,
 	Users,
+	Video,
 } from "lucide-react";
 import { useState } from "react";
 import { Alert, AlertDescription } from "#/components/ui/alert";
@@ -180,7 +182,16 @@ function ScheduledView({
 							: "(no interviewers)"}
 					</span>
 				</div>
-				{session.meeting_link ? (
+				{session.room_type === "Internal" ? (
+					<Link
+						to="/jobs/$id/interviews/$sessionId/meet"
+						params={{ id: jobId, sessionId: session.id }}
+						className="inline-flex items-center gap-1.5 text-primary hover:underline"
+					>
+						<Video className="h-4 w-4" aria-hidden="true" />
+						Join meeting
+					</Link>
+				) : session.meeting_link ? (
 					<a
 						href={session.meeting_link}
 						target="_blank"
