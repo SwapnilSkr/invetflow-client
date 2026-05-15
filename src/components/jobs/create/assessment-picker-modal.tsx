@@ -13,6 +13,7 @@ import { GenericAssessmentForm } from "#/components/assessments/GenericAssessmen
 import { PrescreeningFormComponent } from "#/components/assessments/PrescreeningFormComponent";
 import { PsychometricAssessmentForm } from "#/components/assessments/PsychometricAssessmentForm";
 import { VoiceAssessmentForm } from "#/components/assessments/VoiceAssessmentForm";
+import { Button } from "#/components/ui/button";
 import {
 	Dialog,
 	DialogContent,
@@ -65,6 +66,7 @@ export function AssessmentPickerModal({
 	editingAssessmentId,
 	onLinked,
 }: AssessmentPickerModalProps) {
+	const [tab, setTab] = useState<"pick" | "new">("pick");
 	const [search, setSearch] = useState("");
 	const listParams = useMemo(
 		() => ({ q: search, limit: 50, offset: 0 }),
@@ -147,6 +149,15 @@ export function AssessmentPickerModal({
 	function close() {
 		onOpenChange(false);
 		setSearch("");
+		setTab("pick");
+	}
+
+	function handleOpenChange(next: boolean) {
+		if (!next) {
+			setSearch("");
+			setTab("pick");
+		}
+		onOpenChange(next);
 	}
 
 	const title =
@@ -155,7 +166,7 @@ export function AssessmentPickerModal({
 			: `Link ${stageType} assessment`;
 
 	return (
-		<Dialog open={open} onOpenChange={onOpenChange}>
+		<Dialog open={open} onOpenChange={handleOpenChange}>
 			<DialogContent className="max-h-[90vh] max-w-3xl overflow-hidden">
 				<DialogHeader>
 					<DialogTitle>{title}</DialogTitle>
@@ -188,7 +199,11 @@ export function AssessmentPickerModal({
 						editingAssessmentId={editingAssessmentId}
 					/>
 				) : (
-					<Tabs defaultValue="pick">
+					<Tabs
+						value={tab}
+						onValueChange={(v) => setTab(v as "pick" | "new")}
+						className="w-full"
+					>
 						<TabsList>
 							<TabsTrigger value="pick">Choose existing</TabsTrigger>
 							<TabsTrigger value="new">Create new</TabsTrigger>
@@ -210,6 +225,7 @@ export function AssessmentPickerModal({
 									onLinked(id);
 									close();
 								}}
+								onSwitchToCreate={() => setTab("new")}
 							/>
 						</TabsContent>
 						<TabsContent value="new" className="pt-4">
@@ -242,6 +258,7 @@ function ListPane({
 	psych,
 	pres,
 	onPick,
+	onSwitchToCreate,
 }: {
 	stageType: StageType;
 	voice: ReturnType<typeof useQuery>;
@@ -250,6 +267,7 @@ function ListPane({
 	psych: ReturnType<typeof useQuery>;
 	pres: ReturnType<typeof useQuery>;
 	onPick: (id: string) => void;
+	onSwitchToCreate: () => void;
 }) {
 	const q =
 		stageType === "VoiceInterview"
@@ -283,8 +301,7 @@ function ListPane({
 	if (q.error) {
 		return (
 			<p className="text-sm text-destructive">
-				Assessment API is unavailable until Phase 1 routes are wired. Preview UI
-				only.
+				Couldn&apos;t load assessments. Check your connection and try again.
 			</p>
 		);
 	}
@@ -296,9 +313,14 @@ function ListPane({
 
 	if (rows.length === 0) {
 		return (
-			<p className="text-sm text-muted-foreground">
-				No assessments found. Switch to «Create new» or adjust search.
-			</p>
+			<div className="space-y-3">
+				<Button type="button" onClick={onSwitchToCreate}>
+					Create your first assessment
+				</Button>
+				<p className="text-sm text-muted-foreground">
+					No assessments found yet. You can also adjust your search.
+				</p>
+			</div>
 		);
 	}
 
@@ -544,8 +566,7 @@ function EditAssessmentBody({
 function MissingAssessment() {
 	return (
 		<p className="text-sm text-muted-foreground">
-			Could not load this assessment. Ensure Phase 1 list/detail routes are
-			deployed.
+			Couldn&apos;t load this assessment. It may have been deleted.
 		</p>
 	);
 }
@@ -611,6 +632,7 @@ function toPsychPayload(
 		slug: row.slug,
 		framework: row.framework,
 		time_limit_minutes: row.time_limit_minutes,
+		items: row.items.map((item) => ({ ...item })),
 	};
 }
 
