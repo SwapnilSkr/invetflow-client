@@ -27,6 +27,7 @@ function toPayload(
 		slug: row.slug,
 		framework: row.framework,
 		time_limit_minutes: row.time_limit_minutes,
+		items: (row.items ?? []).map((item) => ({ ...item })),
 	};
 }
 
