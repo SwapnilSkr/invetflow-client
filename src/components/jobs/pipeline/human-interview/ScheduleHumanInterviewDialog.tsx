@@ -41,6 +41,12 @@ const defaultTimezone =
 		? Intl.DateTimeFormat().resolvedOptions().timeZone
 		: "UTC";
 
+function nextHourSlot(): Date {
+	const d = new Date();
+	d.setHours(d.getHours() + 1, 0, 0, 0);
+	return d;
+}
+
 export function ScheduleHumanInterviewDialog({
 	open,
 	onOpenChange,
@@ -55,7 +61,7 @@ export function ScheduleHumanInterviewDialog({
 		existing?.interviewer_user_ids ?? [],
 	);
 	const [scheduledAt, setScheduledAt] = useState<Date | null>(
-		existing ? new Date(existing.scheduled_at) : null,
+		existing ? new Date(existing.scheduled_at) : nextHourSlot(),
 	);
 	const [duration, setDuration] = useState<number>(
 		existing?.duration_minutes ?? 30,
@@ -78,7 +84,7 @@ export function ScheduleHumanInterviewDialog({
 
 	const reset = () => {
 		setInterviewerIds(existing?.interviewer_user_ids ?? []);
-		setScheduledAt(existing ? new Date(existing.scheduled_at) : null);
+		setScheduledAt(existing ? new Date(existing.scheduled_at) : nextHourSlot());
 		setDuration(existing?.duration_minutes ?? 30);
 		setMeetingLink(existing?.meeting_link ?? "");
 		setRoomType(existing?.room_type ?? "External");
@@ -103,7 +109,7 @@ export function ScheduleHumanInterviewDialog({
 			return "The selected date is invalid.";
 		}
 		if (scheduledAt <= new Date()) {
-			return "Pick a future date and time.";
+			return `The selected time (${scheduledAt.toLocaleString()}) is in the past. Pick a future date and time.`;
 		}
 		if (duration < 5 || duration > 480) {
 			return "Duration must be between 5 and 480 minutes.";
