@@ -4,12 +4,12 @@ import {
 	VideoConference,
 } from "@livekit/components-react";
 import "@livekit/components-styles";
+import { useQuery } from "@tanstack/react-query";
 import { useNavigate } from "@tanstack/react-router";
 import { Loader2 } from "lucide-react";
-import { useEffect, useState } from "react";
 import { Alert, AlertDescription } from "#/components/ui/alert";
 import { Button } from "#/components/ui/button";
-import { useJoinHumanInterviewMeeting } from "#/integrations/api/queries";
+import { humanInterviewQueries } from "#/integrations/api/queries";
 
 type MeetingRoomProps = {
 	sessionId: string;
@@ -18,14 +18,7 @@ type MeetingRoomProps = {
 
 export function MeetingRoom({ sessionId, jobId }: MeetingRoomProps) {
 	const navigate = useNavigate();
-	const joinMeeting = useJoinHumanInterviewMeeting();
-	const [joinStarted, setJoinStarted] = useState(false);
-
-	useEffect(() => {
-		if (joinStarted || joinMeeting.isPending || joinMeeting.data) return;
-		setJoinStarted(true);
-		joinMeeting.mutate(sessionId);
-	}, [joinMeeting, joinStarted, sessionId]);
+	const joinMeeting = useQuery(humanInterviewQueries.joinToken(sessionId));
 
 	if (joinMeeting.isError) {
 		const message =
