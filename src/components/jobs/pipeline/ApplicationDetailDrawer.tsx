@@ -13,6 +13,7 @@ import { Progress } from "#/components/ui/progress";
 import { Skeleton } from "#/components/ui/skeleton";
 import type { StageAttempt } from "#/integrations/api/client";
 import { applicationQueries } from "#/integrations/api/queries";
+import { HumanInterviewBlock } from "./human-interview/HumanInterviewBlock";
 
 interface ApplicationDetailDrawerProps {
 	jobId: string;
@@ -33,6 +34,7 @@ export function ApplicationDetailDrawer({
 	});
 	const application = detail.data?.application;
 	const attempts = application?.stage_attempts ?? [];
+	const orgId = application?.organization_id ?? "";
 
 	return (
 		<Dialog open={open} onOpenChange={onOpenChange}>
@@ -63,7 +65,13 @@ export function ApplicationDetailDrawer({
 				) : (
 					<div className="space-y-3">
 						{attempts.map((attempt) => (
-							<AttemptSection key={attempt.stage_id} attempt={attempt} />
+							<AttemptSection
+								key={attempt.stage_id}
+								attempt={attempt}
+								jobId={jobId}
+								applicationId={applicationId}
+								orgId={orgId}
+							/>
 						))}
 					</div>
 				)}
@@ -72,8 +80,20 @@ export function ApplicationDetailDrawer({
 	);
 }
 
-function AttemptSection({ attempt }: { attempt: StageAttempt }) {
+function AttemptSection({
+	attempt,
+	jobId,
+	applicationId,
+	orgId,
+}: {
+	attempt: StageAttempt;
+	jobId: string;
+	applicationId: string;
+	orgId: string;
+}) {
 	const [expanded, setExpanded] = useState(false);
+	const isHumanInterview = attempt.stage_type === "HumanInterview";
+	const hasExpandableBody = isHumanInterview || !!attempt.responses;
 
 	return (
 		<div className="rounded-lg border border-border">
@@ -97,12 +117,27 @@ function AttemptSection({ attempt }: { attempt: StageAttempt }) {
 					<ChevronDown className="h-4 w-4 text-muted-foreground" />
 				)}
 			</button>
-			{expanded && attempt.responses ? (
+			{expanded && hasExpandableBody ? (
 				<div className="border-t border-border px-4 py-3">
-					<ResponsesView
-						stageType={attempt.stage_type}
-						responses={attempt.responses}
-					/>
+					{isHumanInterview ? (
+						orgId ? (
+							<HumanInterviewBlock
+								jobId={jobId}
+								applicationId={applicationId}
+								orgId={orgId}
+								stageId={attempt.stage_id}
+							/>
+						) : (
+							<p className="text-sm text-muted-foreground">
+								Loading organization context...
+							</p>
+						)
+					) : attempt.responses ? (
+						<ResponsesView
+							stageType={attempt.stage_type}
+							responses={attempt.responses}
+						/>
+					) : null}
 				</div>
 			) : null}
 		</div>
