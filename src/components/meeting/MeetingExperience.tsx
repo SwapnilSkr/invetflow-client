@@ -36,11 +36,13 @@ const textDecoder = new TextDecoder();
 type MeetingExperienceProps = {
 	title: string;
 	roleLabel: string;
+	allowScreenShare?: boolean;
 };
 
 export function MeetingExperience({
 	title,
 	roleLabel,
+	allowScreenShare = true,
 }: MeetingExperienceProps) {
 	const room = useRoomContext();
 	const connectionState = useConnectionState(room);
@@ -159,18 +161,18 @@ export function MeetingExperience({
 	}
 
 	return (
-		<div className="fixed inset-0 z-50 flex h-[100dvh] min-h-0 flex-col overflow-hidden bg-neutral-950 text-white">
-			<header className="flex h-16 shrink-0 items-center justify-between border-white/10 border-b px-4 md:px-6">
+		<div className="fixed inset-0 z-50 flex h-[100dvh] min-h-0 flex-col overflow-hidden bg-meeting-bg text-meeting-text">
+			<header className="flex h-16 shrink-0 items-center justify-between border-meeting-border border-b px-4 md:px-6">
 				<div className="min-w-0">
 					<p className="truncate font-semibold text-sm md:text-base">{title}</p>
-					<p className="text-neutral-400 text-xs">{roleLabel}</p>
+					<p className="text-meeting-text-muted text-xs">{roleLabel}</p>
 				</div>
-				<div className="flex items-center gap-3 text-neutral-300 text-xs">
-					<span className="hidden items-center gap-1.5 rounded-full bg-white/10 px-3 py-1.5 sm:flex">
+				<div className="flex items-center gap-3 text-meeting-text-muted text-xs">
+					<span className="hidden items-center gap-1.5 rounded-full bg-meeting-surface px-3 py-1.5 sm:flex">
 						<Wifi className="size-3.5" aria-hidden />
 						{connectionLabel(connectionState)}
 					</span>
-					<span className="flex items-center gap-1.5 rounded-full bg-white/10 px-3 py-1.5">
+					<span className="flex items-center gap-1.5 rounded-full bg-meeting-surface px-3 py-1.5">
 						<Users className="size-3.5" aria-hidden />
 						{participants.length}
 					</span>
@@ -202,6 +204,7 @@ export function MeetingExperience({
 						isChatOpen={chatOpen}
 						isMicrophoneEnabled={isMicrophoneEnabled}
 						isScreenShareEnabled={isScreenShareEnabled}
+						allowScreenShare={allowScreenShare}
 						onLeave={leaveMeeting}
 						onToggleCamera={toggleCamera}
 						onToggleChat={() => setChatOpen(!chatOpen)}
@@ -210,7 +213,7 @@ export function MeetingExperience({
 					/>
 
 					<div className="absolute right-4 bottom-24 z-10">
-						<StartMediaButton className="rounded-full bg-white px-4 py-2 font-medium text-neutral-950 text-sm shadow-xl transition hover:bg-neutral-200" />
+						<StartMediaButton className="rounded-full bg-meeting-text px-4 py-2 font-medium text-meeting-bg text-sm shadow-xl transition hover:bg-meeting-text-muted" />
 					</div>
 				</main>
 

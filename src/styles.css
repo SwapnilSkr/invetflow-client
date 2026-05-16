@@ -186,6 +186,12 @@
   --color-onb-panel: var(--onb-panel);
   --color-onb-border: var(--onb-border);
   --color-onb-muted: var(--onb-muted);
+  --color-meeting-bg: #09090b;
+  --color-meeting-surface: #18181b;
+  --color-meeting-surface-hover: #27272a;
+  --color-meeting-border: rgba(255, 255, 255, 0.08);
+  --color-meeting-text: #e4e4e7;
+  --color-meeting-text-muted: #a1a1aa;
 }
 
 html,

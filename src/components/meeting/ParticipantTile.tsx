@@ -19,8 +19,8 @@ export function ParticipantTile({
 	spotlight = false,
 }: ParticipantTileProps) {
 	const participant = trackRef.participant;
-	const participantName =
-		participant.name || participant.identity || "Participant";
+	const displayName = participant.name || participant.identity;
+	const participantName = displayName || "Joining...";
 	const videoReady =
 		isTrackReference(trackRef) &&
 		Boolean(trackRef.publication.track) &&
@@ -29,33 +29,40 @@ export function ParticipantTile({
 
 	return (
 		<section
-			className={`relative min-w-0 overflow-hidden rounded-xl bg-neutral-900 ring-1 transition ${
-				isSpeaking ? "ring-emerald-400" : "ring-white/10"
+			className={`relative min-w-0 overflow-hidden rounded-xl bg-meeting-surface ring-1 transition ${
+				isSpeaking ? "ring-primary" : "ring-meeting-border"
 			} ${tileSizeClass({ compact, dense, spotlight })}`}
 		>
 			{videoReady && isTrackReference(trackRef) ? (
 				<VideoTrack
 					trackRef={trackRef}
-					className={`h-full w-full bg-neutral-900 ${
+					className={`h-full w-full bg-meeting-surface ${
 						isScreenShare ? "object-contain" : "object-cover"
 					}`}
 				/>
 			) : (
-				<div className="grid h-full w-full place-items-center bg-neutral-900">
-					<div className="grid size-20 place-items-center rounded-full bg-neutral-700 font-semibold text-2xl text-white ring-1 ring-white/15 md:size-24">
-						{initials(participantName)}
-					</div>
+				<div className="grid h-full w-full place-items-center bg-meeting-surface">
+					{displayName ? (
+						<div className="grid size-20 place-items-center rounded-full bg-meeting-surface-hover font-semibold text-2xl text-meeting-text ring-1 ring-meeting-border md:size-24">
+							{initials(displayName)}
+						</div>
+					) : (
+						<output
+							className="size-20 animate-pulse rounded-full bg-meeting-surface-hover/80 ring-1 ring-meeting-border md:size-24"
+							aria-label="Participant is joining"
+						/>
+					)}
 				</div>
 			)}
 
 			<div className="absolute right-3 bottom-3 left-3 flex items-center justify-between gap-2">
-				<div className="min-w-0 rounded-full bg-neutral-950/80 px-3 py-1.5 text-white shadow-lg backdrop-blur">
+				<div className="min-w-0 rounded-full bg-meeting-bg/80 px-3 py-1.5 text-meeting-text shadow-lg backdrop-blur">
 					<p className="truncate font-medium text-xs md:text-sm">
 						{participantName}
 						{participant.isLocal ? " (you)" : ""}
 					</p>
 				</div>
-				<div className="grid size-8 shrink-0 place-items-center rounded-full bg-neutral-950/80 text-white shadow-lg backdrop-blur">
+				<div className="grid size-8 shrink-0 place-items-center rounded-full bg-meeting-bg/80 text-meeting-text shadow-lg backdrop-blur">
 					{participant.isMicrophoneEnabled ? (
 						<Mic className="size-4" aria-label="Microphone on" />
 					) : (
@@ -68,7 +75,7 @@ export function ParticipantTile({
 			</div>
 
 			{isScreenShare ? (
-				<div className="absolute top-3 left-3 rounded-full bg-neutral-950/80 px-3 py-1.5 font-medium text-white text-xs shadow-lg backdrop-blur">
+				<div className="absolute top-3 left-3 rounded-full bg-meeting-bg/80 px-3 py-1.5 font-medium text-meeting-text text-xs shadow-lg backdrop-blur">
 					Screen share
 				</div>
 			) : null}

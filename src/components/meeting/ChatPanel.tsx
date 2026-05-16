@@ -35,15 +35,17 @@ export function ChatPanel({ messages, onClose, onSend }: ChatPanelProps) {
 	}
 
 	return (
-		<aside className="absolute inset-x-3 bottom-20 z-30 flex max-h-[calc(100dvh-7rem)] min-h-0 flex-col overflow-hidden rounded-xl border border-white/10 bg-neutral-950 shadow-2xl lg:static lg:inset-auto lg:max-h-none lg:rounded-none lg:border-t-0 lg:border-r-0 lg:border-b-0">
-			<div className="flex h-14 shrink-0 items-center justify-between border-white/10 border-b px-4">
+		<aside className="absolute inset-x-3 bottom-20 z-30 flex max-h-[calc(100dvh-7rem)] min-h-0 flex-col overflow-hidden rounded-xl border border-meeting-border bg-meeting-bg shadow-2xl lg:static lg:inset-auto lg:max-h-none lg:rounded-none lg:border-t-0 lg:border-r-0 lg:border-b-0">
+			<div className="flex h-14 shrink-0 items-center justify-between border-meeting-border border-b px-4">
 				<div>
 					<p className="font-semibold text-sm">Meeting chat</p>
-					<p className="text-neutral-400 text-xs">Visible to everyone here</p>
+					<p className="text-meeting-text-muted text-xs">
+						Visible to everyone here
+					</p>
 				</div>
 				<button
 					type="button"
-					className="grid size-9 place-items-center rounded-full text-neutral-300 transition hover:bg-white/10 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white"
+					className="grid size-9 place-items-center rounded-full text-meeting-text-muted transition hover:bg-meeting-surface-hover hover:text-meeting-text focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-meeting-text"
 					onClick={onClose}
 					aria-label="Close chat"
 				>
@@ -53,24 +55,27 @@ export function ChatPanel({ messages, onClose, onSend }: ChatPanelProps) {
 
 			<div className="min-h-0 flex-1 space-y-3 overflow-y-auto px-4 py-4">
 				{messages.length === 0 ? (
-					<p className="rounded-lg bg-white/5 px-3 py-3 text-neutral-400 text-sm">
+					<p className="rounded-lg bg-meeting-surface/50 px-3 py-3 text-meeting-text-muted text-sm">
 						No messages yet.
 					</p>
 				) : (
 					messages.map((message) => (
-						<div key={message.id} className="rounded-lg bg-white/5 px-3 py-2">
+						<div
+							key={message.id}
+							className="rounded-lg bg-meeting-surface/50 px-3 py-2"
+						>
 							<div className="flex items-center justify-between gap-3 text-xs">
-								<span className="truncate font-medium text-white">
+								<span className="truncate font-medium text-meeting-text">
 									{message.senderName}
 								</span>
-								<span className="shrink-0 text-neutral-500">
+								<span className="shrink-0 text-meeting-text-muted">
 									{new Date(message.timestamp).toLocaleTimeString([], {
 										hour: "2-digit",
 										minute: "2-digit",
 									})}
 								</span>
 							</div>
-							<p className="mt-1 whitespace-pre-wrap break-words text-neutral-200 text-sm">
+							<p className="mt-1 whitespace-pre-wrap break-words text-meeting-text text-sm">
 								{message.message}
 							</p>
 						</div>
@@ -79,7 +84,7 @@ export function ChatPanel({ messages, onClose, onSend }: ChatPanelProps) {
 			</div>
 
 			<form
-				className="shrink-0 border-white/10 border-t p-3"
+				className="shrink-0 border-meeting-border border-t p-3"
 				onSubmit={handleSubmit}
 			>
 				{sendError ? (
@@ -92,12 +97,12 @@ export function ChatPanel({ messages, onClose, onSend }: ChatPanelProps) {
 						value={draft}
 						onChange={(event) => setDraft(event.target.value)}
 						placeholder="Message everyone"
-						className="min-w-0 flex-1 rounded-full border border-white/10 bg-neutral-900 px-4 py-2 text-sm text-white outline-none transition placeholder:text-neutral-500 focus:border-white/40"
+						className="min-w-0 flex-1 rounded-full border border-meeting-border bg-meeting-surface px-4 py-2 text-sm text-meeting-text outline-none transition placeholder:text-meeting-text-muted focus:border-meeting-text-muted"
 					/>
 					<button
 						type="submit"
 						disabled={draft.trim().length === 0 || isSending}
-						className="rounded-full bg-white px-4 py-2 font-medium text-neutral-950 text-sm transition hover:bg-neutral-200 disabled:cursor-not-allowed disabled:opacity-50"
+						className="rounded-full bg-meeting-text px-4 py-2 font-medium text-meeting-bg text-sm transition hover:bg-meeting-text-muted disabled:cursor-not-allowed disabled:opacity-50"
 					>
 						Send
 					</button>

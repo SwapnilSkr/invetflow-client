@@ -3,7 +3,11 @@ import "@livekit/components-styles";
 import { useQuery } from "@tanstack/react-query";
 import { useNavigate } from "@tanstack/react-router";
 import { Loader2 } from "lucide-react";
+import { useState } from "react";
+import { HostControlsMenu } from "#/components/meeting/HostControlsMenu";
 import { MeetingExperience } from "#/components/meeting/MeetingExperience";
+import { PreCallScreen } from "#/components/meeting/PreCallScreen";
+import { WaitingRoomGate } from "#/components/meeting/WaitingRoomGate";
 import { Alert, AlertDescription } from "#/components/ui/alert";
 import { Button } from "#/components/ui/button";
 import { humanInterviewQueries } from "#/integrations/api/queries";
@@ -11,10 +15,18 @@ import { humanInterviewQueries } from "#/integrations/api/queries";
 type MeetingRoomProps = {
 	sessionId: string;
 	jobId: string;
+	isHost?: boolean;
+	allowScreenShare?: boolean;
 };
 
-export function MeetingRoom({ sessionId, jobId }: MeetingRoomProps) {
+export function MeetingRoom({
+	sessionId,
+	jobId,
+	isHost = false,
+	allowScreenShare = true,
+}: MeetingRoomProps) {
 	const navigate = useNavigate();
+	const [phase, setPhase] = useState<"pre-call" | "in-meeting">("pre-call");
 	const joinMeeting = useQuery(humanInterviewQueries.joinToken(sessionId));
 
 	if (joinMeeting.isError) {
@@ -51,10 +63,19 @@ export function MeetingRoom({ sessionId, jobId }: MeetingRoomProps) {
 		);
 	}
 
+	if (phase === "pre-call") {
+		return (
+			<PreCallScreen
+				sessionTitle="Human interview"
+				onJoin={() => setPhase("in-meeting")}
+			/>
+		);
+	}
+
 	return (
-		<div className="h-[100dvh] overflow-hidden bg-neutral-950">
+		<div className="h-[100dvh] overflow-hidden bg-meeting-bg">
 			<LiveKitRoom
-				className="h-[100dvh] overflow-hidden bg-neutral-950"
+				className="h-[100dvh] overflow-hidden bg-meeting-bg"
 				serverUrl={joinMeeting.data.livekit_url}
 				token={joinMeeting.data.livekit_token}
 				connect
@@ -76,7 +97,20 @@ export function MeetingRoom({ sessionId, jobId }: MeetingRoomProps) {
 					navigate({ to: "/jobs/$id/pipeline", params: { id: jobId } })
 				}
 			>
-				<MeetingExperience title="Human interview" roleLabel="Recruiter room" />
+				<WaitingRoomGate sessionId={sessionId} isHost={isHost}>
+					<div className="relative h-full">
+						{isHost ? (
+							<div className="absolute top-4 right-4 z-40">
+								<HostControlsMenu sessionId={sessionId} />
+							</div>
+						) : null}
+						<MeetingExperience
+							title="Human interview"
+							roleLabel={isHost ? "Recruiter room" : "Candidate room"}
+							allowScreenShare={allowScreenShare}
+						/>
+					</div>
+				</WaitingRoomGate>
 				<RoomAudioRenderer />
 			</LiveKitRoom>
 		</div>

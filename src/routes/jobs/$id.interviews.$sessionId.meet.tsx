@@ -7,5 +7,7 @@ export const Route = createFileRoute("/jobs/$id/interviews/$sessionId/meet")({
 
 function RecruiterMeetingRoute() {
 	const { id, sessionId } = Route.useParams();
-	return <MeetingRoom jobId={id} sessionId={sessionId} />;
+	return (
+		<MeetingRoom jobId={id} sessionId={sessionId} isHost allowScreenShare />
+	);
 }
