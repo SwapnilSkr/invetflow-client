@@ -16,10 +16,12 @@ import {
 	GripVertical,
 	Info,
 	Loader2,
+	Settings,
 	Trash2,
 } from "lucide-react";
 import { type JSX, useState } from "react";
 import { AssessmentPickerModal } from "#/components/jobs/create/assessment-picker-modal";
+import { HumanInterviewConfigDialog } from "#/components/jobs/create/HumanInterviewConfigDialog";
 import {
 	defaultPipeline,
 	newClientId,
@@ -51,6 +53,7 @@ import {
 import type {
 	CodingAssessment,
 	GenericAssessment,
+	HumanInterviewStageConfig,
 	JobStage,
 	PrescreeningForm,
 	PsychometricAssessment,
@@ -102,6 +105,11 @@ export function PhaseProcess({
 		targetStageId: null,
 		editAssessmentId: null,
 	}));
+
+	const [interviewConfig, setInterviewConfig] = useState<{
+		open: boolean;
+		targetStageId: string | null;
+	}>({ open: false, targetStageId: null });
 
 	function setStages(stages: JobStage[]) {
 		update("pipeline", {
@@ -451,6 +459,12 @@ export function PhaseProcess({
 																			({index + 1})
 																		</span>
 																	</div>
+																	{stage.stage_type === "HumanInterview" &&
+																	stage.human_interview_config ? (
+																		<HumanInterviewSummaryChip
+																			config={stage.human_interview_config}
+																		/>
+																	) : null}
 																</div>
 
 																<div className="flex shrink-0 items-center gap-1">
@@ -583,6 +597,43 @@ export function PhaseProcess({
 																					</Button>
 																				</>
 																			)}
+																		</div>
+																	</div>
+																</div>
+															) : null}
+
+															{stage.stage_type === "HumanInterview" ? (
+																<div className="mt-4 rounded-md border border-border bg-muted/20 px-3 py-2">
+																	<div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+																		<div className="min-w-0">
+																			<p className="mb-1 text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
+																				Interview settings
+																			</p>
+																			{stage.human_interview_config ? (
+																				<p className="text-xs text-muted-foreground">
+																					Configured
+																				</p>
+																			) : (
+																				<p className="text-sm text-muted-foreground">
+																					No interview settings configured yet.
+																				</p>
+																			)}
+																		</div>
+																		<div className="flex shrink-0 flex-wrap gap-2">
+																			<Button
+																				type="button"
+																				size="sm"
+																				variant="secondary"
+																				onClick={() =>
+																					setInterviewConfig({
+																						open: true,
+																						targetStageId: stage.id,
+																					})
+																				}
+																			>
+																				<Settings className="mr-1 size-3.5" />
+																				Configure interview
+																			</Button>
 																		</div>
 																	</div>
 																</div>
@@ -731,6 +782,49 @@ export function PhaseProcess({
 								draft.pipeline.stages.map((row) =>
 									pickerStage && row.id === pickerStage.id
 										? setLinkedAssessmentId(row, assessmentId)
+										: row,
+								),
+							);
+						}}
+					/>
+				) : null}
+
+				{interviewConfig.targetStageId ? (
+					<HumanInterviewConfigDialog
+						open={interviewConfig.open}
+						onOpenChange={(open) =>
+							setInterviewConfig({
+								open,
+								targetStageId: open ? interviewConfig.targetStageId : null,
+							})
+						}
+						stage={
+							(draft.pipeline.stages.find(
+								(s) => s.id === interviewConfig.targetStageId,
+							) ?? {
+								id: "",
+								title: null,
+								order: 0,
+								stage_type: "HumanInterview",
+								is_mandatory: false,
+								candidate_facing: true,
+								contributes_to_score: false,
+								automation: "None",
+								pass_score: null,
+								is_system_stage: false,
+								voice_assessment_id: null,
+								generic_assessment_id: null,
+								coding_assessment_id: null,
+								psychometric_assessment_id: null,
+								prescreening_form_id: null,
+								human_interview_config: null,
+							}) as JobStage
+						}
+						onSave={(config) => {
+							setStages(
+								draft.pipeline.stages.map((row) =>
+									row.id === interviewConfig.targetStageId
+										? { ...row, human_interview_config: config }
 										: row,
 								),
 							);
@@ -900,4 +994,22 @@ function FlagRow({
 
 function humanTitle(t: JobStage["stage_type"]): string {
 	return stageTypeLabel(t);
+}
+
+function HumanInterviewSummaryChip({
+	config,
+}: {
+	config: HumanInterviewStageConfig;
+}) {
+	const parts = [
+		`${config.max_duration_minutes} min`,
+		`recording ${config.recording_enabled ? "on" : "off"}`,
+		`transcript ${config.transcription_enabled ? "on" : "off"}`,
+		`waiting room ${config.waiting_room_enabled ? "on" : "off"}`,
+	];
+	return (
+		<span className="mt-1 inline-flex items-center gap-1 rounded-full bg-muted px-2 py-0.5 text-[11px] text-muted-foreground">
+			{parts.join(" · ")}
+		</span>
+	);
 }

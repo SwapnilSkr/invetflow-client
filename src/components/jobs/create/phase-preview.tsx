@@ -10,6 +10,7 @@ import {
 	ShieldAlert,
 	User,
 	Users,
+	Video,
 	XCircle,
 } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
@@ -113,8 +114,10 @@ function FindingCard({ finding }: { finding: LaunchPreviewFinding }) {
 
 function WorkflowCanvas({
 	stageSummaries,
+	draftStages,
 }: {
 	stageSummaries: LaunchPreviewStageSummary[];
+	draftStages: DraftState["pipeline"]["stages"];
 }) {
 	return (
 		<div className="space-y-3">
@@ -122,29 +125,53 @@ function WorkflowCanvas({
 				<p className="text-sm text-muted-foreground">No stages defined yet.</p>
 			) : (
 				<ol className="space-y-2">
-					{stageSummaries.map((s, idx) => (
-						<li
-							key={s.stage_id}
-							className="flex items-center gap-3 rounded-lg border border-border bg-muted/40 px-4 py-3"
-						>
-							<span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-primary/10 text-xs font-semibold text-primary">
-								{idx + 1}
-							</span>
-							<div className="min-w-0 flex-1">
-								<p className="text-sm font-medium text-foreground">{s.title}</p>
-								<p className="text-xs text-muted-foreground">
-									{s.stage_type}
-									{s.candidate_facing ? " · Candidate-facing" : " · Internal"}
-									{s.linked_assessment ? " · Linked" : ""}
-									{s.contributes_to_score ? " · Scored" : ""}
-									{s.automation !== "None" ? ` · ${s.automation}` : ""}
-									{s.estimated_minutes > 0
-										? ` · ~${s.estimated_minutes} min`
-										: ""}
-								</p>
-							</div>
-						</li>
-					))}
+					{stageSummaries.map((s, idx) => {
+						const draftStage = draftStages.find((ds) => ds.id === s.stage_id);
+						return (
+							<li
+								key={s.stage_id}
+								className="flex items-center gap-3 rounded-lg border border-border bg-muted/40 px-4 py-3"
+							>
+								<span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-primary/10 text-xs font-semibold text-primary">
+									{idx + 1}
+								</span>
+								<div className="min-w-0 flex-1">
+									<p className="text-sm font-medium text-foreground">
+										{s.title}
+									</p>
+									<p className="text-xs text-muted-foreground">
+										{s.stage_type}
+										{s.candidate_facing ? " · Candidate-facing" : " · Internal"}
+										{s.linked_assessment ? " · Linked" : ""}
+										{s.contributes_to_score ? " · Scored" : ""}
+										{s.automation !== "None" ? ` · ${s.automation}` : ""}
+										{s.estimated_minutes > 0
+											? ` · ~${s.estimated_minutes} min`
+											: ""}
+									</p>
+									{draftStage?.stage_type === "HumanInterview" &&
+									draftStage.human_interview_config ? (
+										<p className="mt-1 inline-flex items-center gap-1 rounded-full bg-muted px-2 py-0.5 text-[11px] text-muted-foreground">
+											<Video className="size-3" />
+											{draftStage.human_interview_config.max_duration_minutes}{" "}
+											min · recording{" "}
+											{draftStage.human_interview_config.recording_enabled
+												? "on"
+												: "off"}
+											· transcript{" "}
+											{draftStage.human_interview_config.transcription_enabled
+												? "on"
+												: "off"}
+											· waiting room{" "}
+											{draftStage.human_interview_config.waiting_room_enabled
+												? "on"
+												: "off"}
+										</p>
+									) : null}
+								</div>
+							</li>
+						);
+					})}
 				</ol>
 			)}
 		</div>
@@ -527,7 +554,10 @@ export function PhasePreview({
 
 			{/* Tab content */}
 			{activeTab === "workflow" ? (
-				<WorkflowCanvas stageSummaries={displaySummaries} />
+				<WorkflowCanvas
+					stageSummaries={displaySummaries}
+					draftStages={draft.pipeline.stages}
+				/>
 			) : null}
 
 			{activeTab === "candidate" ? (

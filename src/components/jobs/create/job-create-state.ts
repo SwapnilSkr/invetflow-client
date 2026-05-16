@@ -57,6 +57,20 @@ export function normalizeJobStage(
 		coding_assessment_id: base.coding_assessment_id ?? null,
 		psychometric_assessment_id: base.psychometric_assessment_id ?? null,
 		prescreening_form_id: base.prescreening_form_id ?? null,
+		human_interview_config:
+			base.human_interview_config ??
+			(base.stage_type === "HumanInterview"
+				? {
+						max_duration_minutes: 60,
+						recording_enabled: true,
+						transcription_enabled: true,
+						summarization_enabled: true,
+						waiting_room_enabled: true,
+						default_room_type: "Internal",
+						allow_screen_share: true,
+						allow_chat: true,
+					}
+				: null),
 	};
 }
 
@@ -181,6 +195,19 @@ export function defaultPipeline(): JobPipeline {
 					coding_assessment_id: null,
 					psychometric_assessment_id: null,
 					prescreening_form_id: null,
+					human_interview_config:
+						r.type === "HumanInterview"
+							? {
+									max_duration_minutes: 60,
+									recording_enabled: true,
+									transcription_enabled: true,
+									summarization_enabled: true,
+									waiting_room_enabled: true,
+									default_room_type: "Internal",
+									allow_screen_share: true,
+									allow_chat: true,
+								}
+							: null,
 				},
 				idx,
 			),
@@ -604,6 +631,11 @@ export function mergeBlueprint(
 						prescreening_form_id:
 							typeof row.prescreening_form_id === "string"
 								? row.prescreening_form_id
+								: null,
+						human_interview_config:
+							row.human_interview_config &&
+							typeof row.human_interview_config === "object"
+								? (row.human_interview_config as JobStage["human_interview_config"])
 								: null,
 					},
 					index,

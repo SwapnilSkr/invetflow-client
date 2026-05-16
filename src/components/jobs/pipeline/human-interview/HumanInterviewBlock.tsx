@@ -6,6 +6,7 @@ import {
 	CalendarClock,
 	ExternalLink,
 	MapPin,
+	Play,
 	Users,
 	Video,
 } from "lucide-react";
@@ -297,6 +298,17 @@ function CompletedView({ session }: { session: HumanInterviewSession }) {
 						: "(no interviewers)"}
 				</span>
 			</div>
+			{session.recording_status === "Ready" && session.recording_url ? (
+				<a
+					href={session.recording_url}
+					target="_blank"
+					rel="noreferrer"
+					className="inline-flex items-center gap-1.5 text-primary hover:underline"
+				>
+					<Play className="h-4 w-4" aria-hidden="true" />
+					View recording
+				</a>
+			) : null}
 			{session.feedback_html ? (
 				// Trust boundary: feedback HTML is authored by authenticated recruiters via our own Tiptap editor,
 				// sanitized by Tiptap's schema before being persisted server-side. Render directly.
