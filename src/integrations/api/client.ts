@@ -972,6 +972,7 @@ export async function healthCheck(): Promise<{
 export type HumanInterviewStatus =
 	| "Scheduled"
 	| "InProgress"
+	| "MeetingEnded"
 	| "Completed"
 	| "Cancelled"
 	| "NoShow";
@@ -1043,6 +1044,8 @@ export interface RecordHumanInterviewOutcomeBody {
 
 export interface HumanInterviewJoinTokenResponse {
 	interview_id: string;
+	job_id: string;
+	application_id: string;
 	livekit_token: string;
 	livekit_url: string;
 }

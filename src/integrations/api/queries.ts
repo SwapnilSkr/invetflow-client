@@ -900,33 +900,25 @@ export function useCancelHumanInterview(jobId: string, applicationId: string) {
 	});
 }
 
-export function useStartHumanInterview() {
+export function useStartHumanInterview(jobId: string, applicationId: string) {
 	const queryClient = useQueryClient();
 	return useMutation({
 		mutationFn: (id: string) => startHumanInterview(id),
-		onSuccess: (_data, id) => {
-			queryClient.invalidateQueries({
-				queryKey: humanInterviewKeys.detail(id),
-			});
-			queryClient.invalidateQueries({ queryKey: humanInterviewKeys.list() });
-		},
+		onSuccess: () =>
+			invalidateAfterHumanInterviewChange(queryClient, jobId, applicationId),
 	});
 }
 
-export function useEndHumanInterview() {
+export function useEndHumanInterview(jobId: string, applicationId: string) {
 	const queryClient = useQueryClient();
 	return useMutation({
 		mutationFn: (id: string) => endHumanInterview(id),
-		onSuccess: (_data, id) => {
-			queryClient.invalidateQueries({
-				queryKey: humanInterviewKeys.detail(id),
-			});
-			queryClient.invalidateQueries({ queryKey: humanInterviewKeys.list() });
-		},
+		onSuccess: () =>
+			invalidateAfterHumanInterviewChange(queryClient, jobId, applicationId),
 	});
 }
 
-export function useAdmitParticipant() {
+export function useAdmitParticipant(jobId: string, applicationId: string) {
 	const queryClient = useQueryClient();
 	return useMutation({
 		mutationFn: ({
@@ -936,10 +928,7 @@ export function useAdmitParticipant() {
 			id: string;
 			participantIdentity: string;
 		}) => admitHumanInterviewParticipant(id, participantIdentity),
-		onSuccess: (_data, variables) => {
-			queryClient.invalidateQueries({
-				queryKey: humanInterviewKeys.detail(variables.id),
-			});
-		},
+		onSuccess: () =>
+			invalidateAfterHumanInterviewChange(queryClient, jobId, applicationId),
 	});
 }
