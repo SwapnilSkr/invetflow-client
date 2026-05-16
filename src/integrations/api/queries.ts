@@ -9,6 +9,7 @@ import {
 	type AssessmentListParams,
 	type AssignCandidateRequest,
 	type AuditLog,
+	admitHumanInterviewParticipant,
 	apiClient,
 	apiClientPublic,
 	type BulkAssignCandidateRequest,
@@ -32,6 +33,7 @@ import {
 	deletePrescreeningForm,
 	deletePsychometricAssessment,
 	deleteVoiceAssessment,
+	endHumanInterview,
 	type GenerateJobContentRequest,
 	type GenerateJobContentResponse,
 	getApplicationDetail,
@@ -63,6 +65,7 @@ import {
 	recordHumanInterviewOutcome,
 	type ScheduleHumanInterviewBody,
 	scheduleHumanInterview,
+	startHumanInterview,
 	type TranscriptEntry,
 	type UpdateHumanInterviewBody,
 	type UpdateJobRequest,
@@ -775,6 +778,9 @@ export function useSaveScores() {
 
 export const humanInterviewKeys = {
 	all: ["humanInterviews"] as const,
+	lists: () => [...humanInterviewKeys.all, "list"] as const,
+	list: (filters?: Record<string, string>) =>
+		[...humanInterviewKeys.lists(), filters] as const,
 	forApplication: (jobId: string, applicationId: string) =>
 		[...humanInterviewKeys.all, "byApp", jobId, applicationId] as const,
 	detail: (id: string) => [...humanInterviewKeys.all, "detail", id] as const,
@@ -891,5 +897,49 @@ export function useCancelHumanInterview(jobId: string, applicationId: string) {
 		mutationFn: (id: string) => cancelHumanInterview(id),
 		onSuccess: () =>
 			invalidateAfterHumanInterviewChange(queryClient, jobId, applicationId),
+	});
+}
+
+export function useStartHumanInterview() {
+	const queryClient = useQueryClient();
+	return useMutation({
+		mutationFn: (id: string) => startHumanInterview(id),
+		onSuccess: (_data, id) => {
+			queryClient.invalidateQueries({
+				queryKey: humanInterviewKeys.detail(id),
+			});
+			queryClient.invalidateQueries({ queryKey: humanInterviewKeys.list() });
+		},
+	});
+}
+
+export function useEndHumanInterview() {
+	const queryClient = useQueryClient();
+	return useMutation({
+		mutationFn: (id: string) => endHumanInterview(id),
+		onSuccess: (_data, id) => {
+			queryClient.invalidateQueries({
+				queryKey: humanInterviewKeys.detail(id),
+			});
+			queryClient.invalidateQueries({ queryKey: humanInterviewKeys.list() });
+		},
+	});
+}
+
+export function useAdmitParticipant() {
+	const queryClient = useQueryClient();
+	return useMutation({
+		mutationFn: ({
+			id,
+			participantIdentity,
+		}: {
+			id: string;
+			participantIdentity: string;
+		}) => admitHumanInterviewParticipant(id, participantIdentity),
+		onSuccess: (_data, variables) => {
+			queryClient.invalidateQueries({
+				queryKey: humanInterviewKeys.detail(variables.id),
+			});
+		},
 	});
 }

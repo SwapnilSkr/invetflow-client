@@ -135,6 +135,17 @@ export type StageAutomation =
 	| "SendRejection"
 	| "SendHiredNotification";
 
+export interface HumanInterviewStageConfig {
+	max_duration_minutes: number;
+	recording_enabled: boolean;
+	transcription_enabled: boolean;
+	summarization_enabled: boolean;
+	waiting_room_enabled: boolean;
+	default_room_type: "Internal" | "External";
+	allow_screen_share: boolean;
+	allow_chat: boolean;
+}
+
 export interface JobStage {
 	id: string;
 	title: string | null;
@@ -151,6 +162,7 @@ export interface JobStage {
 	coding_assessment_id: string | null;
 	psychometric_assessment_id: string | null;
 	prescreening_form_id: string | null;
+	human_interview_config: HumanInterviewStageConfig | null;
 }
 
 export interface ApplicationSettings {
@@ -987,6 +999,15 @@ export interface HumanInterviewSession {
 	outcome: HumanInterviewOutcome | null;
 	score: number | null;
 	feedback_html: string | null;
+	recording_status:
+		| "Idle"
+		| "Recording"
+		| "Processing"
+		| "Ready"
+		| "Failed"
+		| null;
+	recording_url: string | null;
+	transcript_status: "Idle" | "Streaming" | "Complete" | "Failed" | null;
 	created_at: string;
 	updated_at: string;
 }
@@ -1085,6 +1106,28 @@ export async function joinHumanInterviewMeeting(
 		`/api/human-interviews/${id}/join-token`,
 		{ method: "POST" },
 	);
+}
+
+export async function startHumanInterview(id: string): Promise<void> {
+	return apiClient<void>(`/api/human-interviews/${id}/start`, {
+		method: "POST",
+	});
+}
+
+export async function endHumanInterview(id: string): Promise<void> {
+	return apiClient<void>(`/api/human-interviews/${id}/end`, {
+		method: "POST",
+	});
+}
+
+export async function admitHumanInterviewParticipant(
+	id: string,
+	participantIdentity: string,
+): Promise<void> {
+	return apiClient<void>(`/api/human-interviews/${id}/admit`, {
+		method: "POST",
+		body: JSON.stringify({ participant_identity: participantIdentity }),
+	});
 }
 
 // --- Organization members ----------------------------------------------------
