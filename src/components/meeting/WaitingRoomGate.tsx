@@ -9,6 +9,8 @@ import { useAdmitParticipant } from "#/integrations/api/queries";
 
 type WaitingRoomGateProps = {
 	sessionId: string;
+	jobId: string;
+	applicationId: string;
 	isHost: boolean;
 	children: ReactNode;
 };
@@ -27,12 +29,14 @@ function isAdmitted(participant: { metadata?: string | undefined }): boolean {
 
 export function WaitingRoomGate({
 	sessionId,
+	jobId,
+	applicationId,
 	isHost,
 	children,
 }: WaitingRoomGateProps) {
 	const participants = useParticipants();
 	const { localParticipant } = useLocalParticipant();
-	const admitMutation = useAdmitParticipant();
+	const admitMutation = useAdmitParticipant(jobId, applicationId);
 	const [admittedIds, setAdmittedIds] = useState<Set<string>>(new Set());
 
 	const localIsAdmitted = isAdmitted(localParticipant);

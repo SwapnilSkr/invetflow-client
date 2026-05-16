@@ -29,16 +29,22 @@ const textEncoder = new TextEncoder();
 
 type HostControlsMenuProps = {
 	sessionId: string;
+	jobId: string;
+	applicationId: string;
 };
 
-export function HostControlsMenu({ sessionId }: HostControlsMenuProps) {
+export function HostControlsMenu({
+	sessionId,
+	jobId,
+	applicationId,
+}: HostControlsMenuProps) {
 	const room = useRoomContext();
 	const participants = useParticipants();
 	const { localParticipant } = useLocalParticipant();
 	const [started, setStarted] = useState(false);
-	const startMutation = useStartHumanInterview();
-	const endMutation = useEndHumanInterview();
-	const admitMutation = useAdmitParticipant();
+	const startMutation = useStartHumanInterview(jobId, applicationId);
+	const endMutation = useEndHumanInterview(jobId, applicationId);
+	const admitMutation = useAdmitParticipant(jobId, applicationId);
 
 	const remoteParticipants = participants.filter(
 		(p) => p.identity !== localParticipant.identity,

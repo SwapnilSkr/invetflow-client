@@ -97,11 +97,20 @@ export function MeetingRoom({
 					navigate({ to: "/jobs/$id/pipeline", params: { id: jobId } })
 				}
 			>
-				<WaitingRoomGate sessionId={sessionId} isHost={isHost}>
+				<WaitingRoomGate
+					sessionId={sessionId}
+					jobId={joinMeeting.data.job_id}
+					applicationId={joinMeeting.data.application_id}
+					isHost={isHost}
+				>
 					<div className="relative h-full">
 						{isHost ? (
 							<div className="absolute top-4 right-4 z-40">
-								<HostControlsMenu sessionId={sessionId} />
+								<HostControlsMenu
+									sessionId={sessionId}
+									jobId={joinMeeting.data.job_id}
+									applicationId={joinMeeting.data.application_id}
+								/>
 							</div>
 						) : null}
 						<MeetingExperience
