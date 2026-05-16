@@ -20,6 +20,7 @@ import {
 	humanInterviewQueries,
 	useCancelHumanInterview,
 } from "#/integrations/api/queries";
+import { MeetingSummaryView } from "./MeetingSummaryView";
 import { OutcomeDialog } from "./OutcomeDialog";
 import { ScheduleHumanInterviewDialog } from "./ScheduleHumanInterviewDialog";
 
@@ -329,6 +330,8 @@ function MeetingEndedView({
 				</p>
 			) : null}
 
+			<MeetingSummaryView session={session} />
+
 			<div>
 				<Button type="button" size="sm" onClick={() => setOutcomeOpen(true)}>
 					Record outcome
@@ -391,6 +394,7 @@ function CompletedView({ session }: { session: HumanInterviewSession }) {
 					View recording
 				</a>
 			) : null}
+			<MeetingSummaryView session={session} />
 			{session.feedback_html ? (
 				// Trust boundary: feedback HTML is authored by authenticated recruiters via our own Tiptap editor,
 				// sanitized by Tiptap's schema before being persisted server-side. Render directly.

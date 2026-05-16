@@ -1,3 +1,4 @@
+import { useQuery } from "@tanstack/react-query";
 import { lazy, Suspense, useState } from "react";
 import { Alert, AlertDescription } from "#/components/ui/alert";
 import { Button } from "#/components/ui/button";
@@ -14,7 +15,10 @@ import { Label } from "#/components/ui/label";
 import { Skeleton } from "#/components/ui/skeleton";
 import type { HumanInterviewSession } from "#/integrations/api/client";
 import { isApiError } from "#/integrations/api/errors";
-import { useRecordHumanInterviewOutcome } from "#/integrations/api/queries";
+import {
+	humanInterviewQueries,
+	useRecordHumanInterviewOutcome,
+} from "#/integrations/api/queries";
 
 const RichTextEditor = lazy(() =>
 	import("#/components/jobs/create/rich-text-editor").then((m) => ({
@@ -49,6 +53,11 @@ export function OutcomeDialog({
 	const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
 	const mutation = useRecordHumanInterviewOutcome(jobId, applicationId);
+	const transcriptQuery = useQuery({
+		...humanInterviewQueries.transcript(session.id),
+		enabled: open && session.id.length > 0,
+	});
+	const summaryHtml = transcriptQuery.data?.summary_html;
 
 	const handleClose = (next: boolean) => {
 		if (!next) {
@@ -135,7 +144,22 @@ export function OutcomeDialog({
 					</div>
 
 					<div className="space-y-1.5">
-						<Label>Feedback</Label>
+						<div className="flex items-center justify-between gap-3">
+							<Label>Feedback</Label>
+							<Button
+								type="button"
+								size="sm"
+								variant="outline"
+								onClick={() => {
+									if (summaryHtml) {
+										setFeedbackHtml(summaryHtml);
+									}
+								}}
+								disabled={!summaryHtml || mutation.isPending}
+							>
+								Insert from meeting summary
+							</Button>
+						</div>
 						<Suspense fallback={<Skeleton className="h-40 w-full" />}>
 							<RichTextEditor
 								value={feedbackHtml}
