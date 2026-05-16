@@ -1,0 +1,123 @@
+import {
+	Camera,
+	CameraOff,
+	MessageSquare,
+	Mic,
+	MicOff,
+	MonitorUp,
+	MonitorX,
+	PhoneOff,
+} from "lucide-react";
+import type { ReactNode } from "react";
+
+type ControlBarProps = {
+	isCameraEnabled: boolean;
+	isChatOpen: boolean;
+	isMicrophoneEnabled: boolean;
+	isScreenShareEnabled: boolean;
+	onLeave: () => void;
+	onToggleCamera: () => void;
+	onToggleChat: () => void;
+	onToggleMicrophone: () => void;
+	onToggleScreenShare: () => void;
+};
+
+export function ControlBar({
+	isCameraEnabled,
+	isChatOpen,
+	isMicrophoneEnabled,
+	isScreenShareEnabled,
+	onLeave,
+	onToggleCamera,
+	onToggleChat,
+	onToggleMicrophone,
+	onToggleScreenShare,
+}: ControlBarProps) {
+	return (
+		<div className="absolute right-0 bottom-0 left-0 z-10 flex items-center justify-center border-white/10 border-t bg-neutral-950/85 px-3 py-3 backdrop-blur md:px-5">
+			<div className="flex items-center gap-2 rounded-full bg-neutral-900 px-2 py-2 shadow-2xl ring-1 ring-white/10">
+				<ControlButton
+					label={isMicrophoneEnabled ? "Mute microphone" : "Unmute microphone"}
+					active={isMicrophoneEnabled}
+					onClick={onToggleMicrophone}
+				>
+					{isMicrophoneEnabled ? (
+						<Mic className="size-5" aria-hidden />
+					) : (
+						<MicOff className="size-5" aria-hidden />
+					)}
+				</ControlButton>
+				<ControlButton
+					label={isCameraEnabled ? "Turn camera off" : "Turn camera on"}
+					active={isCameraEnabled}
+					onClick={onToggleCamera}
+				>
+					{isCameraEnabled ? (
+						<Camera className="size-5" aria-hidden />
+					) : (
+						<CameraOff className="size-5" aria-hidden />
+					)}
+				</ControlButton>
+				<ControlButton
+					label={
+						isScreenShareEnabled ? "Stop presenting" : "Present your screen"
+					}
+					active={isScreenShareEnabled}
+					onClick={onToggleScreenShare}
+				>
+					{isScreenShareEnabled ? (
+						<MonitorX className="size-5" aria-hidden />
+					) : (
+						<MonitorUp className="size-5" aria-hidden />
+					)}
+				</ControlButton>
+				<ControlButton
+					label={isChatOpen ? "Close chat" : "Open chat"}
+					active={isChatOpen}
+					onClick={onToggleChat}
+				>
+					<MessageSquare className="size-5" aria-hidden />
+				</ControlButton>
+				<button
+					type="button"
+					className="grid size-11 place-items-center rounded-full bg-destructive text-destructive-foreground transition hover:bg-destructive/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-destructive"
+					onClick={onLeave}
+					aria-label="Leave meeting"
+					title="Leave meeting"
+				>
+					<PhoneOff className="size-5" aria-hidden />
+				</button>
+			</div>
+		</div>
+	);
+}
+
+type ControlButtonProps = {
+	label: string;
+	active: boolean;
+	onClick: () => void;
+	children: ReactNode;
+};
+
+function ControlButton({
+	label,
+	active,
+	onClick,
+	children,
+}: ControlButtonProps) {
+	return (
+		<button
+			type="button"
+			className={`grid size-11 place-items-center rounded-full transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white ${
+				active
+					? "bg-white text-neutral-950 hover:bg-neutral-200"
+					: "bg-neutral-700 text-white hover:bg-neutral-600"
+			}`}
+			onClick={onClick}
+			aria-label={label}
+			title={label}
+		>
+			{children}
+		</button>
+	);
+}
