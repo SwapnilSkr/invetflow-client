@@ -117,6 +117,7 @@ export function MeetingRoom({
 							title="Human interview"
 							roleLabel={isHost ? "Recruiter room" : "Candidate room"}
 							allowScreenShare={allowScreenShare}
+							sessionId={sessionId}
 						/>
 					</div>
 				</WaitingRoomGate>

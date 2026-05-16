@@ -20,6 +20,7 @@ import { Users, Wifi } from "lucide-react";
 import { useEffect, useState } from "react";
 import { ChatPanel } from "./ChatPanel";
 import { ControlBar } from "./ControlBar";
+import { LiveTranscriptPanel } from "./LiveTranscriptPanel";
 import type { MeetingChatMessage } from "./meeting-types";
 import { VideoGrid } from "./VideoGrid";
 
@@ -37,12 +38,14 @@ type MeetingExperienceProps = {
 	title: string;
 	roleLabel: string;
 	allowScreenShare?: boolean;
+	sessionId?: string;
 };
 
 export function MeetingExperience({
 	title,
 	roleLabel,
 	allowScreenShare = true,
+	sessionId,
 }: MeetingExperienceProps) {
 	const room = useRoomContext();
 	const connectionState = useConnectionState(room);
@@ -55,6 +58,7 @@ export function MeetingExperience({
 		localParticipant,
 	} = useLocalParticipant();
 	const [chatOpen, setChatOpen] = useState(false);
+	const [transcriptOpen, setTranscriptOpen] = useState(false);
 	const [deviceError, setDeviceError] = useState<string | null>(null);
 	const [chatMessages, setChatMessages] = useState<MeetingChatMessage[]>([]);
 	const tracks = useTracks(MEETING_TRACK_SOURCES, TRACK_OPTIONS);
@@ -181,7 +185,9 @@ export function MeetingExperience({
 
 			<div
 				className={`grid min-h-0 flex-1 grid-cols-1 ${
-					chatOpen ? "lg:grid-cols-[minmax(0,1fr)_360px]" : "lg:grid-cols-1"
+					chatOpen || transcriptOpen
+						? "lg:grid-cols-[minmax(0,1fr)_360px]"
+						: "lg:grid-cols-1"
 				}`}
 			>
 				<main className="relative min-h-0 overflow-hidden">
@@ -202,6 +208,7 @@ export function MeetingExperience({
 					<ControlBar
 						isCameraEnabled={isCameraEnabled}
 						isChatOpen={chatOpen}
+						isTranscriptOpen={transcriptOpen}
 						isMicrophoneEnabled={isMicrophoneEnabled}
 						isScreenShareEnabled={isScreenShareEnabled}
 						allowScreenShare={allowScreenShare}
@@ -210,6 +217,14 @@ export function MeetingExperience({
 						onToggleChat={() => setChatOpen(!chatOpen)}
 						onToggleMicrophone={toggleMicrophone}
 						onToggleScreenShare={toggleScreenShare}
+						onToggleTranscript={
+							sessionId
+								? () => {
+										setTranscriptOpen(!transcriptOpen);
+										setChatOpen(false);
+									}
+								: undefined
+						}
 					/>
 
 					<div className="absolute right-4 bottom-24 z-10">
@@ -222,6 +237,13 @@ export function MeetingExperience({
 						messages={chatMessages}
 						onClose={() => setChatOpen(false)}
 						onSend={sendChatMessage}
+					/>
+				) : null}
+				{sessionId ? (
+					<LiveTranscriptPanel
+						sessionId={sessionId}
+						open={transcriptOpen}
+						onClose={() => setTranscriptOpen(false)}
 					/>
 				) : null}
 			</div>

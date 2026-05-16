@@ -1,6 +1,7 @@
 import {
 	Camera,
 	CameraOff,
+	Captions,
 	MessageSquare,
 	Mic,
 	MicOff,
@@ -13,12 +14,14 @@ import type { ReactNode } from "react";
 type ControlBarProps = {
 	isCameraEnabled: boolean;
 	isChatOpen: boolean;
+	isTranscriptOpen?: boolean;
 	isMicrophoneEnabled: boolean;
 	isScreenShareEnabled: boolean;
 	allowScreenShare?: boolean;
 	onLeave: () => void;
 	onToggleCamera: () => void;
 	onToggleChat: () => void;
+	onToggleTranscript?: () => void;
 	onToggleMicrophone: () => void;
 	onToggleScreenShare: () => void;
 };
@@ -26,12 +29,14 @@ type ControlBarProps = {
 export function ControlBar({
 	isCameraEnabled,
 	isChatOpen,
+	isTranscriptOpen = false,
 	isMicrophoneEnabled,
 	isScreenShareEnabled,
 	allowScreenShare = true,
 	onLeave,
 	onToggleCamera,
 	onToggleChat,
+	onToggleTranscript,
 	onToggleMicrophone,
 	onToggleScreenShare,
 }: ControlBarProps) {
@@ -82,6 +87,15 @@ export function ControlBar({
 				>
 					<MessageSquare className="size-5" aria-hidden />
 				</ControlButton>
+				{onToggleTranscript ? (
+					<ControlButton
+						label={isTranscriptOpen ? "Close transcript" : "Open transcript"}
+						active={isTranscriptOpen}
+						onClick={onToggleTranscript}
+					>
+						<Captions className="size-5" aria-hidden />
+					</ControlButton>
+				) : null}
 				<button
 					type="button"
 					className="grid size-11 place-items-center rounded-full bg-destructive text-destructive-foreground transition hover:bg-destructive/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-destructive"
