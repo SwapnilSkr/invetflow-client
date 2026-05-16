@@ -35,7 +35,10 @@ import { Route as DashboardAssessmentsGenericNewRouteImport } from './routes/das
 import { Route as DashboardAssessmentsGenericIdRouteImport } from './routes/dashboard/assessments.generic.$id'
 import { Route as DashboardAssessmentsCodingNewRouteImport } from './routes/dashboard/assessments.coding.new'
 import { Route as DashboardAssessmentsCodingIdRouteImport } from './routes/dashboard/assessments.coding.$id'
+import { Route as JobsIdInterviewsSessionIdWebrtcStatsRouteImport } from './routes/jobs/$id.interviews.$sessionId.webrtc-stats'
+import { Route as JobsIdInterviewsSessionIdPlaybackRouteImport } from './routes/jobs/$id.interviews.$sessionId.playback'
 import { Route as JobsIdInterviewsSessionIdMeetRouteImport } from './routes/jobs/$id.interviews.$sessionId.meet'
+import { Route as JobsIdInterviewsSessionIdAnalyticsRouteImport } from './routes/jobs/$id.interviews.$sessionId.analytics'
 
 const SignInRoute = SignInRouteImport.update({
   id: '/sign-in',
@@ -177,10 +180,28 @@ const DashboardAssessmentsCodingIdRoute =
     path: '/coding/$id',
     getParentRoute: () => DashboardAssessmentsRoute,
   } as any)
+const JobsIdInterviewsSessionIdWebrtcStatsRoute =
+  JobsIdInterviewsSessionIdWebrtcStatsRouteImport.update({
+    id: '/interviews/$sessionId/webrtc-stats',
+    path: '/interviews/$sessionId/webrtc-stats',
+    getParentRoute: () => JobsIdRoute,
+  } as any)
+const JobsIdInterviewsSessionIdPlaybackRoute =
+  JobsIdInterviewsSessionIdPlaybackRouteImport.update({
+    id: '/interviews/$sessionId/playback',
+    path: '/interviews/$sessionId/playback',
+    getParentRoute: () => JobsIdRoute,
+  } as any)
 const JobsIdInterviewsSessionIdMeetRoute =
   JobsIdInterviewsSessionIdMeetRouteImport.update({
     id: '/interviews/$sessionId/meet',
     path: '/interviews/$sessionId/meet',
+    getParentRoute: () => JobsIdRoute,
+  } as any)
+const JobsIdInterviewsSessionIdAnalyticsRoute =
+  JobsIdInterviewsSessionIdAnalyticsRouteImport.update({
+    id: '/interviews/$sessionId/analytics',
+    path: '/interviews/$sessionId/analytics',
     getParentRoute: () => JobsIdRoute,
   } as any)
 
@@ -211,7 +232,10 @@ export interface FileRoutesByFullPath {
   '/dashboard/assessments/psychometric/new': typeof DashboardAssessmentsPsychometricNewRoute
   '/dashboard/assessments/voice/$id': typeof DashboardAssessmentsVoiceIdRoute
   '/dashboard/assessments/voice/new': typeof DashboardAssessmentsVoiceNewRoute
+  '/jobs/$id/interviews/$sessionId/analytics': typeof JobsIdInterviewsSessionIdAnalyticsRoute
   '/jobs/$id/interviews/$sessionId/meet': typeof JobsIdInterviewsSessionIdMeetRoute
+  '/jobs/$id/interviews/$sessionId/playback': typeof JobsIdInterviewsSessionIdPlaybackRoute
+  '/jobs/$id/interviews/$sessionId/webrtc-stats': typeof JobsIdInterviewsSessionIdWebrtcStatsRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -239,7 +263,10 @@ export interface FileRoutesByTo {
   '/dashboard/assessments/psychometric/new': typeof DashboardAssessmentsPsychometricNewRoute
   '/dashboard/assessments/voice/$id': typeof DashboardAssessmentsVoiceIdRoute
   '/dashboard/assessments/voice/new': typeof DashboardAssessmentsVoiceNewRoute
+  '/jobs/$id/interviews/$sessionId/analytics': typeof JobsIdInterviewsSessionIdAnalyticsRoute
   '/jobs/$id/interviews/$sessionId/meet': typeof JobsIdInterviewsSessionIdMeetRoute
+  '/jobs/$id/interviews/$sessionId/playback': typeof JobsIdInterviewsSessionIdPlaybackRoute
+  '/jobs/$id/interviews/$sessionId/webrtc-stats': typeof JobsIdInterviewsSessionIdWebrtcStatsRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -269,7 +296,10 @@ export interface FileRoutesById {
   '/dashboard/assessments/psychometric/new': typeof DashboardAssessmentsPsychometricNewRoute
   '/dashboard/assessments/voice/$id': typeof DashboardAssessmentsVoiceIdRoute
   '/dashboard/assessments/voice/new': typeof DashboardAssessmentsVoiceNewRoute
+  '/jobs/$id/interviews/$sessionId/analytics': typeof JobsIdInterviewsSessionIdAnalyticsRoute
   '/jobs/$id/interviews/$sessionId/meet': typeof JobsIdInterviewsSessionIdMeetRoute
+  '/jobs/$id/interviews/$sessionId/playback': typeof JobsIdInterviewsSessionIdPlaybackRoute
+  '/jobs/$id/interviews/$sessionId/webrtc-stats': typeof JobsIdInterviewsSessionIdWebrtcStatsRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -300,7 +330,10 @@ export interface FileRouteTypes {
     | '/dashboard/assessments/psychometric/new'
     | '/dashboard/assessments/voice/$id'
     | '/dashboard/assessments/voice/new'
+    | '/jobs/$id/interviews/$sessionId/analytics'
     | '/jobs/$id/interviews/$sessionId/meet'
+    | '/jobs/$id/interviews/$sessionId/playback'
+    | '/jobs/$id/interviews/$sessionId/webrtc-stats'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -328,7 +361,10 @@ export interface FileRouteTypes {
     | '/dashboard/assessments/psychometric/new'
     | '/dashboard/assessments/voice/$id'
     | '/dashboard/assessments/voice/new'
+    | '/jobs/$id/interviews/$sessionId/analytics'
     | '/jobs/$id/interviews/$sessionId/meet'
+    | '/jobs/$id/interviews/$sessionId/playback'
+    | '/jobs/$id/interviews/$sessionId/webrtc-stats'
   id:
     | '__root__'
     | '/'
@@ -357,7 +393,10 @@ export interface FileRouteTypes {
     | '/dashboard/assessments/psychometric/new'
     | '/dashboard/assessments/voice/$id'
     | '/dashboard/assessments/voice/new'
+    | '/jobs/$id/interviews/$sessionId/analytics'
     | '/jobs/$id/interviews/$sessionId/meet'
+    | '/jobs/$id/interviews/$sessionId/playback'
+    | '/jobs/$id/interviews/$sessionId/webrtc-stats'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -555,11 +594,32 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DashboardAssessmentsCodingIdRouteImport
       parentRoute: typeof DashboardAssessmentsRoute
     }
+    '/jobs/$id/interviews/$sessionId/webrtc-stats': {
+      id: '/jobs/$id/interviews/$sessionId/webrtc-stats'
+      path: '/interviews/$sessionId/webrtc-stats'
+      fullPath: '/jobs/$id/interviews/$sessionId/webrtc-stats'
+      preLoaderRoute: typeof JobsIdInterviewsSessionIdWebrtcStatsRouteImport
+      parentRoute: typeof JobsIdRoute
+    }
+    '/jobs/$id/interviews/$sessionId/playback': {
+      id: '/jobs/$id/interviews/$sessionId/playback'
+      path: '/interviews/$sessionId/playback'
+      fullPath: '/jobs/$id/interviews/$sessionId/playback'
+      preLoaderRoute: typeof JobsIdInterviewsSessionIdPlaybackRouteImport
+      parentRoute: typeof JobsIdRoute
+    }
     '/jobs/$id/interviews/$sessionId/meet': {
       id: '/jobs/$id/interviews/$sessionId/meet'
       path: '/interviews/$sessionId/meet'
       fullPath: '/jobs/$id/interviews/$sessionId/meet'
       preLoaderRoute: typeof JobsIdInterviewsSessionIdMeetRouteImport
+      parentRoute: typeof JobsIdRoute
+    }
+    '/jobs/$id/interviews/$sessionId/analytics': {
+      id: '/jobs/$id/interviews/$sessionId/analytics'
+      path: '/interviews/$sessionId/analytics'
+      fullPath: '/jobs/$id/interviews/$sessionId/analytics'
+      preLoaderRoute: typeof JobsIdInterviewsSessionIdAnalyticsRouteImport
       parentRoute: typeof JobsIdRoute
     }
   }
@@ -633,13 +693,22 @@ const DashboardRouteRouteWithChildren = DashboardRouteRoute._addFileChildren(
 interface JobsIdRouteChildren {
   JobsIdPipelineRoute: typeof JobsIdPipelineRoute
   JobsIdSessionRoute: typeof JobsIdSessionRoute
+  JobsIdInterviewsSessionIdAnalyticsRoute: typeof JobsIdInterviewsSessionIdAnalyticsRoute
   JobsIdInterviewsSessionIdMeetRoute: typeof JobsIdInterviewsSessionIdMeetRoute
+  JobsIdInterviewsSessionIdPlaybackRoute: typeof JobsIdInterviewsSessionIdPlaybackRoute
+  JobsIdInterviewsSessionIdWebrtcStatsRoute: typeof JobsIdInterviewsSessionIdWebrtcStatsRoute
 }
 
 const JobsIdRouteChildren: JobsIdRouteChildren = {
   JobsIdPipelineRoute: JobsIdPipelineRoute,
   JobsIdSessionRoute: JobsIdSessionRoute,
+  JobsIdInterviewsSessionIdAnalyticsRoute:
+    JobsIdInterviewsSessionIdAnalyticsRoute,
   JobsIdInterviewsSessionIdMeetRoute: JobsIdInterviewsSessionIdMeetRoute,
+  JobsIdInterviewsSessionIdPlaybackRoute:
+    JobsIdInterviewsSessionIdPlaybackRoute,
+  JobsIdInterviewsSessionIdWebrtcStatsRoute:
+    JobsIdInterviewsSessionIdWebrtcStatsRoute,
 }
 
 const JobsIdRouteWithChildren =
