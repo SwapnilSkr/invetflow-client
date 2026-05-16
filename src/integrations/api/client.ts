@@ -1050,6 +1050,30 @@ export interface HumanInterviewJoinTokenResponse {
 	livekit_url: string;
 }
 
+export interface MeetingTranscriptTurn {
+	speaker_identity: string;
+	speaker_name: string;
+	text: string;
+	start_ms: number;
+	end_ms: number;
+	confidence: number;
+	is_final: boolean;
+}
+
+export interface MeetingTranscript {
+	id: string;
+	session_id: string;
+	turns: MeetingTranscriptTurn[];
+	summary_html: string | null;
+	key_topics: string[];
+	action_items: string[];
+	strengths: string[];
+	concerns: string[];
+	suggested_score: number | null;
+	created_at: string;
+	updated_at: string;
+}
+
 export async function listHumanInterviewsForApplication(
 	jobId: string,
 	applicationId: string,
@@ -1108,6 +1132,14 @@ export async function joinHumanInterviewMeeting(
 	return apiClient<HumanInterviewJoinTokenResponse>(
 		`/api/human-interviews/${id}/join-token`,
 		{ method: "POST" },
+	);
+}
+
+export async function getMeetingTranscript(
+	id: string,
+): Promise<MeetingTranscript | null> {
+	return apiClient<MeetingTranscript | null>(
+		`/api/human-interviews/${id}/transcript`,
 	);
 }
 

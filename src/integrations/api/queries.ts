@@ -40,6 +40,7 @@ import {
 	getCodingAssessment,
 	getGenericAssessment,
 	getHumanInterview,
+	getMeetingTranscript,
 	getPrescreeningForm,
 	getPsychometricAssessment,
 	getVoiceAssessment,
@@ -786,6 +787,8 @@ export const humanInterviewKeys = {
 	detail: (id: string) => [...humanInterviewKeys.all, "detail", id] as const,
 	joinToken: (id: string) =>
 		[...humanInterviewKeys.all, "joinToken", id] as const,
+	transcript: (id: string) =>
+		[...humanInterviewKeys.all, "transcript", id] as const,
 };
 
 export const humanInterviewQueries = {
@@ -811,6 +814,13 @@ export const humanInterviewQueries = {
 			staleTime: 5 * 60_000,
 			refetchOnWindowFocus: false,
 			retry: false,
+		}),
+	transcript: (id: string) =>
+		queryOptions({
+			queryKey: humanInterviewKeys.transcript(id),
+			queryFn: () => getMeetingTranscript(id),
+			enabled: id.length > 0,
+			refetchInterval: false,
 		}),
 };
 
