@@ -71,6 +71,16 @@ export function HumanInterviewBlock({
 		return <CompletedView session={session} />;
 	}
 
+	if (session.status === "MeetingEnded") {
+		return (
+			<MeetingEndedView
+				session={session}
+				jobId={jobId}
+				applicationId={applicationId}
+			/>
+		);
+	}
+
 	if (session.status === "Cancelled" || session.status === "NoShow") {
 		return (
 			<TerminalNonCompleted
@@ -253,6 +263,78 @@ function ScheduledView({
 				stageId={stageId}
 				existing={session}
 			/>
+			<OutcomeDialog
+				key={`${session.id}:${session.updated_at}:outcome`}
+				open={outcomeOpen}
+				onOpenChange={setOutcomeOpen}
+				jobId={jobId}
+				applicationId={applicationId}
+				session={session}
+			/>
+		</div>
+	);
+}
+
+function MeetingEndedView({
+	session,
+	jobId,
+	applicationId,
+}: {
+	session: HumanInterviewSession;
+	jobId: string;
+	applicationId: string;
+}) {
+	const [outcomeOpen, setOutcomeOpen] = useState(false);
+	const at = new Date(session.scheduled_at);
+
+	return (
+		<div className="space-y-3 rounded-md border border-border bg-card p-4">
+			<div className="flex flex-wrap items-center gap-2">
+				<Badge variant="secondary">Meeting ended</Badge>
+				<span className="text-sm font-medium text-foreground">
+					Awaiting outcome
+				</span>
+				<span className="ml-auto text-xs text-muted-foreground">
+					<Calendar className="mr-1 inline h-3 w-3" aria-hidden="true" />
+					{format(at, "MMM d, yyyy")}
+				</span>
+			</div>
+
+			<div className="flex items-start gap-2 text-sm text-foreground">
+				<Users
+					className="mt-0.5 h-4 w-4 text-muted-foreground"
+					aria-hidden="true"
+				/>
+				<span>
+					{session.interviewer_names.length > 0
+						? session.interviewer_names.join(", ")
+						: "(no interviewers)"}
+				</span>
+			</div>
+
+			{session.recording_status === "Ready" && session.recording_url ? (
+				<a
+					href={session.recording_url}
+					target="_blank"
+					rel="noreferrer"
+					className="inline-flex items-center gap-1.5 text-sm text-primary hover:underline"
+				>
+					<Play className="h-4 w-4" aria-hidden="true" />
+					View recording
+				</a>
+			) : session.recording_status === "Recording" ||
+				session.recording_status === "Processing" ? (
+				<p className="text-xs text-muted-foreground">
+					Recording is still processing...
+				</p>
+			) : null}
+
+			<div>
+				<Button type="button" size="sm" onClick={() => setOutcomeOpen(true)}>
+					Record outcome
+				</Button>
+			</div>
+
 			<OutcomeDialog
 				key={`${session.id}:${session.updated_at}:outcome`}
 				open={outcomeOpen}
