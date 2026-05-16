@@ -40,6 +40,7 @@ import {
 	getCodingAssessment,
 	getGenericAssessment,
 	getHumanInterview,
+	getMeetingAnalytics,
 	getMeetingTranscript,
 	getPrescreeningForm,
 	getPsychometricAssessment,
@@ -789,6 +790,8 @@ export const humanInterviewKeys = {
 		[...humanInterviewKeys.all, "joinToken", id] as const,
 	transcript: (id: string) =>
 		[...humanInterviewKeys.all, "transcript", id] as const,
+	analytics: (jobId: string, sessionId: string) =>
+		[...humanInterviewKeys.all, "analytics", jobId, sessionId] as const,
 };
 
 export const humanInterviewQueries = {
@@ -821,6 +824,15 @@ export const humanInterviewQueries = {
 			queryFn: () => getMeetingTranscript(id),
 			enabled: id.length > 0,
 			refetchInterval: false,
+		}),
+	analytics: (jobId: string, sessionId: string) =>
+		queryOptions({
+			queryKey: humanInterviewKeys.analytics(jobId, sessionId),
+			queryFn: () => getMeetingAnalytics(jobId, sessionId),
+			enabled: jobId.length > 0 && sessionId.length > 0,
+			// Meeting analytics are immutable once a meeting ends; keep them fresh
+			// for 30s so tab navigation doesn't trigger refetch storms.
+			staleTime: 30_000,
 		}),
 };
 

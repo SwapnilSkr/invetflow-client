@@ -1069,8 +1069,50 @@ export interface MeetingTranscript {
 	action_items: string[];
 	strengths: string[];
 	concerns: string[];
+	recording_started_at: string | null;
+	recording_offset_ms: number;
 	created_at: string;
 	updated_at: string;
+}
+
+export interface MeetingAnalyticsParticipant {
+	identity: string;
+	display_name: string;
+	joined_at: string;
+	left_at: string | null;
+	seconds_present: number;
+}
+
+export interface MeetingAnalyticsRecording {
+	status: string;
+	size_bytes: number | null;
+	storage_class: string | null;
+	url: string | null;
+}
+
+export interface MeetingAnalyticsSpeakerStats {
+	turns: number;
+	words: number;
+	seconds_speaking: number;
+}
+
+export interface MeetingAnalyticsTranscript {
+	turn_count: number;
+	words: number;
+	by_speaker: Record<string, MeetingAnalyticsSpeakerStats>;
+	summary_available: boolean;
+}
+
+export interface MeetingAnalytics {
+	scheduled_at: string;
+	started_at: string | null;
+	ended_at: string | null;
+	actual_duration_seconds: number | null;
+	scheduled_duration_minutes: number;
+	participant_count_peak: number;
+	participants: MeetingAnalyticsParticipant[];
+	recording: MeetingAnalyticsRecording | null;
+	transcript: MeetingAnalyticsTranscript | null;
 }
 
 export async function listHumanInterviewsForApplication(
@@ -1139,6 +1181,15 @@ export async function getMeetingTranscript(
 ): Promise<MeetingTranscript | null> {
 	return apiClient<MeetingTranscript | null>(
 		`/api/human-interviews/${id}/transcript`,
+	);
+}
+
+export async function getMeetingAnalytics(
+	jobId: string,
+	sessionId: string,
+): Promise<MeetingAnalytics> {
+	return apiClient<MeetingAnalytics>(
+		`/api/jobs/${jobId}/interviews/${sessionId}/analytics`,
 	);
 }
 
