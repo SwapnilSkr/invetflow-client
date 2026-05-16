@@ -5,7 +5,7 @@ import {
 	type RemoteParticipant,
 	RoomEvent,
 } from "livekit-client";
-import { Captions, X } from "lucide-react";
+import { AlertTriangle, Captions, X } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { Button } from "#/components/ui/button";
 import type { MeetingTranscriptTurn } from "#/integrations/api/client";
@@ -25,6 +25,18 @@ type IncomingTranscriptTurn = MeetingTranscriptTurn & {
 	type?: string;
 };
 
+type IncomingTranscriptStatus = {
+	type: "transcript_status";
+	speaker_identity: string;
+	speaker_name?: string;
+	status: "paused" | "resumed" | "disabled";
+};
+
+type SpeakerStatus = {
+	name: string;
+	status: "paused" | "disabled";
+};
+
 export function LiveTranscriptPanel({
 	sessionId,
 	open,
@@ -33,6 +45,10 @@ export function LiveTranscriptPanel({
 	const room = useRoomContext();
 	const [turns, setTurns] = useState<MeetingTranscriptTurn[]>([]);
 	const [pollingEnabled, setPollingEnabled] = useState(false);
+	const [idleWarning, setIdleWarning] = useState(false);
+	const [speakerStatuses, setSpeakerStatuses] = useState<
+		Record<string, SpeakerStatus>
+	>({});
 	const lastDataChannelAt = useRef(Date.now());
 	const transcriptQuery = useQuery({
 		...humanInterviewQueries.transcript(sessionId),
@@ -45,7 +61,9 @@ export function LiveTranscriptPanel({
 			return;
 		}
 		const timer = window.setInterval(() => {
-			setPollingEnabled(Date.now() - lastDataChannelAt.current > 10_000);
+			const idleMs = Date.now() - lastDataChannelAt.current;
+			setPollingEnabled(idleMs > 10_000);
+			setIdleWarning(idleMs > 30_000);
 		}, 2_000);
 		return () => window.clearInterval(timer);
 	}, [open]);
@@ -68,11 +86,16 @@ export function LiveTranscriptPanel({
 				return;
 			}
 			try {
-				const parsed = JSON.parse(
-					textDecoder.decode(payload),
-				) as IncomingTranscriptTurn;
+				const parsed = JSON.parse(textDecoder.decode(payload)) as
+					| IncomingTranscriptTurn
+					| IncomingTranscriptStatus;
 				lastDataChannelAt.current = Date.now();
+				setIdleWarning(false);
 				setPollingEnabled(false);
+				if (isTranscriptStatus(parsed)) {
+					setSpeakerStatuses((current) => mergeSpeakerStatus(current, parsed));
+					return;
+				}
 				setTurns((current) => mergeTurn(current, parsed));
 			} catch {
 				// Ignore malformed captions. Durable transcript polling still recovers final turns.
@@ -88,6 +111,10 @@ export function LiveTranscriptPanel({
 	const renderedTurns = turns
 		.filter((turn) => turn.text.trim().length > 0)
 		.slice(-80);
+	const pausedSpeakers = Object.entries(speakerStatuses);
+	const hasDisabledSpeaker = pausedSpeakers.some(
+		([, speaker]) => speaker.status === "disabled",
+	);
 
 	if (!open) {
 		return null;
@@ -116,6 +143,41 @@ export function LiveTranscriptPanel({
 					<X className="size-4" aria-hidden />
 				</Button>
 			</div>
+			{idleWarning || pausedSpeakers.length > 0 ? (
+				<div className="shrink-0 space-y-2 border-meeting-border border-b px-4 py-3">
+					{idleWarning ? (
+						<div className="flex items-start gap-2 rounded-lg border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-amber-100 text-xs">
+							<AlertTriangle className="mt-0.5 size-3.5 shrink-0" aria-hidden />
+							<span>Transcript may be paused.</span>
+						</div>
+					) : null}
+					{pausedSpeakers.length > 0 ? (
+						<div className="flex flex-wrap gap-2">
+							{pausedSpeakers.map(([identity, speaker]) => (
+								<span
+									key={identity}
+									className={cn(
+										"rounded-full px-2.5 py-1 text-xs",
+										speaker.status === "disabled"
+											? "bg-destructive text-destructive-foreground"
+											: "bg-amber-500/15 text-amber-100",
+									)}
+								>
+									{speaker.status === "disabled"
+										? `Transcription disabled for ${speaker.name}`
+										: `Transcribing paused for ${speaker.name}`}
+								</span>
+							))}
+						</div>
+					) : null}
+					{hasDisabledSpeaker ? (
+						<p className="text-meeting-text-muted text-xs">
+							Disabled transcript streams may leave gaps in the final
+							transcript.
+						</p>
+					) : null}
+				</div>
+			) : null}
 			<div className="min-h-0 flex-1 space-y-2 overflow-y-auto px-4 py-3">
 				{renderedTurns.length === 0 ? (
 					<p className="rounded-lg bg-meeting-surface/50 px-3 py-3 text-meeting-text-muted text-sm">
@@ -149,6 +211,33 @@ export function LiveTranscriptPanel({
 			</div>
 		</aside>
 	);
+}
+
+function isTranscriptStatus(
+	value: IncomingTranscriptTurn | IncomingTranscriptStatus,
+): value is IncomingTranscriptStatus {
+	return value.type === "transcript_status";
+}
+
+function mergeSpeakerStatus(
+	current: Record<string, SpeakerStatus>,
+	incoming: IncomingTranscriptStatus,
+) {
+	const identity = incoming.speaker_identity;
+	if (!identity) {
+		return current;
+	}
+	if (incoming.status === "resumed") {
+		const { [identity]: _removed, ...rest } = current;
+		return rest;
+	}
+	return {
+		...current,
+		[identity]: {
+			name: incoming.speaker_name?.trim() || identity,
+			status: incoming.status,
+		},
+	};
 }
 
 function turnKey(turn: MeetingTranscriptTurn) {

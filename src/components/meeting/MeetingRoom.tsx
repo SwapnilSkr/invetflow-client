@@ -3,8 +3,7 @@ import "@livekit/components-styles";
 import { useQuery } from "@tanstack/react-query";
 import { useNavigate } from "@tanstack/react-router";
 import { Loader2 } from "lucide-react";
-import { useState } from "react";
-import { HostControlsMenu } from "#/components/meeting/HostControlsMenu";
+import { lazy, Suspense, useState } from "react";
 import { MeetingExperience } from "#/components/meeting/MeetingExperience";
 import { PreCallScreen } from "#/components/meeting/PreCallScreen";
 import { WaitingRoomGate } from "#/components/meeting/WaitingRoomGate";
@@ -12,11 +11,18 @@ import { Alert, AlertDescription } from "#/components/ui/alert";
 import { Button } from "#/components/ui/button";
 import { humanInterviewQueries } from "#/integrations/api/queries";
 
+const HostControlsMenu = lazy(() =>
+	import("#/components/meeting/HostControlsMenu").then((module) => ({
+		default: module.HostControlsMenu,
+	})),
+);
+
 type MeetingRoomProps = {
 	sessionId: string;
 	jobId: string;
 	isHost?: boolean;
 	allowScreenShare?: boolean;
+	showWebRtcStats?: boolean;
 };
 
 export function MeetingRoom({
@@ -24,6 +30,7 @@ export function MeetingRoom({
 	jobId,
 	isHost = false,
 	allowScreenShare = true,
+	showWebRtcStats = false,
 }: MeetingRoomProps) {
 	const navigate = useNavigate();
 	const [phase, setPhase] = useState<"pre-call" | "in-meeting">("pre-call");
@@ -106,11 +113,13 @@ export function MeetingRoom({
 					<div className="relative h-full">
 						{isHost ? (
 							<div className="absolute top-4 right-4 z-40">
-								<HostControlsMenu
-									sessionId={sessionId}
-									jobId={joinMeeting.data.job_id}
-									applicationId={joinMeeting.data.application_id}
-								/>
+								<Suspense fallback={null}>
+									<HostControlsMenu
+										sessionId={sessionId}
+										jobId={joinMeeting.data.job_id}
+										applicationId={joinMeeting.data.application_id}
+									/>
+								</Suspense>
 							</div>
 						) : null}
 						<MeetingExperience
@@ -118,6 +127,7 @@ export function MeetingRoom({
 							roleLabel={isHost ? "Recruiter room" : "Candidate room"}
 							allowScreenShare={allowScreenShare}
 							sessionId={sessionId}
+							showWebRtcStats={showWebRtcStats}
 						/>
 					</div>
 				</WaitingRoomGate>

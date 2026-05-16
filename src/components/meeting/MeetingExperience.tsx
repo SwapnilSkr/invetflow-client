@@ -17,12 +17,18 @@ import {
 	Track,
 } from "livekit-client";
 import { Users, Wifi } from "lucide-react";
-import { useEffect, useState } from "react";
+import { lazy, Suspense, useEffect, useState } from "react";
 import { ChatPanel } from "./ChatPanel";
 import { ControlBar } from "./ControlBar";
-import { LiveTranscriptPanel } from "./LiveTranscriptPanel";
 import type { MeetingChatMessage } from "./meeting-types";
 import { VideoGrid } from "./VideoGrid";
+import { WebRtcStatsPanel } from "./WebRtcStatsPanel";
+
+const LiveTranscriptPanel = lazy(() =>
+	import("./LiveTranscriptPanel").then((module) => ({
+		default: module.LiveTranscriptPanel,
+	})),
+);
 
 const MEETING_TRACK_SOURCES: TrackSourceWithOptions[] = [
 	{ source: Track.Source.Camera, withPlaceholder: true },
@@ -39,6 +45,7 @@ type MeetingExperienceProps = {
 	roleLabel: string;
 	allowScreenShare?: boolean;
 	sessionId?: string;
+	showWebRtcStats?: boolean;
 };
 
 export function MeetingExperience({
@@ -46,6 +53,7 @@ export function MeetingExperience({
 	roleLabel,
 	allowScreenShare = true,
 	sessionId,
+	showWebRtcStats = false,
 }: MeetingExperienceProps) {
 	const room = useRoomContext();
 	const connectionState = useConnectionState(room);
@@ -204,6 +212,7 @@ export function MeetingExperience({
 							{deviceError}
 						</div>
 					) : null}
+					{showWebRtcStats ? <WebRtcStatsPanel /> : null}
 
 					<ControlBar
 						isCameraEnabled={isCameraEnabled}
@@ -240,11 +249,13 @@ export function MeetingExperience({
 					/>
 				) : null}
 				{sessionId ? (
-					<LiveTranscriptPanel
-						sessionId={sessionId}
-						open={transcriptOpen}
-						onClose={() => setTranscriptOpen(false)}
-					/>
+					<Suspense fallback={null}>
+						<LiveTranscriptPanel
+							sessionId={sessionId}
+							open={transcriptOpen}
+							onClose={() => setTranscriptOpen(false)}
+						/>
+					</Suspense>
 				) : null}
 			</div>
 		</div>
