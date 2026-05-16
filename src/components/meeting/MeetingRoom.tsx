@@ -52,8 +52,9 @@ export function MeetingRoom({ sessionId, jobId }: MeetingRoomProps) {
 	}
 
 	return (
-		<div className="h-screen bg-background">
+		<div className="h-[100dvh] overflow-hidden bg-neutral-950">
 			<LiveKitRoom
+				className="h-[100dvh] overflow-hidden bg-neutral-950"
 				serverUrl={joinMeeting.data.livekit_url}
 				token={joinMeeting.data.livekit_token}
 				connect

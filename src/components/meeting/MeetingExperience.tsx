@@ -5,7 +5,6 @@ import type {
 import {
 	isTrackReference,
 	StartMediaButton,
-	useChat,
 	useConnectionState,
 	useLocalParticipant,
 	useParticipants,
@@ -14,7 +13,13 @@ import {
 	useTracks,
 	VideoTrack,
 } from "@livekit/components-react";
-import { ConnectionState, Track } from "livekit-client";
+import {
+	ConnectionState,
+	type DataPacket_Kind,
+	type RemoteParticipant,
+	RoomEvent,
+	Track,
+} from "livekit-client";
 import {
 	Camera,
 	CameraOff,
@@ -29,7 +34,7 @@ import {
 	X,
 } from "lucide-react";
 import type { FormEvent, ReactNode } from "react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 const MEETING_TRACK_SOURCES: TrackSourceWithOptions[] = [
 	{ source: Track.Source.Camera, withPlaceholder: true },
@@ -37,6 +42,17 @@ const MEETING_TRACK_SOURCES: TrackSourceWithOptions[] = [
 ] satisfies TrackSourceWithOptions[];
 
 const TRACK_OPTIONS = { onlySubscribed: false } as const;
+const CHAT_TOPIC = "invetflow-meeting-chat";
+const textEncoder = new TextEncoder();
+const textDecoder = new TextDecoder();
+
+type MeetingChatMessage = {
+	id: string;
+	message: string;
+	timestamp: number;
+	senderIdentity: string;
+	senderName: string;
+};
 
 type MeetingExperienceProps = {
 	title: string;
@@ -59,6 +75,7 @@ export function MeetingExperience({
 	} = useLocalParticipant();
 	const [chatOpen, setChatOpen] = useState(false);
 	const [deviceError, setDeviceError] = useState<string | null>(null);
+	const [chatMessages, setChatMessages] = useState<MeetingChatMessage[]>([]);
 	const tracks = useTracks(MEETING_TRACK_SOURCES, TRACK_OPTIONS);
 	const cameraTracks = tracks.filter(
 		(trackRef) => trackRef.source === Track.Source.Camera,
@@ -104,8 +121,70 @@ export function MeetingExperience({
 		await room.disconnect();
 	}
 
+	useEffect(() => {
+		function handleDataReceived(
+			payload: Uint8Array,
+			participant?: RemoteParticipant,
+			_kind?: DataPacket_Kind,
+			topic?: string,
+		) {
+			if (topic !== CHAT_TOPIC) {
+				return;
+			}
+
+			try {
+				const parsed = JSON.parse(
+					textDecoder.decode(payload),
+				) as MeetingChatMessage;
+				setChatMessages((current) =>
+					current.some((message) => message.id === parsed.id)
+						? current
+						: [...current, parsed],
+				);
+			} catch {
+				const senderName =
+					participant?.name || participant?.identity || "Participant";
+				setChatMessages((current) => [
+					...current,
+					{
+						id: crypto.randomUUID(),
+						message: textDecoder.decode(payload),
+						timestamp: Date.now(),
+						senderIdentity: participant?.identity || "unknown",
+						senderName,
+					},
+				]);
+			}
+		}
+
+		room.on(RoomEvent.DataReceived, handleDataReceived);
+		return () => {
+			room.off(RoomEvent.DataReceived, handleDataReceived);
+		};
+	}, [room]);
+
+	async function sendChatMessage(message: string) {
+		const chatMessage: MeetingChatMessage = {
+			id: crypto.randomUUID(),
+			message,
+			timestamp: Date.now(),
+			senderIdentity: localParticipant.identity,
+			senderName:
+				localParticipant.name || localParticipant.identity || "Participant",
+		};
+
+		await localParticipant.publishData(
+			textEncoder.encode(JSON.stringify(chatMessage)),
+			{
+				reliable: true,
+				topic: CHAT_TOPIC,
+			},
+		);
+		setChatMessages((current) => [...current, chatMessage]);
+	}
+
 	return (
-		<div className="flex h-dvh min-h-0 flex-col overflow-hidden bg-neutral-950 text-white">
+		<div className="fixed inset-0 z-50 flex h-[100dvh] min-h-0 flex-col overflow-hidden bg-neutral-950 text-white">
 			<header className="flex h-16 shrink-0 items-center justify-between border-white/10 border-b px-4 md:px-6">
 				<div className="min-w-0">
 					<p className="truncate font-semibold text-sm md:text-base">{title}</p>
@@ -131,7 +210,7 @@ export function MeetingExperience({
 				<main className="relative min-h-0 overflow-hidden">
 					<div className="flex h-full min-h-0 flex-col gap-3 p-3 pb-24 md:p-5 md:pb-28">
 						{spotlightTrack ? (
-							<div className="grid min-h-0 flex-1 grid-cols-1 gap-3 xl:grid-cols-[minmax(0,1fr)_260px]">
+							<div className="grid min-h-0 flex-1 grid-cols-1 grid-rows-[minmax(0,1fr)_auto] gap-3 overflow-hidden xl:grid-cols-[minmax(0,1fr)_minmax(180px,260px)] xl:grid-rows-1">
 								<ParticipantVideoTile
 									trackRef={spotlightTrack}
 									isSpeaking={isParticipantSpeaking(
@@ -140,7 +219,7 @@ export function MeetingExperience({
 									)}
 									spotlight
 								/>
-								<div className="grid max-h-56 grid-cols-2 gap-3 overflow-y-auto xl:max-h-none xl:grid-cols-1">
+								<div className="grid min-w-0 max-h-56 grid-cols-[repeat(auto-fit,minmax(140px,1fr))] gap-3 overflow-x-hidden overflow-y-auto xl:max-h-none xl:grid-cols-1 xl:auto-rows-min">
 									{visibleTracks.map((trackRef) => (
 										<ParticipantVideoTile
 											key={tileKey(trackRef)}
@@ -155,11 +234,7 @@ export function MeetingExperience({
 								</div>
 							</div>
 						) : (
-							<div
-								className={`grid h-full min-h-0 gap-3 ${gridClass(
-									visibleTracks.length,
-								)}`}
-							>
+							<div className={mainGridClass(visibleTracks.length)}>
 								{visibleTracks.map((trackRef) => (
 									<ParticipantVideoTile
 										key={tileKey(trackRef)}
@@ -168,6 +243,7 @@ export function MeetingExperience({
 											trackRef.participant.identity,
 											speakingParticipants,
 										)}
+										dense={visibleTracks.length > 4}
 									/>
 								))}
 							</div>
@@ -245,7 +321,13 @@ export function MeetingExperience({
 					</div>
 				</main>
 
-				{chatOpen ? <ChatPanel onClose={() => setChatOpen(false)} /> : null}
+				{chatOpen ? (
+					<ChatPanel
+						messages={chatMessages}
+						onClose={() => setChatOpen(false)}
+						onSend={sendChatMessage}
+					/>
+				) : null}
 			</div>
 		</div>
 	);
@@ -255,6 +337,7 @@ type ParticipantVideoTileProps = {
 	trackRef: TrackReferenceOrPlaceholder;
 	isSpeaking: boolean;
 	compact?: boolean;
+	dense?: boolean;
 	spotlight?: boolean;
 };
 
@@ -262,10 +345,12 @@ function ParticipantVideoTile({
 	trackRef,
 	isSpeaking,
 	compact = false,
+	dense = false,
 	spotlight = false,
 }: ParticipantVideoTileProps) {
 	const participant = trackRef.participant;
-	const participantName = participant.name || participant.identity;
+	const participantName =
+		participant.name || participant.identity || "Participant";
 	const videoReady =
 		isTrackReference(trackRef) &&
 		Boolean(trackRef.publication.track) &&
@@ -274,11 +359,9 @@ function ParticipantVideoTile({
 
 	return (
 		<section
-			className={`relative min-h-0 overflow-hidden rounded-xl bg-neutral-900 ring-1 transition ${
+			className={`relative min-w-0 overflow-hidden rounded-xl bg-neutral-900 ring-1 transition ${
 				isSpeaking ? "ring-emerald-400" : "ring-white/10"
-			} ${spotlight ? "h-full" : "aspect-video h-full"} ${
-				compact ? "min-h-32" : "min-h-44"
-			}`}
+			} ${tileSizeClass({ compact, dense, spotlight })}`}
 		>
 			{videoReady && isTrackReference(trackRef) ? (
 				<VideoTrack
@@ -354,12 +437,14 @@ function ControlButton({
 }
 
 type ChatPanelProps = {
+	messages: MeetingChatMessage[];
 	onClose: () => void;
+	onSend: (message: string) => Promise<void>;
 };
 
-function ChatPanel({ onClose }: ChatPanelProps) {
-	const { chatMessages, isSending, send } = useChat();
+function ChatPanel({ messages, onClose, onSend }: ChatPanelProps) {
 	const [draft, setDraft] = useState("");
+	const [isSending, setIsSending] = useState(false);
 	const [sendError, setSendError] = useState<string | null>(null);
 
 	async function handleSubmit(event: FormEvent<HTMLFormElement>) {
@@ -371,16 +456,19 @@ function ChatPanel({ onClose }: ChatPanelProps) {
 
 		setDraft("");
 		setSendError(null);
+		setIsSending(true);
 		try {
-			await send(message);
+			await onSend(message);
 		} catch (error) {
 			setDraft(message);
 			setSendError(errorMessage(error, "Message could not be sent."));
+		} finally {
+			setIsSending(false);
 		}
 	}
 
 	return (
-		<aside className="absolute inset-x-0 bottom-0 z-30 flex max-h-[70dvh] min-h-0 flex-col border-white/10 border-t bg-neutral-950 shadow-2xl lg:static lg:max-h-none lg:border-t-0 lg:border-l">
+		<aside className="absolute inset-x-3 bottom-20 z-30 flex max-h-[calc(100dvh-7rem)] min-h-0 flex-col overflow-hidden rounded-xl border border-white/10 bg-neutral-950 shadow-2xl lg:static lg:inset-auto lg:max-h-none lg:rounded-none lg:border-t-0 lg:border-r-0 lg:border-b-0">
 			<div className="flex h-14 shrink-0 items-center justify-between border-white/10 border-b px-4">
 				<div>
 					<p className="font-semibold text-sm">Meeting chat</p>
@@ -397,16 +485,16 @@ function ChatPanel({ onClose }: ChatPanelProps) {
 			</div>
 
 			<div className="min-h-0 flex-1 space-y-3 overflow-y-auto px-4 py-4">
-				{chatMessages.length === 0 ? (
+				{messages.length === 0 ? (
 					<p className="rounded-lg bg-white/5 px-3 py-3 text-neutral-400 text-sm">
 						No messages yet.
 					</p>
 				) : (
-					chatMessages.map((message) => (
+					messages.map((message) => (
 						<div key={message.id} className="rounded-lg bg-white/5 px-3 py-2">
 							<div className="flex items-center justify-between gap-3 text-xs">
 								<span className="truncate font-medium text-white">
-									{message.from?.name || message.from?.identity || "Unknown"}
+									{message.senderName}
 								</span>
 								<span className="shrink-0 text-neutral-500">
 									{new Date(message.timestamp).toLocaleTimeString([], {
@@ -452,14 +540,38 @@ function ChatPanel({ onClose }: ChatPanelProps) {
 	);
 }
 
-function gridClass(count: number) {
+function mainGridClass(count: number) {
 	if (count <= 1) {
-		return "grid-cols-1";
+		return "grid h-full min-h-0 grid-cols-1 gap-3";
+	}
+	if (count <= 2) {
+		return "grid h-full min-h-0 grid-cols-1 gap-3 md:grid-cols-2";
 	}
 	if (count <= 4) {
-		return "grid-cols-1 sm:grid-cols-2";
+		return "grid h-full min-h-0 grid-cols-1 gap-3 sm:grid-cols-2";
 	}
-	return "grid-cols-1 sm:grid-cols-2 xl:grid-cols-3";
+	return "grid min-h-0 content-start gap-3 overflow-y-auto overflow-x-hidden grid-cols-1 sm:grid-cols-2 xl:grid-cols-3";
+}
+
+function tileSizeClass({
+	compact,
+	dense,
+	spotlight,
+}: {
+	compact: boolean;
+	dense: boolean;
+	spotlight: boolean;
+}) {
+	if (spotlight) {
+		return "h-full min-h-0 w-full";
+	}
+	if (compact) {
+		return "aspect-video h-auto min-h-0 w-full";
+	}
+	if (dense) {
+		return "aspect-video min-h-36 w-full";
+	}
+	return "h-full min-h-0 w-full";
 }
 
 function tileKey(trackRef: TrackReferenceOrPlaceholder) {
