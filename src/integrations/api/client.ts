@@ -1069,7 +1069,6 @@ export interface MeetingTranscript {
 	action_items: string[];
 	strengths: string[];
 	concerns: string[];
-	suggested_score: number | null;
 	created_at: string;
 	updated_at: string;
 }

@@ -51,15 +51,6 @@ export function MeetingSummaryView({
 				<ChipGroup title="Concerns" values={transcript.concerns} />
 			</div>
 
-			{transcript.suggested_score != null ? (
-				<p className="text-sm text-muted-foreground">
-					Suggested score:{" "}
-					<span className="font-medium text-foreground">
-						{transcript.suggested_score.toFixed(1)} / 10
-					</span>
-				</p>
-			) : null}
-
 			<button
 				type="button"
 				className="inline-flex items-center gap-1.5 text-sm text-primary hover:underline"

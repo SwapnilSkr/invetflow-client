@@ -6,7 +6,7 @@ import {
 	RoomEvent,
 } from "livekit-client";
 import { Captions, X } from "lucide-react";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Button } from "#/components/ui/button";
 import type { MeetingTranscriptTurn } from "#/integrations/api/client";
 import { humanInterviewQueries } from "#/integrations/api/queries";
@@ -85,10 +85,9 @@ export function LiveTranscriptPanel({
 		};
 	}, [room]);
 
-	const renderedTurns = useMemo(
-		() => turns.filter((turn) => turn.text.trim().length > 0).slice(-80),
-		[turns],
-	);
+	const renderedTurns = turns
+		.filter((turn) => turn.text.trim().length > 0)
+		.slice(-80);
 
 	if (!open) {
 		return null;
