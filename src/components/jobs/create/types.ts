@@ -66,10 +66,5 @@ export type DraftUpdate = <K extends keyof DraftState>(
 	value: DraftState[K],
 ) => void;
 
-export const PHASES = [
-	"Details",
-	"Hiring process",
-	"Preview",
-	"Publish",
-] as const;
+export const PHASES = ["Details", "Pipeline", "Publish"] as const;
 export type Phase = (typeof PHASES)[number];

@@ -22,7 +22,7 @@ import {
 	validatePhase,
 } from "#/components/jobs/create/job-create-state";
 import { PhaseDetails } from "#/components/jobs/create/phase-details";
-import { PhaseProcess } from "#/components/jobs/create/phase-process";
+import { PhasePipeline } from "#/components/jobs/create/phase-pipeline";
 import {
 	type DraftState,
 	PHASES,
@@ -44,11 +44,6 @@ import {
 	useUpdateJob,
 } from "#/integrations/api/queries";
 
-const PhasePreview = lazy(() =>
-	import("#/components/jobs/create/phase-preview").then((m) => ({
-		default: m.PhasePreview,
-	})),
-);
 const PhasePublish = lazy(() =>
 	import("#/components/jobs/create/phase-publish").then((m) => ({
 		default: m.PhasePublish,
@@ -300,12 +295,10 @@ function CreateJobWizard({ routeJobId, initialJob }: CreateJobWizardProps) {
 				setErrorMessage("Save the draft first to unlock later phases.");
 			} else if (!validatePhase("Details", draft).ok) {
 				setErrorMessage("Complete the Details step before opening this phase.");
-			} else if (!validatePhase("Hiring process", draft).ok) {
+			} else if (!validatePhase("Pipeline", draft).ok) {
 				setErrorMessage(
-					"Complete the Hiring process step before opening this phase.",
+					"Complete the Pipeline step before opening this phase.",
 				);
-			} else if (!validatePhase("Preview", draft).ok) {
-				setErrorMessage("Complete the Preview step before opening this phase.");
 			} else {
 				setErrorMessage("This step is not available yet.");
 			}
@@ -363,8 +356,8 @@ function CreateJobWizard({ routeJobId, initialJob }: CreateJobWizardProps) {
 				/>
 			) : null}
 
-			{phase === "Hiring process" ? (
-				<PhaseProcess
+			{phase === "Pipeline" ? (
+				<PhasePipeline
 					draft={draft}
 					update={update}
 					errors={inlinePhaseErrors}
@@ -376,18 +369,6 @@ function CreateJobWizard({ routeJobId, initialJob }: CreateJobWizardProps) {
 				/>
 			) : null}
 
-			{phase === "Preview" ? (
-				<Suspense fallback={<WizardPhaseFallback />}>
-					<PhasePreview
-						draft={draft}
-						routeJobId={routeJobId}
-						onBack={goBack}
-						onSaveAndContinue={handleSaveAndContinue}
-						isSaving={isSaving}
-					/>
-				</Suspense>
-			) : null}
-
 			{phase === "Publish" ? (
 				<Suspense fallback={<WizardPhaseFallback />}>
 					<PhasePublish
@@ -397,6 +378,7 @@ function CreateJobWizard({ routeJobId, initialJob }: CreateJobWizardProps) {
 						isSaving={isSaving}
 						canPublish={!!routeJobId}
 						onBack={goBack}
+						routeJobId={routeJobId}
 					/>
 				</Suspense>
 			) : null}

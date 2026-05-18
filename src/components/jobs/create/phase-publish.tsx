@@ -2,11 +2,12 @@ import {
 	AlertTriangle,
 	ArrowLeft,
 	Check,
+	ChevronDown,
 	Globe2,
 	LayoutGrid,
 	Lock,
 } from "lucide-react";
-import { useEffect, useRef, useState } from "react";
+import { lazy, Suspense, useEffect, useRef, useState } from "react";
 import { Button } from "#/components/ui/button";
 import { Input } from "#/components/ui/input";
 import { Label } from "#/components/ui/label";
@@ -18,6 +19,12 @@ import { buildCreatePayload } from "./job-create-state";
 import { TagInput } from "./tag-input";
 import type { DraftState, DraftUpdate } from "./types";
 
+const CandidateJobPagePreview = lazy(() =>
+	import("#/components/jobs/preview/candidate-job-page-preview").then((m) => ({
+		default: m.CandidateJobPagePreview,
+	})),
+);
+
 type PhasePublishProps = {
 	draft: DraftState;
 	update: DraftUpdate;
@@ -25,6 +32,7 @@ type PhasePublishProps = {
 	isSaving: boolean;
 	canPublish: boolean;
 	onBack: () => void;
+	routeJobId?: string;
 };
 
 function useLaunchReadiness(draft: DraftState) {
@@ -79,6 +87,14 @@ function SwitchRow({
 	);
 }
 
+function PreviewPanelFallback() {
+	return (
+		<div className="flex h-[200px] items-center justify-center text-sm text-muted-foreground">
+			Loading preview…
+		</div>
+	);
+}
+
 export function PhasePublish({
 	draft,
 	update,
@@ -91,9 +107,46 @@ export function PhasePublish({
 	const analysis = useLaunchReadiness(draft);
 	const blockingIssues = analysis?.blocking_issues ?? [];
 	const blocked = blockingIssues.length > 0;
+	const [previewOpen, setPreviewOpen] = useState(false);
 
 	return (
 		<div className="space-y-4">
+			{/* Collapsible preview panel */}
+			<div className="rounded-lg border border-border">
+				<button
+					type="button"
+					onClick={() => setPreviewOpen((v) => !v)}
+					className="flex w-full items-center justify-between px-4 py-3 text-left"
+					aria-expanded={previewOpen}
+				>
+					<div>
+						<p className="text-sm font-semibold text-foreground">
+							Preview before publishing
+						</p>
+						<p className="text-xs text-muted-foreground">
+							See what candidates will see when they open this job.
+						</p>
+					</div>
+					<ChevronDown
+						className={cn(
+							"size-4 shrink-0 text-muted-foreground transition-transform",
+							previewOpen && "rotate-180",
+						)}
+					/>
+				</button>
+				{previewOpen ? (
+					<div className="border-t border-border px-4 pb-4 pt-3">
+						<Suspense fallback={<PreviewPanelFallback />}>
+							<CandidateJobPagePreview
+								draft={draft}
+								analysis={analysis}
+								heightClass="h-[500px]"
+							/>
+						</Suspense>
+					</div>
+				) : null}
+			</div>
+
 			{/* Section 1: Job visibility */}
 			<div className="space-y-3">
 				<Label>Job visibility</Label>
